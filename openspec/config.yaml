@@ -1,0 +1,27 @@
+schema: spec-driven
+
+context: |
+  PRODUCT.md defines Arcloom's product concept, scope, capabilities, and principles.
+  ARCHITECTURE.md defines system boundaries, Component responsibilities, ownership, and dependency rules.
+  openspec/specs defines accepted detailed product behavior.
+  openspec/changes contains proposed product Changes and their DesignDocs.
+  docs/DEVELOPMENT.md governs product design, implementation, testing, and review.
+  Repository administration and development-environment maintenance do not require OpenSpec unless they change product behavior or structure.
+
+rules:
+  proposal:
+    - Identify the affected capabilities and canonical documents without restating them.
+  specs:
+    - Specify externally observable behavior and acceptance conditions without implementation details.
+  design:
+    - Treat design.md as the DesignDoc required by docs/DEVELOPMENT.md and follow that document completely.
+  tasks:
+    - Derive implementation and verification tasks from the accepted specs and design.
+
+operations:
+  apply:
+    guidance:
+      - Follow docs/DEVELOPMENT.md, including its TDD and design-conformance requirements.
+  archive:
+    guidance:
+      - Update PRODUCT.md or ARCHITECTURE.md only when the accepted Change alters their subject matter.
