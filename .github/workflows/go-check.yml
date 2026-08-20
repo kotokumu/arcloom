@@ -1,0 +1,62 @@
+name: Go Check
+
+on:
+  pull_request:
+    paths:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - .golangci.yml
+      - .github/workflows/go-check.yml
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - .golangci.yml
+      - .github/workflows/go-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.mod
+
+      - name: Check module tidiness
+        run: go mod tidy -diff
+
+      - name: Test
+        run: go test -v -race ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.mod
+            .golangci.yml
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.1
