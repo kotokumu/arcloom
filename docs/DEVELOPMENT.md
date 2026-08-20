@@ -4,23 +4,25 @@
 
 ### 1.1 Purpose and Applicability
 
-This document defines the criteria used for design, implementation, and review in Arcloom. The product document defines the value and capabilities provided by Arcloom, and the Architecture document defines system boundaries and Component responsibilities. This document defines how to design when those are changed or made concrete.
+This document defines the criteria used to design, implement, and review the Arcloom product. The product document defines the value and capabilities provided by Arcloom, and the Architecture document defines system boundaries and Component responsibilities. This document defines how product Changes are designed when those are changed or made concrete.
 
-This document applies to development that adds or changes Concepts, responsibilities, state owners, Component boundaries, public contracts, or behavior observable from outside.
+This document applies only to development of the Arcloom product. It applies when work adds or changes product behavior or any Concept, responsibility, state owner, Component boundary, or public contract that realizes the product.
+
+Repository administration and development-environment maintenance are outside its scope when they do not change product behavior or structure. This includes Git metadata, Toolchain versions, editor settings, formatting configuration, and CI workflow maintenance.
 
 This document does not prescribe a specific programming language, framework, or deployment form.
 
-### 1.2 Required before Starting Design
+### 1.2 Required before Starting Product Design
 
-Before starting design, review this document. Review `PRODUCT.md` when the Change affects the product concept, scope, value, capabilities, or product principles. Review `ARCHITECTURE.md` when the Change affects system boundaries, Component responsibilities, ownership, dependency rules, Ports, or external Contexts. Design takes as input the rules in the documents selected for the Change.
+Before starting product design, review this document. Review `PRODUCT.md` when the Change affects the product concept, scope, value, capabilities, or product principles. Review `ARCHITECTURE.md` when the Change affects system boundaries, Component responsibilities, ownership, dependency rules, Ports, or external Contexts. Design takes as input the rules in the documents selected for the Change.
 
-During design, create or update a DesignDoc for each Change. Do not start implementation until the DesignDoc review is complete.
+During product design, create or update a DesignDoc for each product Change. Do not start product implementation until the DesignDoc review is complete.
 
-Do not omit a DesignDoc even for a small Change that follows an existing design. Record `N/A` with a reason for sections that do not apply. A separate DesignDoc is not required for Changes that do not involve implementation, such as wording corrections.
+Do not omit a DesignDoc even for a small product Change that follows an existing design. Record `N/A` with a reason for sections that do not apply. A separate DesignDoc is not required for work outside this document's scope or for Changes that do not involve product implementation, such as wording corrections.
 
 ### 1.3 Responsibility of a DesignDoc
 
-A DesignDoc records the design needed to implement one Change and reach a state where its functional and non-functional aspects can be verified. It includes applicable content among the Change purpose, out of scope, behavior, conceptual model, responsibility assignment, Package design, Interface design, test specification, and design decisions specific to the Change.
+A DesignDoc records the design needed to implement one product Change and reach a state where its functional and non-functional aspects can be verified. It includes applicable content among the Change purpose, out of scope, behavior, conceptual model, responsibility assignment, Package design, Interface design, test specification, and design decisions specific to the Change.
 
 When a Change affects Architecture principles, system boundaries, Component responsibilities, ownership relationships, or dependency rules, record the decision and impact in the DesignDoc and update the Architecture document at the same time.
 
