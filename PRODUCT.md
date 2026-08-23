@@ -73,7 +73,7 @@ Capabilities are classified into Feedback Loops for each Reconciliation target a
 | Feedback Loop | Delivery Reconciliation | Controls the Feedback Loop from a Change initiated by a user or AI through development and Delivery |
 | Feedback Loop | Development Improvement Reconciliation | Reconciles Observations accumulated through repeated Delivery and controls the Feedback Loop that improves the development system |
 | Common | Observation | Makes Observations existing outside Arcloom available to Feedback Loops |
-| Common | Plan | Represents the plan required for Delivery or improvement of the development system through Goals, acceptance conditions, Milestones, Tasks, and deadlines |
+| Common | Plan | Represents the plan required for Delivery or improvement of the development system through a Goal, acceptance conditions, Tasks, and an optional target date |
 | Common | Change Authorization | Decides whether Arcloom may request external application of a single Change targeting a Plan, specification, Source Code, or other target |
 
 This capability classification does not prescribe a one-to-one correspondence with Arcloom Components. Delivery Reconciliation and Development Improvement Reconciliation are Feedback Loops established by combining shared capabilities with external Actors.
@@ -94,7 +94,7 @@ The following are concrete examples of Observations. No Reconciliation requires 
 - Delivery Reconciliation targets one Change from development through Delivery.
 - Development Improvement Reconciliation targets the development system using Observations accumulated through repeated Delivery.
 - Observation makes Observations available. It does not decide the difference from the expected state or the next work item.
-- Plan represents Milestones, Tasks, and deadlines for a Goal and its acceptance conditions. It does not perform Tasks or authorize Changes.
+- Plan represents Tasks and an optional target date for a Goal and its acceptance conditions. Provider-native resources such as Milestones or Issues can represent a Plan but are not Plan elements. A Plan does not perform Tasks or authorize Changes.
 - Change Authorization decides whether Arcloom may request external application of a single Change. It does not grant permissions in an external system or apply the Change externally.
 - External Agents, development tools, or humans perform Tasks. Arcloom does not replace these actors.
 - The same Observation can be used by both capabilities.
