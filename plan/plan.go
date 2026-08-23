@@ -142,7 +142,7 @@ type Plan struct {
 }
 
 func New(name string, goal Goal, conditions []AcceptanceCondition, tasks []Task, targetDate *TargetDate) (Plan, error) {
-	if err := validateText(name, PlanNameElement, true, -1); err != nil {
+	if err := ValidateName(name); err != nil {
 		return Plan{}, err
 	}
 	if err := validateText(goal.text, GoalElement, false, -1); err != nil {
@@ -151,25 +151,11 @@ func New(name string, goal Goal, conditions []AcceptanceCondition, tasks []Task,
 	if len(conditions) == 0 {
 		return Plan{}, &ValidationError{code: MissingAcceptanceCondition, element: AcceptanceConditionElement}
 	}
-	seenConditions := make(map[string]struct{}, len(conditions))
-	for i, condition := range conditions {
-		if err := validateText(condition.statement, AcceptanceConditionElement, false, i); err != nil {
-			return Plan{}, err
-		}
-		if _, exists := seenConditions[condition.statement]; exists {
-			return Plan{}, &ValidationError{code: DuplicateAcceptanceCondition, element: AcceptanceConditionElement, index: i, hasIndex: true}
-		}
-		seenConditions[condition.statement] = struct{}{}
+	if err := ValidateAcceptanceConditions(conditions); err != nil {
+		return Plan{}, err
 	}
-	seenTasks := make(map[string]struct{}, len(tasks))
-	for i, task := range tasks {
-		if err := validateText(task.name, TaskElement, true, i); err != nil {
-			return Plan{}, err
-		}
-		if _, exists := seenTasks[task.name]; exists {
-			return Plan{}, &ValidationError{code: DuplicateTask, element: TaskElement, index: i, hasIndex: true}
-		}
-		seenTasks[task.name] = struct{}{}
+	if err := ValidateTasks(tasks); err != nil {
+		return Plan{}, err
 	}
 	var dateCopy *TargetDate
 	if targetDate != nil {
@@ -201,6 +187,66 @@ func (p Plan) TargetDate() (TargetDate, bool) {
 
 // IsValid reports whether the Plan was successfully constructed.
 func (p Plan) IsValid() bool { return p.valid }
+
+// ValidateName applies the same Plan-name rules used by New without
+// constructing a Plan aggregate. It preserves the exact input (including
+// surrounding whitespace) for validation, performs no normalization, and
+// returns a *ValidationError identifying PlanNameElement. Use errors.As to
+// inspect its stable violation code; invalid UTF-8 or blank text returns
+// InvalidText, and a name containing CR, LF, NEL, U+2028, or U+2029 returns
+// MultilineName.
+func ValidateName(name string) error {
+	if err := validateText(name, PlanNameElement, true, -1); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateAcceptanceConditions validates publicly constructible acceptance
+// conditions without requiring a Plan aggregate. It applies the same
+// zero-element and exact-preserved-text uniqueness rules as New, without
+// normalization, and reports a *ValidationError that includes the affected
+// AcceptanceConditionElement and input index; use errors.As to inspect it.
+// Nil and empty slices satisfy collection validation. An invalid zero element
+// reports InvalidText; an exact duplicate reports
+// DuplicateAcceptanceCondition. If independent violations coexist, the
+// selected violation order is unspecified. The input slice is read only.
+func ValidateAcceptanceConditions(values []AcceptanceCondition) error {
+	seen := make(map[string]struct{}, len(values))
+	for i, value := range values {
+		if err := validateText(value.statement, AcceptanceConditionElement, false, i); err != nil {
+			return err
+		}
+		if _, exists := seen[value.statement]; exists {
+			return &ValidationError{code: DuplicateAcceptanceCondition, element: AcceptanceConditionElement, index: i, hasIndex: true}
+		}
+		seen[value.statement] = struct{}{}
+	}
+	return nil
+}
+
+// ValidateTasks validates publicly constructible Tasks without requiring a
+// Plan aggregate. It applies the same zero-element and exact-preserved-text
+// uniqueness rules as New, without normalization, and reports a
+// *ValidationError that includes the affected TaskElement and input index; use
+// errors.As to inspect it. Nil and empty slices satisfy collection validation.
+// An invalid zero element reports InvalidText, a forbidden line separator in a
+// name reports MultilineName, and an exact duplicate reports DuplicateTask.
+// If independent violations coexist, the selected violation order is
+// unspecified. The input slice is read only.
+func ValidateTasks(values []Task) error {
+	seen := make(map[string]struct{}, len(values))
+	for i, value := range values {
+		if err := validateText(value.name, TaskElement, true, i); err != nil {
+			return err
+		}
+		if _, exists := seen[value.name]; exists {
+			return &ValidationError{code: DuplicateTask, element: TaskElement, index: i, hasIndex: true}
+		}
+		seen[value.name] = struct{}{}
+	}
+	return nil
+}
 
 func validateText(value string, element ElementKind, singleLine bool, index int) *ValidationError {
 	if !utf8.ValidString(value) || strings.TrimFunc(value, unicode.IsSpace) == "" {
