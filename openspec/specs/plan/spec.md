@@ -39,7 +39,7 @@ Plan names, Goals, acceptance conditions, and Task names SHALL be valid UTF-8 an
 - **THEN** the Plan preserves that whitespace exactly
 
 ### Requirement: PLN-3 Collection invariants
-Acceptance-condition statements and Task names SHALL each be unique by exact preserved text within one Plan. Their declared order SHALL be preserved. A zero-value or otherwise invalid Plan SHALL NOT cross a public package boundary as a valid Plan.
+Acceptance-condition statements and Task names SHALL each be unique by exact preserved text within one Plan. Their declared order SHALL be preserved. A zero-value or otherwise invalid Plan SHALL NOT cross a public package boundary as a valid Plan. Acceptance-condition and Task collection validation SHALL be reusable independently of Plan aggregate construction for publicly constructible element values and their zero values. It SHALL return the same typed zero-element or duplicate validation result, including the affected input index, as Plan construction. Empty collections SHALL satisfy standalone collection validation; the requirement for at least one acceptance condition remains an aggregate Plan invariant. When standalone input contains simultaneous independent zero-element and duplicate violations, no ordering among the applicable validation results is part of the contract.
 
 #### Scenario: Duplicate acceptance condition
 - **WHEN** two acceptance conditions in one Plan have the same exact statement
@@ -52,6 +52,14 @@ Acceptance-condition statements and Task names SHALL each be unique by exact pre
 #### Scenario: Similar Unicode text
 - **WHEN** two text values differ by case or Unicode code-point sequence
 - **THEN** the values remain distinct and are not normalized for uniqueness
+
+#### Scenario: Standalone collection uniqueness validation
+- **WHEN** a consumer validates valid Plan acceptance-condition or Task values independently of Plan aggregate construction
+- **THEN** exact duplicates return the same typed duplicate result as Plan construction and an empty collection passes the uniqueness rule
+
+#### Scenario: Standalone collection contains a zero element
+- **WHEN** standalone collection validation receives a zero acceptance condition or Task at a known input index
+- **THEN** it returns the same typed invalid-element result and index as Plan construction
 
 ### Requirement: PLN-4 Target date
 A target date SHALL be exactly ten ASCII characters in `YYYY-MM-DD` form and SHALL represent a valid proleptic Gregorian calendar date from `0001-01-01` through `9999-12-31`. It SHALL contain no whitespace, time, time zone, or Provider-specific deadline semantics.
@@ -69,7 +77,7 @@ A target date SHALL be exactly ten ASCII characters in `YYYY-MM-DD` form and SHA
 - **THEN** target-date construction fails with an invalid-date result
 
 ### Requirement: PLN-5 Validation result and Plan validity
-A failed public Plan-value constructor SHALL return its zero result value and a validation error with a stable violation category, affected Plan element kind, and collection index when the affected element belongs to a collection. Consumers SHALL be able to identify the validation error with Go error inspection. No ordering among simultaneous independent violations is part of the contract. A Plan SHALL report whether it is valid without requiring a consumer to inspect or reconstruct its element invariants. A successfully constructed Plan SHALL report valid, and the zero Plan SHALL report invalid.
+A failed public Plan-value constructor SHALL return its zero result value and a validation error with a stable violation category, affected Plan element kind, and collection index when the affected element belongs to a collection. Consumers SHALL be able to identify the validation error with Go error inspection. No ordering among simultaneous independent violations is part of the contract. A Plan SHALL report whether it is valid without requiring a consumer to inspect or reconstruct its element invariants. A successfully constructed Plan SHALL report valid, and the zero Plan SHALL report invalid. Plan-name validation SHALL be reusable without constructing a Plan aggregate and SHALL return the same typed validation result and preserve the same validity semantics as Plan construction.
 
 #### Scenario: Invalid Task in a collection
 - **WHEN** a Task at a known input index is invalid
@@ -86,3 +94,7 @@ A failed public Plan-value constructor SHALL return its zero result value and a 
 #### Scenario: Zero Plan validity
 - **WHEN** a consumer asks the zero Plan whether it is valid
 - **THEN** the Plan reports invalid without requiring the consumer to reconstruct Plan rules
+
+#### Scenario: Standalone Plan-name validation
+- **WHEN** a consumer validates a Plan name without constructing a Plan aggregate
+- **THEN** the same valid names are accepted and the same invalid-text or multiline-name validation result is returned as during Plan construction
