@@ -105,11 +105,15 @@ The following names or classifications alone do not justify a Concept:
 
 - A processing order turned into a noun
 - A list of capabilities or use cases
+- `End-to-end`, `Cross-cutting`, or `Vertical Slice` that groups responsibilities because they participate in one scenario or span multiple Components
+- `Common`, `Shared`, `Utility`, `Util`, or `Helper` justified only by reuse from multiple Consumers
 - `Manager`, `Processor`, `Handler`, `Resolver`, `Registry`, or `Factory`
 - Generic `Execution`, `Runtime`, or `Service`
 - A DTO that only carries data
 
 Introducing any of these still requires the same conditions as any other Concept. Justify it by the meaning, state, invariants, decisions, or boundaries it owns, not by its name.
+
+These labels describe an implementation or verification scope, where code is used, or how often it is reused. They do not identify the owner of a responsibility. Do not use them as the basis or name for a Concept, Component, Package, Interface, or Port. Assign each responsibility to the owner of its meaning, decisions, and invariants. When implementation is genuinely shared, place it with the Concept, Component responsibility, or external boundary whose contract it implements and name it after that owner.
 
 ---
 
