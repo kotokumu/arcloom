@@ -22,5 +22,6 @@ The Plan Representation Controller can reconcile a provider-independent Plan obs
 ## Impact
 
 - Affects the public GitHub creation request-plan output and adds a GitHub-specific implementation of the Plan Representation Controller's observation Port.
+- **BREAKING** Renames the concrete Go package and public import path from `githubplanning` to the noun-based `githubplan`; the old import path is not retained, while public contract meanings remain unchanged.
 - Uses GitHub.com REST API contracts for Milestones, Issues, and Sub-issues.
 - Preserves the existing `plan`, `reconciliation`, and `planrepresentation` ownership boundaries and adds no Arcloom-owned durable state.

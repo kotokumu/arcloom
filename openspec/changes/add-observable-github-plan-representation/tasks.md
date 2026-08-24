@@ -1,8 +1,9 @@
 ## 1. Public Contract and Test Scaffolds
 
-- [ ] 1.1 Add the compile-only `githubplanning` validation categories and fixed fields, typed ResourceNumber contract, and named Milestone/Issue Observer signatures defined by the DesignDoc without implementing observation behavior.
-- [ ] 1.2 Use the Go test-authoring workflow to generate applicable table-driven scaffolds for public functions and methods before hand-editing cases; test private payload and interpretation responsibilities only through public preview, Observer, Controller, and Result behavior.
-- [ ] 1.3 Add failing black-box tests for both named constructors, ResourceNumber boundaries, constructor success, nil output on failure, cookie-Jar rejection, stable simultaneous-input precedence, zero requests during construction, immutable target binding, and non-mutation of the supplied `http.Client`.
+- [ ] 1.1 Rename the existing `githubplanning` directory, package declaration, imports, and external-package tests to `githubplan` without changing behavior; run the existing race-enabled suite before adding contracts.
+- [ ] 1.2 Add the compile-only `githubplan` validation categories and fixed fields, typed ResourceNumber contract, and named Milestone/Issue Observer signatures defined by the DesignDoc without implementing observation behavior.
+- [ ] 1.3 Use the Go test-authoring workflow to generate applicable table-driven scaffolds for public functions and methods before hand-editing cases; test private payload and interpretation responsibilities only through public preview, Observer, Controller, and Result behavior.
+- [ ] 1.4 Add failing black-box tests for both named constructors, ResourceNumber boundaries, constructor success, nil output on failure, cookie-Jar rejection, stable simultaneous-input precedence, zero requests during construction, immutable target binding, and non-mutation of the supplied `http.Client`.
 
 ## 2. Payload Protocol
 
@@ -18,14 +19,14 @@
 - [ ] 3.3 Add failing root and first-page response tests for Milestone and Issue using literal response bodies and public Result oracles.
 - [ ] 3.4 Implement root and first-page collection reads with private response representations, leaving multi-page coherence to section 5.
 
-## 4. GitHub Observation Interpretation
+## 4. GitHub Representation Semantics
 
 - [ ] 4.1 Add failing Controller-mediated Milestone tests for native title, payload-backed fields including a blank Goal violation, absent/canonical/noncanonical `due_on`, open and closed assigned Issues, assigned Pull Request exclusion, exact titles, and zero/one/100 first-page Task boundaries.
-- [ ] 4.2 Implement the Milestone Scheme cases of the Observation Interpretation Policy and construct one valid provider-independent Observation.
+- [ ] 4.2 Implement the Milestone Representation Scheme's correspondence from typed GitHub fact and Payload outcomes to Plan locations, then construct one valid provider-independent Observation.
 - [ ] 4.3 Add failing Controller-mediated Issue tests for native title, payload-backed target date, zero/one/100 first-page Sub-issues, cross-Repository positive REST `id` identity, parent Pull Request rejection, and unexpected Sub-issue Pull Request shape.
-- [ ] 4.4 Implement the Issue Scheme cases of the Observation Interpretation Policy and construct one valid provider-independent Observation.
+- [ ] 4.4 Implement the Issue Representation Scheme's correspondence from typed GitHub fact and Payload outcomes to Plan locations, then construct one valid provider-independent Observation.
 - [ ] 4.5 Add failing literal response-shape tables for every GHPO-5 localization row and simultaneous payload faults, including null/wrong/container/trailing shapes, integer boundaries, root identity mismatch, unusable title/content/date, unusable collection item `id`/title, and proof that `number` and `node_id` do not determine identity.
-- [ ] 4.6 Implement a private per-call GitHub Observation Fact Set for root/page/identity coherence and the stateless GitHub Observation Interpretation Policy as the sole owner that maps that Fact Set and typed Payload outcomes to affected Plan locations, then use Plan-owned classifiers and `planrepresentation` constructors to enforce Plan validity and Observation algebra; do not add a Policy class, generic mapper, service, or Provider interface.
+- [ ] 4.6 Implement the private per-call GitHub Observation Fact Set as the sole owner of page admission, REST `id` coherence, same-identity conflict resolution, and completeness; keep GitHub-to-Plan-location correspondence exclusively in the selected Representation Scheme, then use Plan-owned classifiers and `planrepresentation` constructors to enforce Plan validity and Observation algebra; do not add an interpretation Policy, generic mapper, service, or Provider interface.
 
 ## 5. Pagination, Failure, and Lifecycle Behavior
 
@@ -41,4 +42,4 @@
 - [ ] 6.1 Run `go test -v -race ./...`, `go vet ./...`, `golangci-lint run`, `go mod tidy -diff`, and strict OpenSpec validation; resolve every failure.
 - [ ] 6.2 Review the implementation against the DesignDoc for Concept minimality, SOLID responsibility ownership, public-interface traceability, Provider boundary containment, and absence of procedure-centered abstractions; resolve every Blocking or High finding.
 - [ ] 6.3 Re-review the Go tests as behavioral specifications under the Go test-authoring workflow and resolve every Blocking or High finding.
-- [ ] 6.4 Confirm the diff contains no external mutation, authorization path, persistence, credential storage, SDK dependency, GitHub Enterprise Server behavior, or unrelated change.
+- [ ] 6.4 Confirm the diff contains no retained `githubplanning` package or non-archived import, external mutation, authorization path, persistence, credential storage, SDK dependency, GitHub Enterprise Server behavior, or unrelated change.

@@ -79,15 +79,14 @@ No latency, throughput, availability, or retry target is introduced.
 | Concept | Meaning | State | Authority / lifecycle owner | Behavior / decision | Constraint / invariant |
 |---|---|---|---|---|---|
 | Plan | Provider-independent expected planning meaning | Immutable valid value | Plan Component | Owns text, collection, and target-date invariants | Contains no GitHub identifier or resource type |
-| GitHub Plan Representation Scheme | Provider-owned rule for mapping either Milestone-based or Issue-based GitHub facts to Plan locations | One explicit closed variant | GitHub Planning Provider | Determines native versus payload-backed locations, root kind, Task relationship, and valid Payload v1 shape | Scheme is explicit and never inferred; it owns no GitHub resource lifecycle |
+| GitHub Plan Representation Scheme | Provider-owned rule for representing a Plan through either Milestone-based or Issue-based GitHub facts | One explicit closed variant | GitHub Planning Provider | Determines native versus payload-backed locations, root kind, Task relationship, valid Payload v1 shape, and the Plan location affected by each typed GitHub fact outcome | Scheme is explicit and never inferred; it is the sole owner of GitHub-to-Plan-location correspondence and owns no GitHub resource lifecycle |
 | GitHub Repository | Provider-specific immutable owner/name locator | Exact locally valid path segments | GitHub owns the addressed external namespace; GitHub Planning Provider owns local form validity | Scopes every root number and REST request | It identifies no root without Scheme and ResourceNumber |
 | GitHub ResourceNumber | Provider-specific positive `number` intended to address a Milestone or Issue root | Immutable positive integer value | GitHub owns assigned external numbers; GitHub Planning Provider owns local value validity | Marks root-number meaning distinctly from REST `id`, GraphQL `node_id`, and request-plan result kinds | It proves positivity and intended role, not the integer's external provenance; it identifies no root alone |
 | GitHub Representation Binding | Composite immutable root address | Repository, selected Scheme, and typed ResourceNumber captured for the Observer lifetime | Host selects target; GitHub Planning Provider owns local structural validity; GitHub owns remote resource lifecycle | Keeps every call on one composite address | No component independently identifies a root; remote existence, access, and HTTP client lifecycle are not Binding validity |
 | Arcloom Plan Payload v1 | Versioned reversible machine protocol at the beginning of native content | Canonical produced bytes or accepted decoded meaning | GitHub Planning Provider owns schema and interpretation; GitHub owns current stored bytes and their lifecycle | Encodes/decodes payload-backed Plan meaning | It is not an Arcloom record or recovery source; absence/corruption makes facts unavailable and no Arcloom backup exists |
 | Generated Human Plan Narrative | Deterministic Markdown presentation after the generated payload | Bytes derived from Plan values in a creation RequestPlan | GitHub Planning Provider owns rendering | Presents proposed Plan meaning to people | Passive artifact; not a reconstruction source; a later GitHub-edited suffix is uninterpreted external content |
 | GitHub Resource Facts | Individual Provider-native root, related-resource, identity, status, and pagination facts | External resources and responses | GitHub | Supply authoritative external facts | Never become an Arcloom persistence record |
-| GitHub Observation Fact Set | Facts accumulated during one bounded observation window | One Binding, root facts, coherent Task resources, seen REST `id` and page keys, and completeness | GitHub owns source facts; GitHub Planning Provider owns only this transient assembly lifecycle | Protects per-call identity coherence and page isolation before projection | Disposable at return; not atomic beyond detected contradictions and never shared across calls |
-| GitHub Observation Interpretation Policy | Provider-specific rule for deciding what Plan knowledge can be established from a Fact Set | Stateless decision over one call's Fact Set and payload outcomes | GitHub Planning Provider | Classifies statuses, shapes, payload fields, pagination, and identity contradictions as known or locally unavailable/incomplete | Establishes provider-independent knowledge, never external facts; does not own payload syntax, Plan invariants, or Observation algebra |
+| GitHub Observation Fact Set | Transient aggregate of typed GitHub fact outcomes from one bounded observation window | One Binding, root outcomes, coherent Task resources, seen positive REST `id` and page keys, and completeness | GitHub owns source facts; GitHub Planning Provider owns only this transient aggregate lifecycle | Admits pages and resources, resolves same-identity repetition or conflict, preserves coherent membership, and determines collection completeness | Disposable at return; identity/page coherence has no other owner, the window is not atomic beyond detected contradictions, and state is never shared across calls |
 | Plan Representation Observation | Immutable provider-independent Disposable Projection | Root and Plan-location knowledge established during one bounded observation window | Plan Representation Controller owns its valid state algebra | Represents known values, violations, and localized unavailability | It is not an atomic GitHub snapshot and contains no GitHub vocabulary or errors |
 | GitHub Creation Request Plan | Existing immutable passive proposed-mutation artifact | Target Repository/Scheme, topologically ordered request values, and typed references | GitHub Planning Provider | Protects dependency topology, compatible result references, immutability, and target consistency | Does not execute, mutate, or claim success |
 
@@ -96,15 +95,14 @@ No latency, throughput, availability, or retry target is introduced.
 | Source | Relationship | Target | Multiplicity / consistency |
 |---|---|---|---|
 | GitHub Representation Binding | combines | GitHub Repository, Representation Scheme, and ResourceNumber | Exactly one of each; none identifies a root independently |
-| GitHub Plan Representation Scheme | maps | GitHub Resource Facts to Plan locations | Mapping may yield known, invalid, or unavailable Plan-shaped meaning; external facts do not constitute a valid Plan |
+| GitHub Plan Representation Scheme | maps | GitHub Observation Fact Set and Payload field outcomes to Plan locations | Mapping may yield known or unavailable Plan-shaped meaning; Plan classifiers determine invalid values, and external facts do not constitute a valid Plan |
 | Native root title | represents | Plan name | Exact text; missing or unusable title localizes to Plan name |
 | Milestone assigned non-PR Issues / Issue Sub-issues | represent | Tasks | Zero or more; GitHub identity is used only before mapping titles |
 | Representation Scheme | determines the valid shape of | Arcloom Plan Payload v1 | Milestone requires Goal/conditions; Issue additionally requires target date |
 | Native content prefix | contains | Arcloom Plan Payload v1 | Zero or one usable block; failure affects only backed locations |
 | Creation Request Plan | contains | Generated Human Plan Narrative | Deterministic proposed bytes; current GitHub suffix may later differ and is ignored |
-| GitHub Observation Fact Set | accumulates from | GitHub Resource Facts | One bounded observation window; discarded at return |
-| GitHub Observation Interpretation Policy | interprets | GitHub Observation Fact Set and Payload field outcomes | Establishes only coherent Plan knowledge and is the sole owner that assigns GitHub uncertainty to affected Plan locations |
-| GitHub Observation Fact Set | projects through the Interpretation Policy into | Plan Representation Observation | Best established knowledge for the window, not an atomic snapshot |
+| GitHub Observation Fact Set | admits and reconciles | GitHub Resource Facts | One bounded observation window with coherent membership and explicit completeness; discarded at return |
+| GitHub Plan Representation Scheme | projects | GitHub Observation Fact Set into Plan Representation Observation | Best established knowledge for the window, not an atomic snapshot |
 | Plan Representation Controller | consumes through its Observer Port | Plan Representation Observation | Existing provider-independent contract remains unchanged |
 
 #### Concept minimality
@@ -117,7 +115,7 @@ No latency, throughput, availability, or retry target is introduced.
 | Public Binding type | Do not introduce | The meaningful immutable binding is represented by the closure returned as the existing Observer Port; consumers need no Provider identity value. |
 | GitHub ResourceNumber | Keep as a public immutable value | Removing it permits raw REST `id` and root `number` to be confused at the Host-facing constructor; a single value serves both root variants without importing either into the Observer Port. |
 | Observation Fact Set | Keep as a transient concept, not a public type | Removing it hides page/identity/coherence state; a private per-call value protects those invariants and is discarded at return. |
-| Observation Interpretation Policy class or interface | Do not introduce | The Policy is a meaningful decision owner, but it has no state, identity, lifecycle, or alternate implementation; private functions and tests are sufficient. |
+| Observation Interpretation Policy | Do not introduce | It would duplicate the Representation Scheme's GitHub-to-Plan correspondence and turn interpretation into a processing stage. |
 | GitHub SDK abstraction | Do not introduce | The concrete Provider consumes only `net/http`; a second implementation or consumer constraint has not been established. |
 | Cache, repository, observation history, or retry policy | Do not introduce | They are not required for current correctness and could obscure external authority. |
 | Authoritative GitHub absence | Do not introduce | The selected GitHub contracts do not provide an unambiguous fact for it. |
@@ -133,14 +131,13 @@ No latency, throughput, availability, or retry target is introduced.
 | Select credentials, client, Repository, representation, and number | Arcloom Host | Invocation/deployment context | Correct target association for the applicable Change | Composition Root only wires; Controller has no GitHub identity vocabulary. |
 | Validate and preserve the local target binding | GitHub Planning Provider | Repository, representation selected by constructor, typed ResourceNumber, and GitHub target syntax | One immutable target; no construction-time remote claim | HTTP client ownership and access behavior are separate REST-boundary concerns. |
 | Validate positive root-number form and distinguish it from REST identity | GitHub ResourceNumber value | Supplied integer and GitHub identifier semantics | Invalid or ambiguous raw integers do not cross the Host-facing Observer boundary | Binding consumes the value; request-plan ResultKind and collection identity have different meanings. |
-| Validate and copy the Host client, refuse redirects, and issue reads | GitHub REST boundary inside the Planning Provider | Host-supplied client and approved REST contract | External access remains read-only and target-contained | Binding does not own transport/authentication lifecycle; Host does not own Provider request rules. |
+| Validate and copy the Host client, refuse redirects, issue reads, and establish typed response outcomes | GitHub REST boundary inside the Planning Provider | Host-supplied client and approved REST status and response-shape contracts | External access remains read-only and target-contained; transport, status, and response-shape failures remain explicit before Plan mapping | Binding does not own transport/authentication lifecycle; Host does not own Provider request or response rules; the REST boundary does not assign Plan locations. |
 | Own external resource identity, permissions, and lifecycle | GitHub | Native system authority | Durable external facts | Arcloom never persists or re-owns them. |
 | Define Payload v1 canonical producer and accepted decoder grammar | GitHub Planning Provider payload protocol | GPCD-2 and GHPO-2 | One reversible protocol decision and private syntactic/typed field outcomes | It does not assign Plan locations or construct Observation child values. |
 | Render the human narrative | GitHub Planning Provider creation preview | Valid Plan and presentation specification | Deterministic human projection | Observer ignores the narrative. |
-| Accumulate one bounded set of coherent root/page facts | GitHub Observation Fact Set | Immutable Binding, raw Provider facts, seen positive REST `id` values and pages | Per-call coherence, completeness, and concurrent-call isolation | Observer coordinates its lifecycle but does not own its identity/coherence invariants. |
-| Obtain GitHub responses and coordinate one Observation | GitHub Planning Provider observer implementation | Immutable Binding, REST boundary, Observation Fact Set, Interpretation Policy, and consumer Observation constructors | One read-only logical Observation per call | It owns no status, payload, localization, identity-coherence, or Plan-validity decision. |
-| Decide what Plan knowledge is established and which Plan location uncertainty affects | GitHub Observation Interpretation Policy | HTTP status, response shape, typed payload field outcomes, Observation Fact Set, positive REST `id`, and pagination facts | Unknown facts are not invented as values, violations, or absence | Payload protocol knows syntax but not Plan locations; Controller knows location algebra but not GitHub semantics; observer only coordinates. |
-| Validate Interpretation Policy outputs and apply provider-independent covering/suppression | Plan Representation Observation values and constructors | Affected Plan locations and classified values supplied by the Provider | Valid immutable Observation combinations | It does not reinterpret GitHub status, shapes, identities, or payload fields. |
+| Maintain one bounded set of coherent root/page facts | GitHub Observation Fact Set | Immutable Binding, typed Provider fact outcomes, seen positive REST `id` values, and page identities | Per-call identity resolution, page admission, completeness, and concurrent-call isolation | The REST boundary establishes individual outcomes; the Scheme maps the coherent aggregate but does not reimplement its identity/page rules. |
+| Decide what Plan knowledge is established and which Plan location uncertainty affects | GitHub Plan Representation Scheme | Explicit Milestone or Issue variant, coherent Observation Fact Set, and typed Payload field outcomes | Unknown facts are not invented as values, violations, or absence; each GitHub fact has one Plan-location correspondence | Payload protocol knows syntax but not Plan locations; Fact Set owns identity/page coherence; Controller knows Observation algebra but not GitHub semantics. |
+| Validate Scheme outputs and apply provider-independent covering/suppression | Plan Representation Observation values and constructors | Affected Plan locations and classified values supplied by the Provider | Valid immutable Observation combinations | It does not reinterpret GitHub status, shapes, identities, or payload fields. |
 | Derive semantic differences and determination | Plan Representation Controller | Expected Plan and returned Observation | Provider-independent reconciliation meaning | Observer never decides satisfaction. |
 
 #### Package responsibilities
@@ -149,30 +146,31 @@ No latency, throughput, availability, or retry target is introduced.
 |---|---|---|---|---|
 | `plan` | Existing Plan concepts and invariants | Existing values and classifiers | Validation details | Go standard library |
 | `planrepresentation` | Existing Controller, Observation algebra, and consumer-owned Observer Port | Existing `Observer`, Observation constructors, Controller and result contracts | Correspondence and evidence construction | `plan`, `reconciliation`, Go standard library |
-| `githubplanning` | GitHub Planning Provider creation preview, binding, payload protocol, REST access, Observation Fact Set, Interpretation Policy, and Observer implementation | Existing preview contracts; typed ResourceNumber; extended validation categories/fields; Milestone and Issue Observer constructors | Payload codec outcomes, binding, request/response representations, per-call identities/pages, and interpretation decisions | `plan`, `planrepresentation`, Go standard library including `net/http` |
+| `githubplan` | GitHub Plan representation, including creation preview, binding, payload protocol, REST fact boundary, Observation Fact Set, Representation Scheme rules, and the Observer Port implementation | Existing preview contracts; typed ResourceNumber; extended validation categories/fields; Milestone and Issue Observer constructors | Payload outcomes, binding, request/response representations, per-call identities/pages, and Scheme-owned correspondence decisions | `plan`, `planrepresentation`, Go standard library including `net/http` |
 
-No new package is added. Payload production and observation belong together because they change with the same GitHub representation protocol. Inside `githubplanning`, package-level files and private functions separate payload protocol, creation projection, target binding, REST access, per-call Observation Fact Set, Interpretation Policy, and Observer coordination. These are responsibility boundaries, not processing-stage classes or public subpackages.
+The existing `githubplanning` package and import path are replaced by `githubplan`; the old package is not retained and no additional package is added. Payload production and observation belong together because they change with the same GitHub representation protocol. Inside `githubplan`, package-level files and private functions preserve the boundaries of the representation protocol, immutable binding, external facts, per-call coherence aggregate, Scheme-owned correspondence, and Observer Port contract. They do not define fetch/decode/map processing-stage classes or public subpackages.
 
 #### Package dependencies
 
 | Source | Target | Public contract used | Reason | Must not cross |
 |---|---|---|---|---|
 | `planrepresentation` | `plan` | Plan values and validation results | Express provider-independent observation meaning | Provider identity and HTTP details |
-| `githubplanning` | `plan` | Plan values used by the creation preview | Produce Provider representation from accepted Plan meaning | GitHub rules into Plan |
-| `githubplanning` | `planrepresentation` | `Observer` and Observation constructors | Implement the consumer-owned observation Port | GitHub DTOs, identifiers, errors, statuses, pagination |
-| Arcloom Host | `githubplanning` | Concrete Provider configuration and preview APIs | Select a Provider and supply external configuration | Business decisions into Composition Root |
+| `githubplan` | `plan` | Plan values used by the creation preview | Produce Provider representation from accepted Plan meaning | GitHub rules into Plan |
+| `githubplan` | `planrepresentation` | `Observer` and Observation constructors | Implement the consumer-owned observation Port | GitHub DTOs, identifiers, errors, statuses, pagination |
+| Arcloom Host | `githubplan` | Concrete Provider configuration and preview APIs | Select a Provider and supply external configuration | Business decisions into Composition Root |
 
 #### Independent evolution scenario impact
 
 | Scenario / confidence | Primary owner | Expected propagation | Verdict |
 |---|---|---|---|
-| Human Markdown changes independently / committed | Narrative renderer | `githubplanning` renderer and presentation tests; decoder unchanged | Pass |
-| Payload v2 coexists with v1 / plausible | Payload protocol | `githubplanning` codec and conformance tests; Plan and Controller unchanged | Pass; no strategy is added before v2 exists. |
-| GitHub title, date, relationship, access, or pagination facts change / committed | GitHub observation responsibility | Provider mapping and boundary tests | Pass |
-| GitHub repeats an `id`, changes a title, or returns cross-Repository Sub-issues / committed | Observation Fact Set and Interpretation Policy | Provider identity/coherence code and tests only; `number` and `node_id` remain irrelevant | Pass |
+| Human Markdown changes independently / committed | Narrative renderer | `githubplan` renderer and presentation tests; decoder unchanged | Pass |
+| Payload v2 coexists with v1 / plausible | Payload protocol | `githubplan` codec and conformance tests; Plan and Controller unchanged | Pass; no strategy is added before v2 exists. |
+| GitHub title, date, or relationship representation changes / committed | GitHub Plan Representation Scheme | Scheme correspondence rules and mapping tests only | Pass |
+| GitHub status or response shape changes / committed | GitHub REST boundary | Typed fact outcomes and boundary tests only | Pass |
+| GitHub repeats an `id`, changes a title for the same `id`, repeats a page, or returns cross-Repository Sub-issues / committed | Observation Fact Set | Provider identity/page coherence code and tests only; `number` and `node_id` remain irrelevant | Pass |
 | REST `2022-11-28` retires / committed | GitHub REST boundary | Request contracts, response representations, and conformance tests | Pass; separate contract Change required. |
 | HTTP implementation or authentication wrapper changes / plausible | Host and GitHub REST boundary | Host-supplied client and Provider HTTP tests | Pass |
-| A Linear Provider is added / plausible | New Linear Provider Module | New package implements existing Observer Port; no `githubplanning` dependency | Pass |
+| A Linear Provider is added / plausible | New Linear Provider Module | New package implements existing Observer Port; no `githubplan` dependency | Pass |
 | Authorized mutation is added / plausible | Plan Change Target plus Change Authorization | Separate mutation Port and Provider implementation | Pass; current observer remains read-only. |
 | Quota or latency pressure motivates caching / plausible | Product and Architecture decision | Separate design; any cache must be a Disposable Projection and cannot be required for correctness | Pass; no speculative cache Port. |
 
@@ -180,11 +178,11 @@ No new package is added. Payload production and observation belong together beca
 
 | Principle | Risk | Mitigation |
 |---|---|---|
-| SRP | A single observer function could own binding, payload, paging, validation, and observation decisions. | Keep private responsibilities aligned to binding, payload protocol, GitHub facts, and Observation construction; do not split them by execution step. |
+| SRP | A single observer function could own binding, payload, paging, validation, and correspondence decisions. | Keep decisions with Binding, Payload Protocol, REST fact boundary, Observation Fact Set, Representation Scheme, and consumer-owned Observation constructors; the Port implementation owns none of those decisions. |
 | OCP | Payload/API version strategies could be added for hypothetical versions. | Support only payload v1 and REST `2022-11-28`; record later versions as new contract Changes. |
 | LSP | The Provider could leak a GitHub error or invalid Observation through the Port. | Convert every non-caller failure to a valid localized Observation and contract-test the Port. |
 | ISP | A broad GitHub service could combine preview, reads, and future mutation. | Publish one constructor for the existing read-only Observer Port; keep preview concrete and mutation absent. |
-| DIP | Core Packages could depend on HTTP or GitHub DTOs. | Only `githubplanning` imports `net/http`; it returns consumer-owned Observation values. |
+| DIP | Provider-independent Packages could depend on HTTP or GitHub DTOs. | Only `githubplan` imports `net/http`; it returns consumer-owned Observation values. |
 
 The implementation must not introduce `Manager`, `Processor`, `Handler`, `Client` wrapper, or generic Provider interface merely to mirror fetch/decode/map stages.
 
@@ -193,7 +191,7 @@ The implementation must not introduce `Manager`, `Processor`, `Handler`, `Client
 #### Extended validation contract
 
 ```go
-package githubplanning
+package githubplan
 
 const (
 	InvalidClient         ViolationCode = "invalid_client"
@@ -211,7 +209,7 @@ Existing validation categories and fields keep their values and meaning. Resourc
 #### Concrete Provider construction and consumer Port
 
 ```go
-package githubplanning
+package githubplan
 
 // ResourceNumber is a positive GitHub Milestone or Issue number. It is not a
 // GitHub REST id, GraphQL node_id, or request-plan ResultKind.
@@ -243,7 +241,7 @@ func NewIssueObserver(
 | Hidden details | Client copy, target URL, headers, Provider identities, page state, response representations, payload bytes, statuses, and errors. |
 | Protected constraint | GitHub configuration remains outside the consumer Port while one immutable binding and Provider error containment are enforced. |
 
-`ResourceNumber` and the two named constructors prevent direct accidental mixing of a raw integer with the root-number parameter and avoid a representation flag. Construction proves positivity and intended role, not whether the caller originally obtained that integer from REST `number` rather than `id`. This concrete API is a Composition Root boundary used by the Arcloom Host. Client, Repository, and ResourceNumber terminate in `githubplanning`; none crosses the returned `planrepresentation.Observer`.
+`ResourceNumber` and the two named constructors prevent direct accidental mixing of a raw integer with the root-number parameter and avoid a representation flag. Construction proves positivity and intended role, not whether the caller originally obtained that integer from REST `number` rather than `id`. This concrete API is a Composition Root boundary used by the Arcloom Host. Client, Repository, and ResourceNumber terminate in `githubplan`; none crosses the returned `planrepresentation.Observer`.
 
 The Provider rejects a non-nil cookie Jar, copies the supplied `http.Client` value, replaces `CheckRedirect` without calling the Host callback, and returns `http.ErrUseLastResponse`. It never changes the caller's client. It closes every received response body after extracting the required facts. A custom Transport and its reachable collaborators remain Host-owned, shared external-access mechanisms under the stated immutability and concurrency precondition; the Provider does not inspect or copy credential material from them.
 
@@ -277,17 +275,17 @@ The following are implementation representations, not new public contracts:
 #### Example composition
 
 ```go
-repository, err := githubplanning.NewRepository("owner", "repository")
-if err != nil { /* inspect *githubplanning.ValidationError */ }
+repository, err := githubplan.NewRepository("owner", "repository")
+if err != nil { /* inspect *githubplan.ValidationError */ }
 
-number, err := githubplanning.NewResourceNumber(42)
-if err != nil { /* inspect *githubplanning.ValidationError */ }
+number, err := githubplan.NewResourceNumber(42)
+if err != nil { /* inspect *githubplan.ValidationError */ }
 
 // authenticatedClient is dedicated to this integration, has no cookie Jar,
 // and its Transport remains immutable and concurrent-safe after construction.
-observer, err := githubplanning.NewMilestoneObserver(authenticatedClient, repository, number)
+observer, err := githubplan.NewMilestoneObserver(authenticatedClient, repository, number)
 if err != nil {
-	var validation *githubplanning.ValidationError
+	var validation *githubplan.ValidationError
 	if errors.As(err, &validation) { /* use Code and Field */ }
 }
 
@@ -312,11 +310,13 @@ The observer follows only an unambiguous `rel="next"` URL that remains HTTPS on 
 
 ## 4. Decisions
 
-### 4.1 Keep observation in `githubplanning`
+### 4.1 Keep GitHub Plan representation in `githubplan`
 
-The existing package already owns Repository, representation selection, request contracts, and the GitHub representation rules. The observer changes for the same GitHub schema and payload protocol. A second package would duplicate those decisions or require a premature public Provider abstraction.
+`githubplan` names the represented concept rather than the activity of planning. It owns Repository, representation selection, request contracts, and the GitHub representation rules. The observer changes for the same GitHub schema and payload protocol. A second package would duplicate those decisions or require a premature public Provider abstraction.
 
-Alternative rejected: a separate `githubobservation` package. It would either depend on `githubplanning` as a utility package or copy Repository, representation, and payload rules.
+Alternative rejected: a separate `githubobservation` package. It would either depend on `githubplan` as a utility package or copy Repository, representation, and payload rules.
+
+Alternative rejected: retain `githubplanning` as a compatibility package. No released Arcloom contract requires parallel import paths, and retaining both would create two public package boundaries for one responsibility.
 
 ### 4.2 Reuse the existing consumer-owned Observer Port
 
@@ -361,10 +361,11 @@ Alternative rejected: fail the whole call for Provider problems. That would viol
 
 ### 5.2 Migration Plan
 
-1. Change the dry-run output to prefix all newly planned descriptions and bodies with Payload v1.
-2. Add the observer constructor and read-only GitHub mapping.
-3. Existing stored GitHub resources remain untouched. They reconcile with unavailable payload-backed locations until changed by a separately authorized mechanism outside this Change.
-4. Rollback removes the observer and restores the previous preview output. Any already published payload remains an inert HTML comment and does not alter the human narrative. No Arcloom data migration or recovery is required.
+1. Replace the `githubplanning` directory, package declaration, imports, and external-package tests with `githubplan`. Do not retain a compatibility package.
+2. Change the dry-run output to prefix all newly planned descriptions and bodies with Payload v1.
+3. Add the observer constructor and read-only GitHub mapping.
+4. Existing stored GitHub resources remain untouched. They reconcile with unavailable payload-backed locations until changed by a separately authorized mechanism outside this Change.
+5. Rollback restores the `githubplanning` import path and previous preview output and removes the observer. Any already published payload remains an inert HTML comment and does not alter the human narrative. No Arcloom data migration or recovery is required.
 
 ## 6. Test Specification
 
@@ -372,20 +373,22 @@ Go test construction SHALL follow the repository's Go test-authoring workflow: g
 
 Semantic Observer tests SHALL pass the returned Port into `planrepresentation.Controller` and assert only public Result determination, literal Difference payloads, and literal unavailable Locations. They SHALL NOT use `cmp.AllowUnexported`, same-package access to Observation state, or the production payload encoder/decoder as an oracle. Direct Observer tests are limited to public error, context, request, and resource-lifecycle behavior.
 
+Package migration verification SHALL prove that production code and tests compile through `githubplan` and that no non-archived source or import remains under `githubplanning`.
+
 ### 6.1 Requirement Coverage
 
 | Requirement | Observable behavior | Verification method | Owner | Required evidence |
 |---|---|---|---|---|
-| GPCD-2 | Canonical payload bytes plus unchanged human narrative | Black-box Go tests through `NewCreationRequestPlan` with independent literals | `githubplanning` preview tests | Exact complete description/body bytes for both Schemes and escape boundaries |
-| GPCD-6 | Preview performs no read/mutation and Observer performs only approved reads | Recording Transport tests plus dependency/diff inspection | `githubplanning` boundary tests and conformance review | Zero preview requests; only declared `GET` requests; no mutation dependency or code path |
-| GHPO-1 | Typed number, named constructors, validation, binding, and client ownership | Compile-time API inspection plus black-box Go tests | `githubplanning` constructor tests | Public signatures; literal error code/field; zero construction requests; client/Jar/redirect/body lifecycle assertions |
-| GHPO-2 | Producer/decoder grammar and localized payload outcomes | Preview byte tests plus Controller-mediated observer tests | `githubplanning` payload boundary tests | Literal payloads and public reconciliation evidence for every grammar/localization class |
-| GHPO-3 | Milestone facts map to Plan locations | Controller-mediated black-box Go tests | `githubplanning` Milestone tests | Literal Result evidence for title, payload, date, open/closed Issues, PR exclusion, and boundaries |
-| GHPO-4 | Issue facts map to Plan locations | Controller-mediated black-box Go tests | `githubplanning` Issue tests | Literal Result evidence for title, payload/date, Sub-issues, parent PR, and boundaries |
-| GHPO-5 | Failures remain localized; only caller context errors cross | Direct error tests plus Controller-mediated availability tests | `githubplanning` failure tests | Exact context errors with ignored Observation values, literal unavailable Locations, no Provider detail |
-| GHPO-6 | Every page, REST `id` coherence, completeness, and safe next-link containment | Controller-mediated boundary/property tables | `githubplanning` pagination tests | Order-independent literal Result evidence and request log proving no escaping follow |
-| GHPO-7 | Fixed GitHub.com REST request contract | Recording Transport inspection | `githubplanning` request tests | Literal method, URL, query, media type, version, page size, and User-Agent |
-| GHPO-8 | Read-only, stateless, concurrent reconstruction | Repeated-call and barrier-based race tests plus diff inspection | `githubplanning` lifecycle tests and conformance review | Different current Results per call, isolated concurrent Results, race pass, no persistence/credential-storage code |
+| GPCD-2 | Canonical payload bytes plus unchanged human narrative | Black-box Go tests through `NewCreationRequestPlan` with independent literals | `githubplan` preview tests | Exact complete description/body bytes for both Schemes and escape boundaries |
+| GPCD-6 | Preview performs no read/mutation and Observer performs only approved reads | Recording Transport tests plus dependency/diff inspection | `githubplan` boundary tests and conformance review | Zero preview requests; only declared `GET` requests; no mutation dependency or code path |
+| GHPO-1 | Typed number, named constructors, validation, binding, and client ownership | Compile-time API inspection plus black-box Go tests | `githubplan` constructor tests | Public signatures; literal error code/field; zero construction requests; client/Jar/redirect/body lifecycle assertions |
+| GHPO-2 | Producer/decoder grammar and localized payload outcomes | Preview byte tests plus Controller-mediated observer tests | `githubplan` payload boundary tests | Literal payloads and public reconciliation evidence for every grammar/localization class |
+| GHPO-3 | Milestone facts map to Plan locations | Controller-mediated black-box Go tests | `githubplan` Milestone tests | Literal Result evidence for title, payload, date, open/closed Issues, PR exclusion, and boundaries |
+| GHPO-4 | Issue facts map to Plan locations | Controller-mediated black-box Go tests | `githubplan` Issue tests | Literal Result evidence for title, payload/date, Sub-issues, parent PR, and boundaries |
+| GHPO-5 | Failures remain localized; only caller context errors cross | Direct error tests plus Controller-mediated availability tests | `githubplan` failure tests | Exact context errors with ignored Observation values, literal unavailable Locations, no Provider detail |
+| GHPO-6 | Every page, REST `id` coherence, completeness, and safe next-link containment | Controller-mediated boundary/property tables | `githubplan` pagination tests | Order-independent literal Result evidence and request log proving no escaping follow |
+| GHPO-7 | Fixed GitHub.com REST request contract | Recording Transport inspection | `githubplan` request tests | Literal method, URL, query, media type, version, page size, and User-Agent |
+| GHPO-8 | Read-only, stateless, concurrent reconstruction | Repeated-call and barrier-based race tests plus diff inspection | `githubplan` lifecycle tests and conformance review | Different current Results per call, isolated concurrent Results, race pass, no persistence/credential-storage code |
 
 `ResourceNumber` preventing direct raw-integer use is compile-time contract evidence; it cannot prove where a caller obtained an integer before explicit construction. No-authoritative-store, no credential copy, and no mutation beyond HTTP reads are confirmed by public dependency and diff review in addition to behavioral tests.
 
