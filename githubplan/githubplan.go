@@ -1,5 +1,5 @@
-// Package githubplanning creates immutable, non-executed GitHub request plans.
-package githubplanning
+// Package githubplan creates immutable, non-executed GitHub request plans.
+package githubplan
 
 import (
 	"fmt"
@@ -28,6 +28,8 @@ const (
 	RepositoryNameField
 	RepresentationField
 	PlanField
+	ClientField
+	ResourceNumberField
 )
 
 // ValidationError describes one rejected GitHub-planning input.
@@ -152,21 +154,16 @@ func NewCreationRequestPlan(repository Repository, representation Representation
 	if !validRepository(repository) {
 		return RequestPlan{}, &ValidationError{code: InvalidRepository, field: RepositoryOwnerField}
 	}
-	if representation != MilestoneRepresentation && representation != IssueRepresentation {
+	selectedScheme, valid := schemeFor(representation)
+	if !valid {
 		return RequestPlan{}, &ValidationError{code: InvalidRepresentation, field: RepresentationField}
 	}
 	if !value.IsValid() {
 		return RequestPlan{}, &ValidationError{code: InvalidPlan, field: PlanField}
 	}
-	var requests []Request
-	if representation == MilestoneRepresentation {
-		requests = milestoneRequests(value)
-	} else {
-		var supported bool
-		requests, supported = issueRequests(value)
-		if !supported {
-			return RequestPlan{}, &ValidationError{code: UnsupportedRepresentation, field: RepresentationField}
-		}
+	requests, supported := selectedScheme.creationRequests(value)
+	if !supported {
+		return RequestPlan{}, &ValidationError{code: UnsupportedRepresentation, field: RepresentationField}
 	}
 	return RequestPlan{repository: repository, representation: representation, requests: requests}, nil
 }
@@ -239,58 +236,4 @@ func (r issueIDResult) reference() ResultReference {
 type createdIssueResult struct {
 	number issueNumberResult
 	id     issueIDResult
-}
-
-func milestoneRequests(value plan.Plan) []Request {
-	tasks := value.Tasks()
-	construction := newRequestPlanConstruction(1 + len(tasks))
-	milestone := CreateMilestoneRequest{title: value.Name(), description: narrative(value)}
-	if date, ok := value.TargetDate(); ok {
-		milestone.dueOn = date.String() + "T00:00:00Z"
-		milestone.hasDueOn = true
-	}
-	milestoneResult := construction.addMilestone(milestone)
-	for _, task := range tasks {
-		construction.addIssue(CreateIssueRequest{
-			title:        task.Name(),
-			milestone:    milestoneResult.reference(),
-			hasMilestone: true,
-		})
-	}
-	return construction.snapshot()
-}
-
-func issueRequests(value plan.Plan) ([]Request, bool) {
-	tasks := value.Tasks()
-	if len(tasks) > 100 {
-		return nil, false
-	}
-	construction := newRequestPlanConstruction(1 + len(tasks)*2)
-	parent := construction.addIssue(CreateIssueRequest{title: value.Name(), body: issueNarrative(value), hasBody: true})
-	for _, task := range tasks {
-		child := construction.addIssue(CreateIssueRequest{title: task.Name()})
-		construction.addSubIssue(parent.number, child.id)
-	}
-	return construction.snapshot(), true
-}
-
-func narrative(value plan.Plan) string {
-	var builder strings.Builder
-	builder.WriteString("## Goal\n\n")
-	builder.WriteString(value.Goal().Text())
-	builder.WriteString("\n\n## Acceptance Conditions")
-	for i, condition := range value.AcceptanceConditions() {
-		fmt.Fprintf(&builder, "\n\n### %d\n\n", i+1)
-		builder.WriteString(condition.Statement())
-	}
-	builder.WriteByte('\n')
-	return builder.String()
-}
-
-func issueNarrative(value plan.Plan) string {
-	text := narrative(value)
-	if date, ok := value.TargetDate(); ok {
-		text += "\n## Target Date\n\n" + date.String() + "\n"
-	}
-	return text
 }
