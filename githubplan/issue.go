@@ -14,7 +14,7 @@ func decodeIssueRoot(document responseDocument, number ResourceNumber) rootFactO
 	if marker, exists := object["pull_request"]; exists && strings.TrimSpace(string(marker)) != "null" {
 		return rootFactOutcome{}
 	}
-	fact := rootFact{number: rootNumber, date: dateFact{state: dateUnavailable}}
+	fact := rootFact{number: rootNumber, date: dateFact{state: dateUnavailable}, state: decodeNativeState(object["state"])}
 	if value, exists := rawString(object["title"]); exists {
 		fact.title = textFact{value: value, available: true}
 	}
