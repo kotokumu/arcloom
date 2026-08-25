@@ -17,9 +17,9 @@
 
 ## 4. Plan Application Request
 
-- [ ] 4.1 Implement stable Target Reference and exact Plan Revision values with public immutable accessors, and verify invalid, equal, and exact-value cases with `go test -race ./planapplication`.
-- [ ] 4.2 Implement passive Request, Request Receipt Evidence, and Result value contracts, and verify all authorization and receipt outcomes remain inspectable without exposing target state.
-- [ ] 4.3 Implement the invocation-local Application Attempt and stable invalid-input failures, and verify every Plan Application precedence row, Actor cancellation LSP behavior, exact subject-bound Authorization, at-most-once Actor invocation, and no retry with `go test -race ./planapplication`.
+- [x] 4.1 Implement stable Target Reference and exact Plan Revision values with public immutable accessors, and verify invalid, equal, and exact-value cases with `go test -race ./planapplication`.
+- [x] 4.2 Implement passive Request, Request Receipt Evidence, and Result value contracts, and verify all authorization and receipt outcomes remain inspectable without exposing target state.
+- [x] 4.3 Implement the invocation-local Application Attempt and stable invalid-input failures, and verify every Plan Application precedence row, Actor cancellation LSP behavior, exact subject-bound Authorization, at-most-once Actor invocation, and no retry with `go test -race ./planapplication`.
 
 ## 5. Codex Plan Control Adapter
 
