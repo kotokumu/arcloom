@@ -238,8 +238,8 @@ A Reconciliation Module owns the provider-independent contract and result invari
 ##### Plan Controller
 
 - Responsibility: Establishes one Plan-specific external AI assessment from one current Plan and caller-supplied observation material to control the Plan toward completion.
-- Owned Concepts and decisions: Owns the provider-independent meaning and invariants of Plan Control Assessment and Plan Control Failure. The external AI owns the semantic judgment represented by an Assessment.
-- Capability provided externally: Provides exactly one complete, retain, revise, or insufficient-information Assessment associated with the current Plan, or a stable Failure when no valid Assessment is established.
+- Owned Concepts and decisions: Owns the provider-independent meaning and invariants of Plan Control Assessment and Plan Control Failure, where Failure is limited to the five stable FailureCode categories. Supplied context cancellation or deadline is caller-owned termination, not a Failure. The external AI owns the semantic judgment represented by an Assessment.
+- Capability provided externally: Provides an Assessment, a stable Failure, or the supplied context error; an Assessment is exactly one complete, retain, revise, or insufficient-information result associated with the current Plan.
 - Capabilities required: Requires Plan and a consumer-owned Port for an external AI assessment. Observation meaning and lifecycle remain with the caller and external authorities.
 - Responsibilities not held: Does not own observation acquisition or semantics, external AI implementation, a common Reconciliation result, Change, Authorization, external Plan application, Delivery Acceptance, Task execution, persistence, or repeated-loop lifecycle.
 
