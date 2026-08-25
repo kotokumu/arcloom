@@ -52,7 +52,7 @@ C4Container
     Person(human, "Human", "Provides Goals, proposed Changes, and decision material for Changes, and can perform Tasks")
 
     System_Ext(host_integration, "Arcloom Host", "Embeds or invokes Arcloom and can consume a concrete Provider's non-mutating request preview")
-    System_Ext(ai_agent_context, "AI Agent Context", "Provides proposed Plans, proposed evaluations, and decision material for Changes")
+    System_Ext(ai_agent_context, "AI Agent Context", "Provides Provider-native responses containing requested AI judgments")
     System_Ext(agent_runtime_context, "Agent Runtime Context", "Starts and manages Agents that perform external Tasks")
     System_Ext(planning_context, "Planning Context", "Owns the authoritative source of facts representing Plans such as Milestones, Tasks, and deadlines")
     System_Ext(specification_context, "Specification Context", "Owns the authoritative source of specifications and their Changes")
@@ -65,13 +65,13 @@ C4Container
     System_Ext(authorization_context, "Authorization Context", "Owns the authoritative source of Authorization Policies, Rules, permissions, approvals, and externally established authorization decisions")
 
     System_Boundary(arcloom, "Arcloom") {
-        Container(arcloom_runtime, "Arcloom Runtime", "Logical Runtime", "Executes Modules that use Reconciliation, Change Authorization, and Plan")
+        Container(arcloom_runtime, "Arcloom Runtime", "Logical Runtime", "Composes selected Components, Modules, and external Context adapters")
     }
 
     Rel(human, arcloom_runtime, "Provides Goals, configuration, and decision material for Changes")
     Rel(host_integration, arcloom_runtime, "Invokes configured capabilities and consumes explicitly requested Provider previews")
-    Rel(ai_agent_context, arcloom_runtime, "Provides proposed Changes targeting Plans")
-    Rel(arcloom_runtime, ai_agent_context, "Requests proposed evaluations and decision material for Changes")
+    Rel(ai_agent_context, arcloom_runtime, "Provides Provider-native responses containing requested AI judgments")
+    Rel(arcloom_runtime, ai_agent_context, "Requests consumer-specific AI judgments")
     Rel(arcloom_runtime, planning_context, "Observes Plans and requests application of authorized Plan Changes")
     Rel(arcloom_runtime, specification_context, "Observes specifications and requests application of authorized Changes")
     Rel(arcloom_runtime, source_context, "Observes Source Code and Change history")
@@ -103,7 +103,7 @@ C4Component
     Person_Ext(human, "Human", "Provides proposed Changes or decision material for Changes")
 
     System_Ext(host_integration, "Arcloom Host", "Consumes a concrete Provider's explicitly requested non-mutating preview")
-    System_Ext(ai_agent_context, "AI Agent Context", "Provides proposed Plans, proposed evaluations, and decision material for Changes")
+    System_Ext(ai_agent_context, "AI Agent Context", "Provides Provider-native responses containing requested AI judgments")
     System_Ext(planning_context, "Planning Context", "Owns the authoritative source of external facts representing Plans")
     System_Ext(specification_context, "Specification Context", "Owns the authoritative source of specifications and their Changes")
     System_Ext(review_context, "Review Context", "Owns the authoritative source of Pull Requests, Reviews, and Provider-specific Review decisions")
@@ -120,7 +120,7 @@ C4Component
         }
 
         Boundary(reconciliation_modules, "Reconciliation Modules") {
-            Component(plan_controller, "Plan Controller", "Reconciliation Module", "Reconciles whether the Plan's Tasks and optional target date are sufficient for its Goal and acceptance conditions")
+            Component(plan_controller, "Plan Controller", "Reconciliation Module", "Establishes an external AI assessment that controls one current Plan toward completion")
             Component(plan_representation_controller, "Plan Representation Controller", "Reconciliation Module", "Reconciles the consistency between the meaning of a Plan and its representation in the external Planning Context")
             Component(token_optimization_controller, "Token Optimization Controller", "Reconciliation Module", "Reconciles whether the token-usage Goal is met while maintaining required quality and derives an Improvement Intent")
         }
@@ -132,7 +132,7 @@ C4Component
         }
 
         Boundary(provider_context_modules, "Provider Context Modules") {
-            Component(ai_agent_module, "AI Agent Provider Module", "Provider Context Module", "Adapts Plan Change proposals, proposed evaluations, and decision material for Changes from the AI Agent Context to Ports owned by consumers")
+            Component(ai_agent_module, "AI Agent Provider Module", "Provider Context Module", "Adapts Provider-specific AI judgments to Ports owned by their consumers")
             Component(planning_context_module, "Planning Provider Module", "Provider Context Module", "Adapts the contract with the Planning Context to Ports owned by consumers")
             Component(specification_context_module, "Specification Provider Module", "Provider Context Module", "Adapts the contract with the Specification Context to Ports owned by consumers")
             Component(review_context_module, "Review Provider Module", "Provider Context Module", "Adapts the contract with the Review Context to Ports owned by consumers")
@@ -146,9 +146,8 @@ C4Component
 
     Rel(host_integration, planning_context_module, "Requests and consumes a concrete GitHub or other Provider-specific non-mutating preview")
 
-    Rel(plan_controller, reconciliation_core, "Uses the common Reconciliation contract")
-    Rel(plan_controller, plan, "Uses the Plan's Goal, acceptance conditions, and structure")
-    Rel(plan_controller, ai_agent_module, "Obtains a proposed sufficiency evaluation through a Port owned by the Controller")
+    Rel(plan_controller, plan, "Uses the current Plan and Plan invariants")
+    Rel(plan_controller, ai_agent_module, "Obtains a provider-independent AI response through a Port owned by the Controller")
     Rel(plan_representation_controller, reconciliation_core, "Uses the common Reconciliation contract")
     Rel(plan_representation_controller, plan, "Uses the meaning and structure of a Plan")
     Rel(plan_representation_controller, planning_context_module, "Observes the external representation through a Port owned by the Controller")
@@ -184,9 +183,10 @@ C4Component
     Rel(authorization_context_module, authorization_context, "Uses Provider-specific contracts")
 ```
 
-Arcloom Runtime places Reconciliation Modules, Change Target Modules, and Provider Context Modules around a Core of target-independent Components.
+Arcloom Runtime places Reconciliation Modules, Change Target Modules, and Provider Context Modules around target-independent Components.
 
 - Reconciliation Core, Change, and Plan do not depend on target-specific Modules or external Contexts. External facts required by Change Authorization are acquired through a Port owned by Change Authorization.
+- A Reconciliation Module depends on Reconciliation Core only when it uses the Core's evidence-derived result semantics. Membership in the Reconciliation Module category does not require that dependency.
 - Reconciliation Modules and Change Target Modules are extensible, and the Modules to use are selected in the Composition Root.
 - Standard Modules and Custom Modules developed by users follow the public contracts and common extension and dependency rules for their Module type. This diagram does not distinguish them because differences in provision or maintenance ownership do not change Component boundaries.
 - Provider Context Modules are prepared for each combination of external Context and Provider. They implement Ports owned by consumers and do not expose Provider-specific APIs or data models to the Core.
@@ -233,15 +233,15 @@ Arrows in the diagram show runtime usage relationships. They do not show process
 
 #### 3.3.2 Reconciliation Modules
 
-A Reconciliation Module owns target-specific expected states, observed states, reconciliation rules, and reconciliation results. If required external facts cannot be acquired, it does not fill the observed state with speculation; it represents an undecidable state in the reconciliation result.
+A Reconciliation Module owns the provider-independent contract and result invariants for reconciling its target. It owns target-specific observation or judgment semantics only when those semantics are part of its accepted contract. External Contexts retain authority over supplied facts and judgments. If required information cannot be established, a Module preserves that condition according to its target-specific result contract rather than filling it with speculation.
 
 ##### Plan Controller
 
-- Responsibility: Reconciles whether the Plan's Tasks and optional target date are sufficient for its Goal and acceptance conditions.
-- Owned Concepts and decisions: Owns expected states, observed states, reconciliation rules, and final reconciliation results specific to Plan sufficiency.
-- Capability provided externally: Provides reconciliation results indicating what is missing from a Plan.
-- Capabilities required: Requires Reconciliation Core, Plan, and proposed AI evaluations when qualitative evaluation is necessary.
-- Responsibilities not held: Does not own generation of Plan proposals or Tasks, Plan changes, Change Authorization, or Task execution.
+- Responsibility: Establishes one Plan-specific external AI assessment from one current Plan and caller-supplied observation material to control the Plan toward completion.
+- Owned Concepts and decisions: Owns the provider-independent meaning and invariants of Plan Control Assessment and Plan Control Failure. The external AI owns the semantic judgment represented by an Assessment.
+- Capability provided externally: Provides exactly one complete, retain, revise, or insufficient-information Assessment associated with the current Plan, or a stable Failure when no valid Assessment is established.
+- Capabilities required: Requires Plan and a consumer-owned Port for an external AI assessment. Observation meaning and lifecycle remain with the caller and external authorities.
+- Responsibilities not held: Does not own observation acquisition or semantics, external AI implementation, a common Reconciliation result, Change, Authorization, external Plan application, Delivery Acceptance, Task execution, persistence, or repeated-loop lifecycle.
 
 ##### Plan Representation Controller
 
@@ -291,11 +291,11 @@ A Change Target Module requests external application of an authorized Change. Co
 
 ##### AI Agent Provider Module
 
-- Responsibility: Adapts Provider-specific contracts of the AI Agent Context to Ports of consumers that require Plan Change proposals, proposed evaluations, or decision material for Changes.
+- Responsibility: Adapts Provider-specific contracts of the AI Agent Context to consumer-owned Ports that require AI judgments, including the untrusted response accepted by Plan Controller.
 - Owned Concepts and decisions: Owns conversion rules between Provider-specific requests, responses, and errors and the consumer Ports.
-- Capability provided externally: Implements Ports that obtain Plan Change proposals, proposed evaluations, or decision material for Changes from the AI Agent Context.
+- Capability provided externally: Implements consumer-owned Ports that obtain Provider-independent AI judgments from the AI Agent Context.
 - Capabilities required: Requires the contracts of Ports owned by consumers and the Provider-specific contracts of the AI Agent Context.
-- Responsibilities not held: Does not own the meaning or invariants of Plans, reconciliation results, authorization decisions, or Task execution.
+- Responsibilities not held: Does not own the meaning or invariants of Plans, Plan Control Assessment, reconciliation results, authorization decisions, or Task execution.
 
 ##### Planning Provider Module
 
@@ -361,7 +361,7 @@ flowchart BT
     PCM[Provider Context Modules]
     CR[Composition Root]
 
-    RM --> RC
+    RM -.->|Only when the Module uses Core evidence semantics| RC
     RM --> P
     CTM --> C
     CTM --> P
@@ -378,7 +378,7 @@ flowchart BT
     CR --> PCM
 ```
 
-Arrows show source-code dependency direction. They do not show the direction of runtime requests and responses. Core-facing Module contracts that use Plan are limited to Reconciliation Modules and the Plan Change Target Module. A concrete Provider Context Module may additionally depend inward on Plan for a Provider-specific, non-mutating request preview consumed only by an Arcloom Host. Such a preview is not a consumer Port and cannot request external application.
+Arrows show source-code dependency direction. They do not show the direction of runtime requests and responses. The dotted Reconciliation Core arrow is permitted rather than required; each Module depends only on Core contracts whose semantics it actually uses. Core-facing Module contracts that use Plan are limited to Reconciliation Modules and the Plan Change Target Module. A concrete Provider Context Module may additionally depend inward on Plan for a Provider-specific, non-mutating request preview consumed only by an Arcloom Host. Such a preview is not a consumer Port and cannot request external application.
 
 #### 3.4.2 Permitted Dependencies
 
@@ -388,7 +388,7 @@ Arrows show source-code dependency direction. They do not show the direction of 
 | Change | None | Represents the relationship and validity with one Change target in Provider-independent vocabulary |
 | Plan | None | Does not reference Controllers, Change Authorization, Change Target Modules, or the external Planning Context |
 | Change Authorization | Change; Ports for external facts and decision material owned by Change Authorization | Depends only on contracts required to apply Authorization Policies and Rules |
-| Plan Controller | Reconciliation Core, Plan, and an AI evaluation Port owned by Plan Controller | Depends only on contracts required to reconcile the semantic sufficiency of a Plan |
+| Plan Controller | Plan and an AI assessment Port owned by Plan Controller | Depends only on contracts required to establish a Plan-specific Assessment; does not depend on Reconciliation Core, Change, or Authorization |
 | Plan Representation Controller | Reconciliation Core, Plan, and an observation Port for the Planning Context owned by Plan Representation Controller | Depends only on contracts required to reconcile consistency between a Plan and its external representation |
 | Token Optimization Controller | Reconciliation Core, Plan, and Ports for Development Activity, Quality Evaluation, and AI evaluation owned by Token Optimization Controller | Depends only on contracts required to reconcile token usage and quality against the improvement Goal |
 | Plan Change Target Module | Plan, Change, Change Authorization, and input and Change Ports for Plan Change proposals owned by Plan Change Target Module | Depends only on contracts required to receive Plan Change proposals and request external application of Changes targeting Plans |
@@ -404,7 +404,8 @@ Apply the same extension and dependency rules to Standard Modules and Custom Mod
 
 | Port owner | Contract defined by the Port | Responsibility of implementer |
 |---|---|---|
-| Reconciliation Module | Observations and AI evaluations expressed in target-specific vocabulary | The corresponding Provider Context Module adapts them to Provider-specific observation and evaluation contracts |
+| Reconciliation Module | Target-specific observation or judgment input required by the consumer contract | The corresponding Provider Context Module adapts Provider-specific facts or responses without taking ownership of result semantics |
+| Plan Controller | An untrusted provider-independent AI response with caller-owned observation vocabulary | The AI Agent Provider Module translates Provider-native syntax and errors; Plan Controller validates the response and constructs Assessment |
 | Change Target Module | Change requests expressed in the target's vocabulary | The corresponding Provider Context Module adapts them to Provider-specific Change contracts |
 | Plan Change Target Module | Provider-independent Plan Change proposals | The AI Agent Provider Module adapts proposed Plans from the AI Agent Context |
 | Change Authorization | External facts representing Authorization Policies, Authorization Rules, permissions, approvals, and externally established authorization decisions | The Authorization Provider Module adapts them from Provider-specific representations in the Authorization Context |
