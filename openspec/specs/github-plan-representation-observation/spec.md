@@ -2,7 +2,7 @@
 
 Defines how a read-only GitHub Planning Provider reconstructs a provider-independent Plan observation from one bound GitHub Milestone or parent Issue without owning or mutating the external facts.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: GHPO-1 Explicit target binding
 A GitHub Plan observation SHALL require one explicit target consisting of a locally valid Repository, either a Milestone or Issue representation, and a positive GitHub resource number distinct from other GitHub identifiers. The observation SHALL remain bound to that target, reject an invalid local binding before accessing GitHub, make no claim about remote existence, access, permissions, or lifecycle, and exclude provider-native identity from the provider-independent Observation.

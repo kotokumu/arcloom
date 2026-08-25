@@ -19,62 +19,27 @@ A creation dry-run SHALL require a locally valid GitHub Repository target and ex
 - **WHEN** no supported representation is supplied
 - **THEN** the dry-run fails without returning a request plan
 
-### Requirement: GPCD-2 Canonical Plan narrative
-The dry-run SHALL encode the Goal and acceptance conditions as deterministic Markdown in the Plan resource's description or body. It SHALL neither escape nor trim inserted text. The exact byte concatenation SHALL be `"## Goal\n\n" + goal + "\n\n## Acceptance Conditions"`, followed for each declared condition at one-based index `n` by `"\n\n### " + decimal(n) + "\n\n" + condition`. The Issue representation SHALL then append `"\n\n## Target Date\n\n" + targetDate` when the date exists. Both representations SHALL finally append `"\n"`. An inserted value's own trailing line feeds remain in addition to these fixed delimiters.
+### Requirement: GPCD-2 Versioned Plan narrative
+The dry-run SHALL place a version-one machine-readable Plan block at the beginning of the Milestone description or parent Issue body, before the human-readable narrative. The version-one block SHALL remain compatible with persisted `arcloom-plan:v1` artifacts and SHALL losslessly represent its Plan values. A Milestone payload SHALL contain the exact Goal and ordered acceptance conditions. An Issue payload SHALL additionally contain the present or absent target date. The payload SHALL omit Plan name and Tasks because GitHub represents them natively, and the Milestone payload SHALL omit the natively represented target date. The same Plan and representation SHALL produce the same payload. The narrative SHALL present the exact Goal and acceptance conditions in declared order and, for an Issue, the target date when present; it SHALL NOT be a reconstruction source.
 
-```text
-## Goal
+#### Scenario: Milestone payload is reversible
+- **WHEN** a Milestone representation is planned
+- **THEN** its leading version-one payload recovers the exact Goal and ordered acceptance conditions without duplicating native Plan values
 
-{goal}
+#### Scenario: Issue payload is reversible
+- **WHEN** an Issue representation is planned
+- **THEN** its leading version-one payload recovers the exact Goal, ordered acceptance conditions, and present or absent target date without duplicating native Plan values
 
-## Acceptance Conditions
+#### Scenario: Narrative text is preserved
+- **WHEN** Plan text contains multiple lines or Markdown-sensitive content
+- **THEN** the payload recovers the exact input and the narrative presents the unchanged values in declared order
 
-### 1
-
-{first acceptance condition}
-```
-
-For two conditions, the complete structural form before the optional target-date delimiter and final line feed SHALL be:
-
-```text
-## Goal
-
-{goal}
-
-## Acceptance Conditions
-
-### 1
-
-{first acceptance condition}
-
-### 2
-
-{second acceptance condition}
-```
-
-For the Issue representation, an existing target date SHALL append the following fixed delimiter and value:
-
-```text
-
-## Target Date
-
-{YYYY-MM-DD}
-```
-
-#### Scenario: Multiple acceptance conditions
-- **WHEN** a Plan contains multiple acceptance conditions
-- **THEN** the narrative contains each preserved statement once in declared order under consecutively numbered headings
-
-#### Scenario: Preserved multi-line text
-- **WHEN** a Goal or acceptance condition contains CRLF, a Markdown heading, leading whitespace, or a trailing LF
-- **THEN** the narrative equals the fixed delimiters plus the unchanged input bytes and does not remove or reinterpret the inserted text
-
-#### Scenario: Issue representation has a target date
-- **WHEN** the Issue representation is selected for a Plan with a target date
-- **THEN** the parent Issue body includes the canonical target-date section
+#### Scenario: Same Plan is represented twice
+- **WHEN** the same Plan and representation are supplied twice
+- **THEN** both request plans contain the same machine-readable payload
 
 ### Requirement: GPCD-3 Milestone creation request plan
-For the Milestone representation, the request plan SHALL contain one create-Milestone request followed by one create-Issue request for each Task in declared order. The Milestone title SHALL equal the Plan name, its description SHALL equal the canonical Plan narrative, and an existing target date SHALL be represented as `YYYY-MM-DDT00:00:00Z` in `due_on`. Each Task Issue title SHALL equal the Task name, its body SHALL be absent, and its Milestone input SHALL reference the created Milestone's `number`.
+For the Milestone representation, the request plan SHALL contain one create-Milestone request followed by one create-Issue request for each Task in declared order. The Milestone title SHALL equal the Plan name, its description SHALL equal the versioned Plan narrative, and an existing target date SHALL be represented as the Milestone target date. Each Task Issue title SHALL equal the Task name, its body SHALL be absent, and its Milestone input SHALL reference the created Milestone.
 
 #### Scenario: Milestone representation without Tasks
 - **WHEN** a Plan has no Tasks
@@ -83,10 +48,10 @@ For the Milestone representation, the request plan SHALL contain one create-Mile
 #### Scenario: Milestone representation with Tasks
 - **WHEN** a Plan contains two Tasks
 - **THEN** the request plan contains one create-Milestone request followed by two create-Issue requests in declared Task order
-- **AND** each Issue request contains a typed reference to the Milestone request's `number` result
+- **AND** each Issue request references the Milestone request result
 
 ### Requirement: GPCD-4 Issue creation request plan
-For the Issue representation, the request plan SHALL support at most 100 Tasks and SHALL reject a larger Plan for this representation without returning a request plan. For a supported Plan, the request plan SHALL contain one create-Issue request for the Plan followed, for each Task in declared order, by one create-Issue request for the Task and one add-sub-issue request. The parent Issue title SHALL equal the Plan name and its body SHALL equal the canonical Plan narrative. Each Task Issue title SHALL equal the Task name; its body and Milestone input SHALL be absent. Each add-sub-issue request SHALL reference the parent Issue's `number` and the corresponding Task Issue's `id`.
+For the Issue representation, the request plan SHALL support at most 100 Tasks and SHALL reject a larger Plan for this representation without returning a request plan. For a supported Plan, the request plan SHALL contain one create-Issue request for the Plan followed, for each Task in declared order, by one create-Issue request for the Task and one add-sub-issue request. The parent Issue title SHALL equal the Plan name and its body SHALL equal the versioned Plan narrative. Each Task Issue title SHALL equal the Task name; its body and Milestone input SHALL be absent. Each add-sub-issue request SHALL reference the parent Issue and corresponding Task Issue using their required distinct result kinds.
 
 #### Scenario: Issue representation without Tasks
 - **WHEN** a Plan has no Tasks
@@ -95,7 +60,7 @@ For the Issue representation, the request plan SHALL support at most 100 Tasks a
 #### Scenario: Issue representation with Tasks
 - **WHEN** a Plan contains two Tasks
 - **THEN** the request plan contains the parent create-Issue request and two adjacent Task-Issue and add-sub-issue request pairs in declared Task order
-- **AND** each relationship request contains typed references to the parent Issue `number` and corresponding Task Issue `id`
+- **AND** each relationship request distinguishes the parent Issue number from the corresponding Task Issue identity
 
 #### Scenario: Issue representation reaches its Task limit
 - **WHEN** a Plan contains 100 Tasks
@@ -106,7 +71,7 @@ For the Issue representation, the request plan SHALL support at most 100 Tasks a
 - **THEN** the Issue representation fails with an unsupported-representation result and returns no request plan
 
 ### Requirement: GPCD-5 Request-plan integrity
-A request plan SHALL be deterministic, topologically ordered, and immutable from a consumer's perspective. Every returned symbolic result reference SHALL identify an earlier request in the same plan and the exact result kind required by its input. A dry-run SHALL NOT invent a GitHub-assigned Milestone number, Issue number, or Issue ID. Callers SHALL NOT be able to construct a dangling, forward, cross-plan, or result-kind-incompatible reference through the public contract.
+A request plan SHALL be deterministic, dependency-ordered, and immutable from a consumer's perspective. Every returned symbolic result reference SHALL identify an earlier request in the same plan and the exact result kind required by its input. A dry-run SHALL NOT invent a GitHub-assigned Milestone number, Issue number, or Issue ID. Callers SHALL NOT be able to construct a dangling, forward, cross-plan, or result-kind-incompatible reference through the public contract.
 
 #### Scenario: Same input is planned twice
 - **WHEN** the same valid Plan, Repository target, and representation are supplied twice
@@ -114,34 +79,34 @@ A request plan SHALL be deterministic, topologically ordered, and immutable from
 
 #### Scenario: Number and ID remain distinct
 - **WHEN** the Issue representation contains a Task
-- **THEN** the add-sub-issue request distinguishes the parent Issue `number` reference from the child Issue `id` reference
+- **THEN** the relationship request distinguishes the parent Issue number reference from the child Issue identity reference
 
 #### Scenario: Caller mutates returned collections
 - **WHEN** a caller changes a collection returned by a request-plan accessor
 - **THEN** a subsequent read of the request plan is unchanged
 
-### Requirement: GPCD-6 Dry-run boundary and GitHub contract
-Producing a request plan SHALL perform no network request, external mutation, authorization decision, observation, persistence, or Provider-assigned identifier generation. The result SHALL target GitHub.com REST API version `2022-11-28` and the create-Milestone, create-Issue, and add-sub-issue contracts. The corresponding operations SHALL represent `POST /repos/{owner}/{repo}/milestones`, `POST /repos/{owner}/{repo}/issues`, and `POST /repos/{owner}/{repo}/issues/{parent_number}/sub_issues`. The result SHALL conform structurally to those known client inputs but SHALL NOT assert Repository existence, permission sufficiency, server acceptance, absence of conflicts, or eventual creation success. GitHub Enterprise Server and reverse reconstruction of a Plan from Markdown SHALL remain outside this contract.
+### Requirement: GPCD-6 Dry-run boundary and GitHub compatibility
+Producing a creation request plan SHALL perform no network access, external mutation, authorization decision, observation, persistence, or Provider-assigned identifier generation. The returned passive request plan SHALL identify GitHub.com REST compatibility version `2022-11-28` and contain the operation inputs and result dependencies needed for the selected Milestone or Issue representation. It SHALL NOT claim Repository existence, access, permission sufficiency, absence of conflicts, Provider acceptance, or creation success. GitHub Enterprise Server SHALL remain outside this capability.
 
 #### Scenario: Request plan is produced
 - **WHEN** a valid creation dry-run succeeds
-- **THEN** no GitHub resource or other external fact is created or changed
+- **THEN** no GitHub resource or other external fact is accessed, created, or changed
 
-#### Scenario: GitHub would reject a request
-- **WHEN** a structurally valid request plan targets a Repository that is absent, inaccessible, or rejects an operation
-- **THEN** the dry-run remains a non-executed plan and makes no success claim about the external operation
+#### Scenario: External operation would fail
+- **WHEN** the passive request plan describes operations that GitHub would reject
+- **THEN** the dry-run makes no claim that the operations can or will succeed
 
-#### Scenario: API contract is inspected
+#### Scenario: Host inspects compatibility
 - **WHEN** a Host inspects a returned request plan
-- **THEN** it can identify the fixed API version and each request's operation-specific input, including Milestone `number`, parent Issue `number`, and child Issue `id` result semantics
+- **THEN** it can identify the declared GitHub compatibility version, required operation inputs, and result dependencies
 
 ### Requirement: GPCD-7 Validation result
-A failed dry-run constructor SHALL return a zero request plan and a validation error with a stable category and affected input field. A zero Plan SHALL produce an invalid-Plan result without inventing or retaining a prior Plan-construction error. Unsupported Issue representation caused by more than 100 Tasks SHALL be distinguishable from invalid local input. No partial request plan SHALL be returned.
+A failed dry-run construction SHALL return no request plan and a stable validation result identifying the affected input. An invalid Plan SHALL remain distinguishable from an unsupported selected representation. No partial request plan SHALL be returned.
 
 #### Scenario: Invalid Plan input
-- **WHEN** an invalid or zero Plan is supplied
-- **THEN** the constructor returns a zero request plan and an invalid-Plan result identifying the Plan field
+- **WHEN** an invalid Plan is supplied
+- **THEN** construction returns no request plan and identifies the Plan input as invalid
 
 #### Scenario: Invalid Repository input
-- **WHEN** an invalid or zero Repository target is supplied
-- **THEN** the constructor returns a zero request plan and identifies the Repository field
+- **WHEN** an invalid Repository target is supplied
+- **THEN** construction returns no request plan and identifies the Repository input

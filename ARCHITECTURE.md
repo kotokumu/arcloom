@@ -51,9 +51,10 @@ C4Container
 
     Person(human, "Human", "Provides Goals, proposed Changes, and decision material for Changes, and can perform Tasks")
 
-    System_Ext(host_integration, "Arcloom Host", "Embeds or invokes Arcloom and can consume a concrete Provider's non-mutating request preview")
+    System_Ext(host_integration, "Arcloom Host", "Embeds or invokes Arcloom and composes selected capabilities")
     System_Ext(ai_agent_context, "AI Agent Context", "Provides Provider-native responses containing requested AI judgments")
     System_Ext(agent_runtime_context, "Agent Runtime Context", "Starts and manages Agents that perform external Tasks")
+    System_Ext(external_actor, "External Actor", "Human, AI agent, or external system that owns action-time interpretation, conflict handling, and target mutation")
     System_Ext(planning_context, "Planning Context", "Owns the authoritative source of facts representing Plans such as Milestones, Tasks, and deadlines")
     System_Ext(specification_context, "Specification Context", "Owns the authoritative source of specifications and their Changes")
     System_Ext(source_context, "Source Code Context", "Owns the authoritative source of Source Code and its Change history")
@@ -69,13 +70,15 @@ C4Container
     }
 
     Rel(human, arcloom_runtime, "Provides Goals, configuration, and decision material for Changes")
-    Rel(host_integration, arcloom_runtime, "Invokes configured capabilities and consumes explicitly requested Provider previews")
+    Rel(host_integration, arcloom_runtime, "Invokes and composes configured capabilities")
     Rel(ai_agent_context, arcloom_runtime, "Provides Provider-native responses containing requested AI judgments")
     Rel(arcloom_runtime, ai_agent_context, "Requests consumer-specific AI judgments")
-    Rel(arcloom_runtime, planning_context, "Observes Plans and requests application of authorized Plan Changes")
-    Rel(arcloom_runtime, specification_context, "Observes specifications and requests application of authorized Changes")
+    Rel(arcloom_runtime, planning_context, "Observes authoritative Plan representations")
+    Rel(arcloom_runtime, external_actor, "Requests application of authorized proposed external changes")
+    Rel(external_actor, planning_context, "May mutate Plan representations through native contracts")
+    Rel(arcloom_runtime, specification_context, "Observes authoritative specifications")
     Rel(arcloom_runtime, source_context, "Observes Source Code and Change history")
-    Rel(arcloom_runtime, review_context, "Observes Pull Requests and Reviews and requests application of authorized Changes")
+    Rel(arcloom_runtime, review_context, "Observes authoritative Pull Requests and Reviews")
     Rel(arcloom_runtime, test_context, "Observes Tests and execution results")
     Rel(arcloom_runtime, ci_context, "Observes CI and Check results")
     Rel(arcloom_runtime, quality_context, "Observes quality evaluation results")
@@ -84,6 +87,8 @@ C4Container
     Rel(agent_runtime_context, planning_context, "Retrieves Tasks and updates their execution status")
     Rel(agent_runtime_context, source_context, "Performs Source Code Changes required by Tasks")
     Rel(agent_runtime_context, test_context, "Performs Tests required by Tasks")
+    Rel(external_actor, specification_context, "May mutate specifications through native contracts")
+    Rel(external_actor, review_context, "May mutate Pull Requests and Reviews through native contracts")
 ```
 
 Arcloom Runtime represents a logical container. This diagram does not prescribe a deployment form such as a process, CLI, server, or cloud service.
@@ -102,8 +107,9 @@ C4Component
 
     Person_Ext(human, "Human", "Provides proposed Changes or decision material for Changes")
 
-    System_Ext(host_integration, "Arcloom Host", "Consumes a concrete Provider's explicitly requested non-mutating preview")
+    System_Ext(host_integration, "Arcloom Host", "Invokes and composes selected Arcloom Components")
     System_Ext(ai_agent_context, "AI Agent Context", "Provides Provider-native responses containing requested AI judgments")
+    System_Ext(external_actor, "External Actor", "Human, AI agent, or external system that owns action-time target mutation")
     System_Ext(planning_context, "Planning Context", "Owns the authoritative source of external facts representing Plans")
     System_Ext(specification_context, "Specification Context", "Owns the authoritative source of specifications and their Changes")
     System_Ext(review_context, "Review Context", "Owns the authoritative source of Pull Requests, Reviews, and Provider-specific Review decisions")
@@ -116,7 +122,7 @@ C4Component
             Component(reconciliation_core, "Reconciliation Core", "Core Component", "Owns target-independent meaning and invariants common to expected states, observed states, and reconciliation results")
             Component(change, "Change", "Core Component", "Owns the relationship and validity between a single Change and one Change target. Has no parent-child structure or ChangeSet")
             Component(plan, "Plan", "Domain Component", "Owns Goals, acceptance conditions, Tasks, optional target dates, and Plan invariants")
-            Component(change_authorization, "Change Authorization", "Policy Component", "Owns the meaning of applying Authorization Policies and Rules to a single Change and the invariants of authorization decisions")
+            Component(authorization, "Authorization", "Policy Component", "Owns generic typed Policies, Rules, and recalculable authorization decisions without interpreting target-specific subject meaning")
         }
 
         Boundary(reconciliation_modules, "Reconciliation Modules") {
@@ -125,10 +131,14 @@ C4Component
             Component(token_optimization_controller, "Token Optimization Controller", "Reconciliation Module", "Reconciles whether the token-usage Goal is met while maintaining required quality and derives an Improvement Intent")
         }
 
-        Boundary(change_target_modules, "Change Target Modules") {
-            Component(plan_change_target, "Plan Change Target Module", "Change Target Module", "Owns the input contract for proposed Plan Changes, the Change Port, and the boundary for requesting external application")
-            Component(specification_change_target, "Specification Change Target Module", "Change Target Module", "Owns the Change Port expressed in specification vocabulary and the boundary for requesting external application")
-            Component(source_change_target, "Source Change Target Module", "Change Target Module", "Owns the Change Port expressed in Source Code vocabulary and the boundary for requesting external application")
+        Boundary(observation_modules, "Observation Modules") {
+            Component(plan_snapshot_observation, "Plan Snapshot Observation Module", "Observation Module", "Owns current-Plan eligibility, provider-independent representation progress, and the Plan snapshot observation Port")
+        }
+
+        Boundary(application_request_modules, "Application Request Modules") {
+            Component(plan_application_request, "Plan Application Request Module", "Application Request Module", "Owns exact target-bound Plan revision input, Authorization gating, the external Actor request Port, and request-interaction result invariants")
+            Component(specification_change_target, "Specification Change Target Module", "Change Target Module", "Owns an external Actor Port expressed in specification vocabulary and the boundary for requesting external application")
+            Component(source_change_target, "Source Change Target Module", "Change Target Module", "Owns an external Actor Port expressed in Source Code vocabulary and the boundary for requesting external application")
         }
 
         Boundary(provider_context_modules, "Provider Context Modules") {
@@ -138,11 +148,9 @@ C4Component
             Component(review_context_module, "Review Provider Module", "Provider Context Module", "Adapts the contract with the Review Context to Ports owned by consumers")
             Component(quality_context_module, "Quality Evaluation Provider Module", "Provider Context Module", "Adapts the contract with the Quality Evaluation Context to Ports owned by consumers")
             Component(activity_context_module, "Development Activity Provider Module", "Provider Context Module", "Adapts the contract with the Development Activity Context to Ports owned by consumers")
-            Component(authorization_context_module, "Authorization Provider Module", "Provider Context Module", "Adapts the contract with the Authorization Context to Ports owned by Change Authorization")
+            Component(authorization_context_module, "Authorization Provider Module", "Provider Context Module", "Adapts external authorization facts to consumer-owned Rule and fact contracts")
         }
     }
-
-    Rel(change_authorization, change, "Applies Authorization Policies and Rules to a Change")
 
     Rel(host_integration, planning_context_module, "Requests and consumes a concrete GitHub or other Provider-specific non-mutating preview")
 
@@ -157,22 +165,24 @@ C4Component
     Rel(token_optimization_controller, quality_context_module, "Observes quality through a Port owned by the Controller")
     Rel(token_optimization_controller, ai_agent_module, "Obtains a proposed evaluation through a Port owned by the Controller")
 
-    Rel(plan_change_target, plan, "Uses the meaning and invariants of a Plan")
-    Rel(plan_change_target, change, "Uses a single Change targeting a Plan")
-    Rel(plan_change_target, change_authorization, "Requests Change Authorization before external application")
-    Rel(plan_change_target, planning_context_module, "Requests external application through the owned Change Port")
-    Rel(ai_agent_module, plan_change_target, "Adapts and provides Plan Change proposals to the input contract")
-    Rel(human, plan_change_target, "Provides proposed Changes targeting Plans")
-    Rel(specification_change_target, change, "Uses a single Change targeting a specification")
-    Rel(specification_change_target, change_authorization, "Requests Change Authorization before external application")
-    Rel(specification_change_target, specification_context_module, "Requests external application through the owned Change Port")
-    Rel(source_change_target, change, "Uses a single Change targeting Source Code")
-    Rel(source_change_target, change_authorization, "Requests Change Authorization before external application")
-    Rel(source_change_target, review_context_module, "Requests external application such as a Pull Request through the owned Change Port")
+    Rel(plan_snapshot_observation, plan, "Uses Plan invariants to establish current-Plan eligibility")
+    Rel(plan_snapshot_observation, planning_context_module, "Obtains current Plan and representation-progress facts through its owned observation Port")
 
-    Rel(change_authorization, authorization_context_module, "Observes Policies, Rules, permissions, approvals, and externally established authorization decisions through an owned Port")
-    Rel(change_authorization, ai_agent_module, "Obtains decision material for a Change through an owned Port")
-    Rel(human, change_authorization, "Provides decision material for a Change")
+    Rel(plan_application_request, plan, "Uses the meaning and invariants of current and proposed Plans")
+    Rel(plan_application_request, authorization, "Evaluates Authorization for the exact target-bound revision")
+    Rel(plan_application_request, external_actor, "Requests application through the owned external Actor Port")
+    Rel(ai_agent_module, plan_application_request, "May provide proposed Plans through Host composition")
+    Rel(human, plan_application_request, "May provide proposed Plans through Host composition")
+    Rel(specification_change_target, change, "Uses a single Change targeting a specification")
+    Rel(specification_change_target, authorization, "Requests Authorization before external application")
+    Rel(specification_change_target, external_actor, "Requests specification application through the owned external Actor Port")
+    Rel(source_change_target, change, "Uses a single Change targeting Source Code")
+    Rel(source_change_target, authorization, "Requests Authorization before external application")
+    Rel(source_change_target, external_actor, "Requests Source Code application such as a Pull Request through the owned external Actor Port")
+
+    Rel(authorization, authorization_context_module, "Rules obtain permissions, approvals, and other current authorization facts through consumer-owned boundaries")
+    Rel(authorization, ai_agent_module, "Rules may obtain decision material through consumer-owned Ports")
+    Rel(human, authorization, "May provide externally authoritative decision material")
 
     Rel(ai_agent_module, ai_agent_context, "Uses Provider-specific contracts")
     Rel(planning_context_module, planning_context, "Uses Provider-specific contracts")
@@ -181,13 +191,16 @@ C4Component
     Rel(quality_context_module, quality_context, "Uses Provider-specific contracts")
     Rel(activity_context_module, activity_context, "Uses Provider-specific contracts")
     Rel(authorization_context_module, authorization_context, "Uses Provider-specific contracts")
+    Rel(external_actor, planning_context, "Uses the Planning Context's native mutation interface")
+    Rel(external_actor, specification_context, "Uses the Specification Context's native mutation interface")
+    Rel(external_actor, review_context, "Uses the Review Context's native mutation interface")
 ```
 
-Arcloom Runtime places Reconciliation Modules, Change Target Modules, and Provider Context Modules around target-independent Components.
+Arcloom Runtime places Reconciliation Modules, Observation Modules, Application Request Modules, and Provider Context Modules around target-independent Components.
 
-- Reconciliation Core, Change, and Plan do not depend on target-specific Modules or external Contexts. External facts required by Change Authorization are acquired through a Port owned by Change Authorization.
+- Reconciliation Core, Change, Plan, and Authorization do not depend on target-specific Modules or concrete external Contexts. Authorization Rules obtain the exact external facts they require through consumer-owned boundaries.
 - A Reconciliation Module depends on Reconciliation Core only when it uses the Core's evidence-derived result semantics. Membership in the Reconciliation Module category does not require that dependency.
-- Reconciliation Modules and Change Target Modules are extensible, and the Modules to use are selected in the Composition Root.
+- Reconciliation Modules, Observation Modules, and Application Request Modules are extensible, and the Modules to use are selected in the Composition Root.
 - Standard Modules and Custom Modules developed by users follow the public contracts and common extension and dependency rules for their Module type. This diagram does not distinguish them because differences in provision or maintenance ownership do not change Component boundaries.
 - Provider Context Modules are prepared for each combination of external Context and Provider. They implement Ports owned by consumers and do not expose Provider-specific APIs or data models to the Core.
 - The diagram shows only usage relationships between Components whose responsibilities are defined. Because no standard Modules that observe Source Code, Test, or CI in section 3.1 are defined, corresponding Provider Context Modules are not shown. When a standard or Custom Module using them is added, the consumer Module owns the observation Port and the corresponding Provider Context Module implements it for the external Context and Provider combination.
@@ -205,13 +218,13 @@ Arrows in the diagram show runtime usage relationships. They do not show process
 - Owned Concepts and decisions: Owns the meaning and invariants common to expected states, observed states, and reconciliation results.
 - Capability provided externally: Provides a contract through which target-specific Reconcilers can construct reconciliation results according to the common meaning.
 - Capabilities required: Requires no capabilities from other Arcloom Components or external Contexts.
-- Responsibilities not held: Does not own target-specific Goals, reconciliation rules, observation, planning, Change Authorization, or changes to external state.
+- Responsibilities not held: Does not own target-specific Goals, reconciliation rules, observation, planning, Authorization, or changes to external state.
 
 ##### Change
 
 - Responsibility: Represents one proposed Change to external state and its relationship with one Change target.
 - Owned Concepts and decisions: Owns a single Change, its relationship with the Change target, and the validity of that relationship. It has no parent-child structure for Changes and does not aggregate multiple Changes.
-- Capability provided externally: Provides a common representation for Change Authorization and Change Target Modules to handle the same Change.
+- Capability provided externally: Provides a common representation for consumers that explicitly choose Change as their subject.
 - Capabilities required: Requires no capabilities from other Components.
 - Responsibilities not held: Does not own Change creation, planning, authorization, external application, or observation of execution results.
 
@@ -219,17 +232,17 @@ Arrows in the diagram show runtime usage relationships. They do not show process
 
 - Responsibility: Represents a plan for achieving a Goal through acceptance conditions, Tasks, and an optional target date.
 - Owned Concepts and decisions: Owns the meaning of Plan elements and structural invariants concerning those elements. Provider-native resources such as Milestones and Issues are representations in the Planning Context, not Plan elements.
-- Capability provided externally: Provides a common representation that lets Controllers and Change Target Modules use Plans without depending on Provider-specific representations.
+- Capability provided externally: Provides a common representation that lets Controllers and application-request consumers use Plans without depending on Provider-specific representations.
 - Capabilities required: Requires no capabilities from other Components or external Contexts.
-- Responsibilities not held: Does not own generation of Plan proposals, application to the external Planning Context, Change Authorization, Task execution, Plan progress management, or an authoritative Plan.
+- Responsibilities not held: Does not own generation of Plan proposals, application to the external Planning Context, Authorization, Task execution, Plan progress management, or an authoritative Plan.
 
-##### Change Authorization
+##### Authorization
 
-- Responsibility: Applies Authorization Policies and Authorization Rules and decides whether Arcloom may request external application of a single Change, using the external permissions, approvals, or externally established authorization decisions required by them and, when necessary, decision material provided by a human or AI.
-- Owned Concepts and decisions: Owns the meaning of applying Policies and Rules to a Change, the invariant that a lack of required facts makes the decision undecidable and prevents proceeding to external application, and an authorization decision that can be recalculated during execution. The Authorization Context owns the facts and lifecycle of Policies, Rules, permissions, approvals, and externally established authorization decisions.
-- Capability provided externally: Provides Change Target Modules with the decision whether a single Change may proceed to external application.
-- Capabilities required: Requires Change and external facts from the Authorization Context. When the applied Policy or Rule requires it, it also requires decision material provided by a human or AI.
-- Responsibilities not held: Does not own Change selection, Reconciliation progress, granting permissions in external systems, or external application of Changes.
+- Responsibility: Applies one non-empty typed Authorization Policy to the exact subject supplied by a consumer and establishes a subject-bound Evaluation containing Authorized, Denied, or Undecidable.
+- Owned Concepts and decisions: Owns Policy validity, Rule conclusions, deny-overrides and all-permit aggregation, subject-bound Evaluation, and the invariant that missing, unavailable, invalid, or failed Rule facts cannot establish Authorized.
+- Capability provided externally: Provides consumers with a recalculable Evaluation of whether Arcloom may issue the proposed external application request for that exact subject.
+- Capabilities required: Requires no target-specific Component. Each Rule obtains or interprets the current external facts it needs from their authoritative Context.
+- Responsibilities not held: Does not semantically inspect Change, Plan, GitHub, or another target; grant external permissions; apply a proposal; persist a decision; or own Reconciliation progress.
 
 #### 3.3.2 Reconciliation Modules
 
@@ -249,7 +262,7 @@ A Reconciliation Module owns the provider-independent contract and result invari
 - Owned Concepts and decisions: Owns reconciliation rules and final reconciliation results specific to consistency between the expected Plan and the observed Plan, which is a Disposable Projection.
 - Capability provided externally: Provides reconciliation results indicating deficiencies or inconsistencies between a Plan and its external representation.
 - Capabilities required: Requires Reconciliation Core, Plan, and the observation capability of the Planning Context.
-- Responsibilities not held: Does not own Plan content decisions, changes to the external representation, Change Authorization, or the facts of the Planning Context.
+- Responsibilities not held: Does not own Plan content decisions, changes to the external representation, Authorization, or the facts of the Planning Context.
 
 ##### Token Optimization Controller
 
@@ -259,35 +272,47 @@ A Reconciliation Module owns the provider-independent contract and result invari
 - Capabilities required: Requires Reconciliation Core, a Plan representing the improvement Goal and acceptance conditions, observation capabilities for the Development Activity Context and Quality Evaluation Context, and proposed AI evaluations when qualitative evaluation is necessary.
 - Responsibilities not held: Does not own generation or collection of telemetry, quality evaluation, changes to the development system, or creation of an improvement Plan.
 
-#### 3.3.3 Change Target Modules
+#### 3.3.3 Observation Modules
 
-A Change Target Module requests external application of an authorized Change. Completion of the request is not evidence that external state changed; a Reconciliation Module observes external facts again to verify the state after the Change.
+An Observation Module owns provider-independent observation meaning, result invariants, and the minimum Port required to obtain facts from an external Context. It does not own the external facts or decide how another Module uses its result.
 
-##### Plan Change Target Module
+##### Plan Snapshot Observation Module
 
-- Responsibility: Provides an intake boundary for proposed Changes targeting Plans, requests an authorization decision for a single Change, and requests external application of an authorized Change to the Planning Context.
-- Owned Concepts and decisions: Owns the Provider-independent input contract for Plan Change proposals received from external Actors, the Change Port contract expressed in Plan vocabulary, and the boundary for requesting external application.
-- Capability provided externally: Receives Provider-independent Plan Change proposals and requests application of authorized Plan Changes to the Planning Context.
-- Capabilities required: Requires Plan, Change, Change Authorization, and a Change Port to the Planning Context.
-- Responsibilities not held: Does not own validity of the relationship between a Change and its target, generation of Plan proposals, Plan invariants, conversion between Plans and Provider-specific representations, Authorization Policies or Rules, or external facts.
+- Responsibility: Establishes one current Plan and provider-independent representation progress from one current observation of an external Plan target.
+- Owned Concepts and decisions: Owns Plan Snapshot coherence, current-Plan eligibility, representation-state and member-progress meaning, membership completeness, and the observation Port. Repeated member names may be preserved as progress even when they prevent construction of a valid Plan.
+- Capability provided externally: Provides either a coherent Snapshot, a provider-independent observation failure, or caller-owned cancellation. A Snapshot may contain a current Plan only when required facts and membership are complete and satisfy Plan invariants.
+- Capabilities required: Requires Plan and an observation Port implemented by a Planning Provider Module.
+- Responsibilities not held: Does not own Provider mappings, target identity, Planning facts, Plan Control judgment, Authorization, application, persistence, or a repeated lifecycle.
+
+#### 3.3.4 Application Request Modules
+
+An Application Request Module owns the provider-independent meaning, Authorization boundary, and request-interaction result for one proposed external application. Completion of a request is not evidence that external state changed. A later observation of authoritative external facts establishes the resulting state.
+
+##### Plan Application Request Module
+
+- Responsibility: Preserves one exact target-bound Plan revision, evaluates Authorization for that revision, and may request its application from an external Actor.
+- Owned Concepts and decisions: Owns the invariant that the current and proposed Plans are valid and unequal, that the stable target reference, current Plan, and proposed Plan remain the same Authorization subject and Actor request, and that possible transmission is never blindly retried. It owns invocation-local Application Attempt state and the six request-interaction results: AuthorizationDenied, AuthorizationUndecidable, ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, and ReceiptUncertain.
+- Capability provided externally: Provides one result describing the current authorization outcome or the certainty of one request transmission without describing target state.
+- Capabilities required: Requires Plan, generic Authorization, and an external Actor request Port owned by this Module. The Host owns the precondition that target and current Plan came from the same fresh Provider snapshot.
+- Responsibilities not held: Does not depend on Change or Plan Control; generate proposals; interpret Authorization facts; apply GitHub mutations; trust request-receipt evidence as target state; observe the resulting Plan; persist request state; or own a repeated lifecycle.
 
 ##### Specification Change Target Module
 
 - Responsibility: Requests external application to the Specification Context for an authorized Change targeting a specification.
-- Owned Concepts and decisions: Owns the Change Port contract expressed in specification vocabulary and the boundary for requesting external application.
+- Owned Concepts and decisions: Owns the external Actor Port contract expressed in specification vocabulary and the boundary for requesting external application.
 - Capability provided externally: Requests application of an authorized specification Change to the Specification Context.
-- Capabilities required: Requires Change, Change Authorization, and a Change Port to the Specification Context.
+- Capabilities required: Requires Change, generic Authorization, and an external Actor Port owned by this Module.
 - Responsibilities not held: Does not own validity of the relationship between a Change and its target, specification content decisions, conversion between specifications and Provider-specific representations, Authorization Policies or Rules, or the authoritative source of external specifications.
 
 ##### Source Change Target Module
 
 - Responsibility: Requests external application to the Review Context for an authorized Change targeting Source Code.
-- Owned Concepts and decisions: Owns the Change Port contract expressed in Source Code vocabulary and the boundary for requesting external application.
+- Owned Concepts and decisions: Owns the external Actor Port contract expressed in Source Code vocabulary and the boundary for requesting external application.
 - Capability provided externally: Requests application of an authorized Change targeting Source Code to the Review Context as an external representation such as a Pull Request.
-- Capabilities required: Requires Change, Change Authorization, and a Change Port to the Review Context.
+- Capabilities required: Requires Change, generic Authorization, and an external Actor Port owned by this Module.
 - Responsibilities not held: Does not own validity of the relationship between a Change and its target, Source Code modification work, Provider-specific conversion between a Change targeting Source Code and a Pull Request, Review decisions, Authorization Policies or Rules, or the authoritative source of Pull Requests.
 
-#### 3.3.4 Provider Context Modules
+#### 3.3.5 Provider Context Modules
 
 ##### AI Agent Provider Module
 
@@ -299,27 +324,27 @@ A Change Target Module requests external application of an authorized Change. Co
 
 ##### Planning Provider Module
 
-- Responsibility: Adapts Provider-specific contracts of the Planning Context to Ports of consumers that observe or change external representations of Plans. A concrete implementation may also provide an Arcloom Host with a Provider-specific, non-mutating preview of requests derived from a Plan.
-- Owned Concepts and decisions: Owns representations of Provider-specific Milestones, Tasks, deadlines, request contracts, and conversion rules with consumer Ports or a Host-facing preview.
-- Capability provided externally: Implements observation and Change Ports for the Planning Context. A concrete implementation may additionally provide its Host-facing request preview.
-- Capabilities required: Requires the contracts of Ports owned by consumers and the Provider-specific contracts of the Planning Context. A Host-facing request preview may also require the Provider-independent Plan value it represents.
-- Responsibilities not held: Does not own the meaning or sufficiency of Plans, Change Authorization, or the authoritative source of facts in the Planning Context.
+- Responsibility: Adapts Provider-specific contracts of the Planning Context to consumer-owned observation Ports. A concrete implementation may also provide an Arcloom Host with a Provider-specific, non-mutating preview derived from a Plan.
+- Owned Concepts and decisions: Owns Provider-specific target bindings, Milestones, Tasks, deadlines, Plan Representation Schemes, versioned payload formats, API contracts, and conversion to provider-independent observation values.
+- Capability provided externally: Implements fresh read-side Plan observation, including a coherent current Plan snapshot when its consumer contract requires one. A concrete implementation may additionally provide a Host-facing request preview.
+- Capabilities required: Requires observation contracts owned by consumers, Plan when reconstructing or previewing Plan meaning, and the Provider-specific contracts of the Planning Context.
+- Responsibilities not held: Does not own Plan meaning or sufficiency, Authorization, an external Actor request, action-time conflict handling, Planning Context mutation, or the authoritative source of Planning facts.
 
 ##### Specification Provider Module
 
-- Responsibility: Adapts Provider-specific contracts of the Specification Context to Ports of consumers that observe or change specifications.
+- Responsibility: Adapts Provider-specific contracts of the Specification Context to consumer-owned observation Ports.
 - Owned Concepts and decisions: Owns Provider-specific specification representations and conversion rules with consumer Ports.
-- Capability provided externally: Implements observation and Change Ports for the Specification Context.
+- Capability provided externally: Implements observation Ports for the Specification Context.
 - Capabilities required: Requires the contracts of Ports owned by consumers and the Provider-specific contracts of the Specification Context.
-- Responsibilities not held: Does not own specification content decisions, Change Authorization, or the authoritative source of facts in the Specification Context.
+- Responsibilities not held: Does not own specification content decisions, Authorization, or the authoritative source of facts in the Specification Context.
 
 ##### Review Provider Module
 
-- Responsibility: Adapts Provider-specific contracts of the Review Context to Ports of consumers that observe or change Pull Requests and Reviews.
+- Responsibility: Adapts Provider-specific contracts of the Review Context to consumer-owned observation Ports for Pull Requests and Reviews.
 - Owned Concepts and decisions: Owns representations of Provider-specific Pull Requests, Reviews, and Review decisions and conversion rules with consumer Ports.
-- Capability provided externally: Implements observation and Change Ports for the Review Context.
+- Capability provided externally: Implements observation Ports for the Review Context.
 - Capabilities required: Requires the contracts of Ports owned by consumers and the Provider-specific contracts of the Review Context.
-- Responsibilities not held: Does not own Source Code changes, Review decisions, Change Authorization, or the authoritative source of facts in the Review Context.
+- Responsibilities not held: Does not own Source Code changes, Review decisions, Authorization, or the authoritative source of facts in the Review Context.
 
 ##### Quality Evaluation Provider Module
 
@@ -339,11 +364,11 @@ A Change Target Module requests external application of an authorized Change. Co
 
 ##### Authorization Provider Module
 
-- Responsibility: Adapts Provider-specific contracts of the Authorization Context to the Port of Change Authorization that observes Authorization Policies, Authorization Rules, permissions, approvals, and externally established authorization decisions.
-- Owned Concepts and decisions: Owns representations of Provider-specific Policies, Rules, permissions, approvals, and externally established authorization decisions and conversion rules with the Port owned by Change Authorization.
-- Capability provided externally: Implements an observation Port for the Authorization Context.
-- Capabilities required: Requires the contract of the Port owned by Change Authorization and the Provider-specific contract of the Authorization Context.
-- Responsibilities not held: Does not own the meaning of Authorization Policies or Rules, the final authorization decision, granting permissions in external systems, or the authoritative source of external authorization facts.
+- Responsibility: Adapts Provider-specific contracts of the Authorization Context to the minimum fact or Rule contracts required by Authorization consumers.
+- Owned Concepts and decisions: Owns Provider-specific representations of permissions, approvals, externally established decisions, and their conversion to the consumer's Rule vocabulary.
+- Capability provided externally: Implements consumer-owned boundaries through which a Rule obtains or interprets current external authorization facts.
+- Capabilities required: Requires the relevant consumer contract and the Provider-specific contract of the Authorization Context.
+- Responsibilities not held: Does not own generic Policy aggregation, the final Authorization Decision, the meaning of a consumer subject, granting external permissions, or the authoritative source of authorization facts.
 
 ### 3.4 Dependencies between Components
 
@@ -354,31 +379,33 @@ flowchart BT
     RC[Reconciliation Core]
     C[Change]
     P[Plan]
-    CA[Change Authorization<br/>+ owned Ports]
+    A[Authorization<br/>+ typed Rules]
 
     RM[Reconciliation Modules<br/>+ owned Ports]
-    CTM[Change Target Modules<br/>+ owned Ports]
+    OM[Observation Modules<br/>+ owned Ports]
+    ARM[Application Request Modules<br/>+ owned Ports]
     PCM[Provider Context Modules]
     CR[Composition Root]
 
     RM -.->|Only when the Module uses Core evidence semantics| RC
     RM --> P
-    CTM --> C
-    CTM --> P
-    CTM --> CA
-    CA --> C
+    OM --> P
+    ARM -.->|Only when the Module uses Change as its subject| C
+    ARM --> P
+    ARM --> A
 
     PCM -->|Implements Ports owned by consumers| RM
-    PCM -->|Implements Ports owned by consumers| CTM
-    PCM -->|Implements Ports owned by consumers| CA
+    PCM -->|Implements Ports owned by consumers| OM
+    PCM -->|Provides facts through typed Rule boundaries| A
 
     CR --> RM
-    CR --> CTM
-    CR --> CA
+    CR --> OM
+    CR --> ARM
+    CR --> A
     CR --> PCM
 ```
 
-Arrows show source-code dependency direction. They do not show the direction of runtime requests and responses. The dotted Reconciliation Core arrow is permitted rather than required; each Module depends only on Core contracts whose semantics it actually uses. Core-facing Module contracts that use Plan are limited to Reconciliation Modules and the Plan Change Target Module. A concrete Provider Context Module may additionally depend inward on Plan for a Provider-specific, non-mutating request preview consumed only by an Arcloom Host. Such a preview is not a consumer Port and cannot request external application.
+Arrows show source-code dependency direction. They do not show the direction of runtime requests and responses. The dotted arrows are permitted rather than required. Each Module depends only on contracts whose semantics it actually uses. The Plan Snapshot Observation Module owns its observation Port and depends on Plan, while its concrete Planning Provider implementation depends inward on that Port. The Plan Application Request Module depends on Plan and Authorization but not Change, Plan Control, or a concrete Provider. A concrete Provider Context Module may additionally depend inward on Plan for reconstruction or a Provider-specific, non-mutating request preview consumed only by an Arcloom Host. Such a preview is not an application Port and cannot request external application.
 
 #### 3.4.2 Permitted Dependencies
 
@@ -386,19 +413,20 @@ Arrows show source-code dependency direction. They do not show the direction of 
 |---|---|---|
 | Reconciliation Core | None | Does not reference target-specific Concepts, external Contexts, or Provider-specific contracts |
 | Change | None | Represents the relationship and validity with one Change target in Provider-independent vocabulary |
-| Plan | None | Does not reference Controllers, Change Authorization, Change Target Modules, or the external Planning Context |
-| Change Authorization | Change; Ports for external facts and decision material owned by Change Authorization | Depends only on contracts required to apply Authorization Policies and Rules |
+| Plan | None | Does not reference Controllers, Authorization, Application Request Modules, or the external Planning Context |
+| Authorization | Standard library and typed Rules supplied by consumers | Does not depend on Change, Plan, target Modules, Providers, or external subject vocabularies |
 | Plan Controller | Plan and an AI assessment Port owned by Plan Controller | Depends only on contracts required to establish a Plan-specific Assessment; does not depend on Reconciliation Core, Change, or Authorization |
 | Plan Representation Controller | Reconciliation Core, Plan, and an observation Port for the Planning Context owned by Plan Representation Controller | Depends only on contracts required to reconcile consistency between a Plan and its external representation |
 | Token Optimization Controller | Reconciliation Core, Plan, and Ports for Development Activity, Quality Evaluation, and AI evaluation owned by Token Optimization Controller | Depends only on contracts required to reconcile token usage and quality against the improvement Goal |
-| Plan Change Target Module | Plan, Change, Change Authorization, and input and Change Ports for Plan Change proposals owned by Plan Change Target Module | Depends only on contracts required to receive Plan Change proposals and request external application of Changes targeting Plans |
-| Specification Change Target Module | Change, Change Authorization, and a Change Port owned by Specification Change Target Module | Depends only on contracts required to request external application of Changes targeting specifications |
-| Source Change Target Module | Change, Change Authorization, and a Change Port owned by Source Change Target Module | Depends only on contracts required to request external application of Changes targeting Source Code |
+| Plan Snapshot Observation Module | Plan and its own observation Port | Depends only on contracts required to establish a provider-independent current Plan and representation progress; does not control or apply the Plan |
+| Plan Application Request Module | Plan, Authorization, and an external Actor Port owned by the Module | Depends only on contracts required to preserve, authorize, and request one exact Plan revision; does not apply or observe GitHub |
+| Specification Change Target Module | Change, Authorization, and an external Actor Port owned by Specification Change Target Module | Depends only on contracts required to request external application of Changes targeting specifications |
+| Source Change Target Module | Change, Authorization, and an external Actor Port owned by Source Change Target Module | Depends only on contracts required to request external application of Changes targeting Source Code |
 | Provider Context Module | Ports owned by consumer Components and Provider-specific contracts of the connected Provider | Depends only on contracts required for its Port and one external Context |
-| Provider-specific request preview in a Provider Context Module | Plan and Provider-specific request contracts | May be consumed only through the concrete Provider API by an Arcloom Host, performs no external mutation, and does not expose Provider-specific types through a Core or Module Port |
-| Composition Root | Public contracts of selected Modules and Change Authorization; concrete implementations of Provider Context Modules | Only creates and wires Components; owns no business decisions |
+| Planning Provider reconstruction or request preview | Plan, consumer-owned observation contracts, and Provider-specific read/request contracts | May be consumed through the concrete Provider API by an Arcloom Host, performs no external mutation, and does not expose Provider-specific types through Core or Module Ports |
+| Composition Root | Public contracts of selected Modules and Authorization; concrete Provider implementations and external Actor adapters | Only creates and wires Components; owns no business decisions or repeated lifecycle |
 
-Apply the same extension and dependency rules to Standard Modules and Custom Modules. Do not establish a common Module Interface shared by Reconciliation Modules and Change Target Modules. Each Custom Module depends only on the public contract of its Module type, published Core contracts, and its own Ports. The Core and Standard Modules do not depend on concrete implementations of Custom Modules.
+Apply the same extension and dependency rules to Standard Modules and Custom Modules. Do not establish a common Module Interface shared by Reconciliation Modules, Observation Modules, and Application Request Modules. Each Custom Module depends only on the public contract of its Module type, published Core contracts, and its own Ports. The Core and Standard Modules do not depend on concrete implementations of Custom Modules.
 
 #### 3.4.3 Port Ownership
 
@@ -406,20 +434,21 @@ Apply the same extension and dependency rules to Standard Modules and Custom Mod
 |---|---|---|
 | Reconciliation Module | Target-specific observation or judgment input required by the consumer contract | The corresponding Provider Context Module adapts Provider-specific facts or responses without taking ownership of result semantics |
 | Plan Controller | An untrusted provider-independent AI response with caller-owned observation vocabulary | The AI Agent Provider Module translates Provider-native syntax and errors; Plan Controller validates the response and constructs Assessment |
-| Change Target Module | Change requests expressed in the target's vocabulary | The corresponding Provider Context Module adapts them to Provider-specific Change contracts |
-| Plan Change Target Module | Provider-independent Plan Change proposals | The AI Agent Provider Module adapts proposed Plans from the AI Agent Context |
-| Change Authorization | External facts representing Authorization Policies, Authorization Rules, permissions, approvals, and externally established authorization decisions | The Authorization Provider Module adapts them from Provider-specific representations in the Authorization Context |
-| Change Authorization | Provider-independent decision material for a Change | The AI Agent Provider Module adapts it from the Provider-specific representation in the AI Agent Context. Humans use the Provider-independent input contract directly |
+| Plan Snapshot Observation Module | Current Plan eligibility and provider-independent representation-progress facts for one external target | The Planning Provider Module maps current Provider facts to the Port without owning Snapshot result semantics |
+| Application Request Module | One proposed external application expressed in the target's vocabulary | An external Actor receives the request and owns action-time interpretation, conflict handling, and target mutation |
+| Plan Application Request Module | One exact target-bound Plan revision and explicit request receipt or refusal | A human, AI agent, or external system implements or receives the Port without returning target state through it |
+| Authorization consumer | A typed Rule that evaluates the consumer's exact subject from current external facts | The Authorization Provider Module, AI Agent Provider Module, human, or another external authority supplies the minimum fact interpretation without owning aggregate Decision semantics |
 
-The consumer Component owns a Port as the minimum contract it requires. Provider Context Modules do not expose Provider-specific APIs, DTOs, errors, or identifiers through a Core or Module Port. A concrete Provider's Host-facing configuration or non-mutating request-preview API is outside those Ports and remains inaccessible to Core and Module contracts. Even when the same Provider implements multiple Ports, do not merge the Port owner with the external Context boundary.
+The consumer Component owns a Port as the minimum contract it requires. Provider Context Modules do not expose Provider-specific APIs, DTOs, errors, or identifiers through a Core or Module Port. An Actor-native request-receipt reference may cross only as explicitly non-authoritative verification evidence. A concrete Provider's Host-facing configuration or non-mutating request-preview API is outside those Ports and remains inaccessible to Core and Module contracts. Even when the same Provider implements multiple Ports, do not merge the Port owner with the external Context boundary.
 
 #### 3.4.4 Prohibited Dependencies
 
-- Reconciliation Core, Change, and Plan do not depend on Reconciliation Modules, Change Target Modules, Provider Context Modules, or the Composition Root.
-- Reconciliation Modules do not depend on other Reconciliation Modules, Change Target Modules, Change Authorization, or concrete implementations of Provider Context Modules.
-- Change Target Modules do not depend on Reconciliation Modules, other Change Target Modules, or concrete implementations of Provider Context Modules.
-- Change Authorization does not depend on Reconciliation Modules, Change Target Modules, or concrete implementations of Provider Context Modules.
+- Reconciliation Core, Change, Plan, and Authorization do not depend on Reconciliation Modules, Observation Modules, Application Request Modules, Provider Context Modules, or the Composition Root.
+- Reconciliation Modules do not depend on other Reconciliation Modules, Observation Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules.
+- Observation Modules do not depend on Reconciliation Modules, other Observation Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules.
+- Application Request Modules do not depend on Reconciliation Modules, Observation Modules, other Application Request Modules, or concrete implementations of Provider Context Modules.
+- Authorization does not depend on Reconciliation Modules, Observation Modules, Application Request Modules, Change, Plan, or concrete implementations of Provider Context Modules.
 - Provider Context Modules do not reimplement Core decisions or connect to external Contexts through other Provider Context Modules.
-- Public contracts of the Core and consumer-owned Module Ports do not include Provider-specific APIs, DTOs, errors, or identifiers. The concrete Host-facing Provider configuration and non-mutating preview APIs defined in sections 3.3.4, 3.4.2, and 3.4.3 are the only exception and remain inaccessible through those contracts and Ports.
+- Public contracts of the Core and consumer-owned Module Ports do not include Provider-specific APIs, DTOs, errors, or identifiers. An optional Actor-native request-receipt reference is non-authoritative evidence, not target state. Concrete Host-facing Provider configuration and non-mutating preview APIs remain inaccessible through Core and Module contracts and Ports.
 - Do not establish a Repository or persistence Port that stores Arcloom's authoritative state, and do not treat an external Provider as its storage location.
 - Do not express a fixed execution order for Delivery or Development Improvement through dependencies between Components.

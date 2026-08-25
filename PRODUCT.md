@@ -37,7 +37,7 @@ Arcloom establishes Feedback Loops in two scopes: Delivery and Development Impro
 - In Delivery, it controls the Feedback Loop from a Change initiated by a user or AI through development and Delivery. It reconciles the expected outcome with the in-progress state based on Observations and feeds the result into the next work item or plan revision. It also provides information for deciding whether to accept the deliverable.
 - In Development Improvement, it performs Reconciliation using Observations accumulated through repeated Delivery and returns the result to the development system as an Improvement Intent for Delivery with fewer tokens while maintaining the required quality.
 
-The two Feedback Loops share Observation, Plan, and Change Authorization. External Agents, development tools, or humans perform Tasks.
+The two Feedback Loops share Observation, Plan, and Authorization. External Actors such as humans, AI agents, or external systems perform Tasks and own action-time changes to external targets.
 
 ### 2.2 Out of Scope
 
@@ -75,7 +75,7 @@ Capabilities are classified into Feedback Loops for each Reconciliation target a
 | Common | Observation | Makes Observations existing outside Arcloom available to Feedback Loops |
 | Common | Plan | Represents the plan required for Delivery or improvement of the development system through a Goal, acceptance conditions, Tasks, and an optional target date |
 | Common | Plan Control | Establishes an external AI assessment that controls one current Plan toward completion without applying the result |
-| Common | Change Authorization | Decides whether Arcloom may request external application of a single Change targeting a Plan, specification, Source Code, or other target |
+| Common | Authorization | Decides whether Arcloom may issue one proposed external application request for an exact consumer-supplied subject |
 
 This capability classification does not prescribe a one-to-one correspondence with Arcloom Components. Delivery Reconciliation and Development Improvement Reconciliation are Feedback Loops established by combining shared capabilities with external Actors.
 
@@ -95,10 +95,10 @@ The following are concrete examples of Observations. No Reconciliation requires 
 - Delivery Reconciliation targets one Change from development through Delivery.
 - Development Improvement Reconciliation targets the development system using Observations accumulated through repeated Delivery.
 - Observation makes Observations available. It does not decide the difference from the expected state or the next work item.
-- Plan represents Tasks and an optional target date for a Goal and its acceptance conditions. Provider-native resources such as Milestones or Issues can represent a Plan but are not Plan elements. A Plan does not perform Tasks or authorize Changes.
+- Plan represents Tasks and an optional target date for a Goal and its acceptance conditions. Provider-native resources such as Milestones or Issues can represent a Plan but are not Plan elements. A Plan does not perform Tasks or authorize external application requests.
 - Plan Control uses one current Plan and supplied Observations to obtain an external AI assessment that identifies the Plan as complete, retains it, proposes a revision, or identifies insufficient information. It does not apply the assessment or own the authoritative Plan.
-- Change Authorization decides whether Arcloom may request external application of a single Change. It does not grant permissions in an external system or apply the Change externally.
-- External Agents, development tools, or humans perform Tasks. Arcloom does not replace these actors.
+- Authorization applies Policies and Rules to an exact subject supplied by its consumer. It decides only whether Arcloom may issue the proposed external application request. It does not grant permissions in an external system, interpret every possible subject, or apply the proposal externally.
+- External Actors such as humans, AI agents, or external systems perform Tasks and own action-time interpretation, conflict handling, and changes to external targets. Arcloom does not replace these Actors.
 - The same Observation can be used by both capabilities.
 - The boundary between the two Reconciliations is determined by the Reconciliation target and where the result is returned, not by the type of Observation or outcome.
 
@@ -116,11 +116,11 @@ Reducing token usage is considered an improvement only when the required quality
 
 ### 5.3 Base Decisions on Observations
 
-Reconciliation and Change Authorization are performed based on available Observations. If necessary information cannot be observed, do not fill the gap with speculation; treat the state as undecidable.
+Reconciliation and Authorization are performed based on available Observations and externally authoritative facts. If necessary information cannot be observed, do not fill the gap with speculation; treat the state as undecidable.
 
 ### 5.4 Separate Plan Control from Authorization
 
-A Plan Control assessment does not make a proposed Plan revision externally effective. Authorization and external application remain separate from Plan Control and its result.
+A Plan Control assessment does not make a proposed Plan revision externally effective. Authorization decides only whether Arcloom may issue the exact proposed request. An external Actor owns action-time target mutation, and a later Observation establishes the resulting state.
 
 ### 5.5 Do Not Fix the Development Method
 
