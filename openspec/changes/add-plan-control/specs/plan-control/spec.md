@@ -84,15 +84,15 @@ The external AI SHALL own the semantic judgment expressed by its assessment. Pla
 - **THEN** Plan Control preserves that assessment without independently re-evaluating its semantic judgment
 
 ### Requirement: PLC-6 AI boundary failure
-Failure of the AI interaction before a response is returned SHALL be distinct from both an AI-contract failure and a valid insufficient-information assessment. AI unavailability, timeout, cancellation, or Provider failure SHALL produce no Plan Control result. A result SHALL remain associated with the Plan snapshot supplied to that AI request. Detecting a newer authoritative Plan or revalidating a result before external application is outside this capability.
+Failure of the AI interaction before a response is returned SHALL be distinct from both an AI-contract failure and a valid insufficient-information assessment. AI unavailability, a Provider-side timeout while the supplied request context remains active, or another Provider failure SHALL produce a stable AI-boundary failure and no Plan Control result. Cancellation or deadline expiry of the supplied request context before a valid response is established SHALL return that context error and no Plan Control result. A result SHALL remain associated with the Plan snapshot supplied to that AI request. Detecting a newer authoritative Plan or revalidating a result before external application is outside this capability.
 
 #### Scenario: AI is unavailable
-- **WHEN** the external AI cannot return a response because of unavailability, timeout, or Provider failure
+- **WHEN** the external AI cannot return a response because of unavailability, a Provider-side timeout while the supplied request context remains active, or another Provider failure
 - **THEN** Plan Control returns a stable AI-boundary failure and no Plan Control result
 
 #### Scenario: Control request is cancelled
-- **WHEN** the Plan Control request is cancelled before a valid AI response is established
-- **THEN** Plan Control returns the cancellation and no Plan Control result
+- **WHEN** the supplied request context is cancelled or its deadline expires before a valid AI response is established
+- **THEN** Plan Control returns the supplied context error and no Plan Control result
 
 #### Scenario: AI reports insufficient information
 - **WHEN** the external AI successfully returns the valid insufficient-information assessment
