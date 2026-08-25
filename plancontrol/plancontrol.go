@@ -184,35 +184,8 @@ func assessmentFromResponse(current plan.Plan, response AssessorResponse) (Asses
 		return Assessment{}, &FailureError{code: AIContractFailure}
 	}
 	proposed := response.ProposedPlans[0]
-	if !proposed.IsValid() || plansEqual(current, proposed) {
+	if !proposed.IsValid() || current.Equal(proposed) {
 		return Assessment{}, &FailureError{code: AIContractFailure}
 	}
 	return Assessment{outcome: Revise, assessedPlan: current, proposedPlan: proposed}, nil
-}
-
-func plansEqual(left, right plan.Plan) bool {
-	if left.IsValid() != right.IsValid() || left.Name() != right.Name() || left.Goal().Text() != right.Goal().Text() {
-		return false
-	}
-	leftConditions, rightConditions := left.AcceptanceConditions(), right.AcceptanceConditions()
-	if len(leftConditions) != len(rightConditions) {
-		return false
-	}
-	for i := range leftConditions {
-		if leftConditions[i].Statement() != rightConditions[i].Statement() {
-			return false
-		}
-	}
-	leftTasks, rightTasks := left.Tasks(), right.Tasks()
-	if len(leftTasks) != len(rightTasks) {
-		return false
-	}
-	for i := range leftTasks {
-		if leftTasks[i].Name() != rightTasks[i].Name() {
-			return false
-		}
-	}
-	leftDate, leftHasDate := left.TargetDate()
-	rightDate, rightHasDate := right.TargetDate()
-	return leftHasDate == rightHasDate && (!leftHasDate || leftDate.String() == rightDate.String())
 }

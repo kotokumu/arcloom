@@ -1,8 +1,8 @@
 ## 1. Plan and Snapshot Meaning
 
-- [ ] 1.1 Add Plan semantic equality through table-driven tests and implementation, and verify `go test -race ./plan` passes.
-- [ ] 1.2 Implement immutable Task Progress and Progress Evidence values, including duplicate-name preservation, completeness, accessors, and defensive copies, and verify `go test -race ./plansnapshot` passes.
-- [ ] 1.3 Implement Snapshot eligibility, Observation Failure, and the consumer-owned Observer boundary, and verify every Snapshot outcome-classification row plus cancellation and concurrency with `go test -race ./plansnapshot`.
+- [x] 1.1 Add Plan semantic equality through table-driven tests and implementation, and verify `go test -race ./plan` passes.
+- [x] 1.2 Implement immutable Task Progress and Progress Evidence values, including duplicate-name preservation, completeness, accessors, and defensive copies, and verify `go test -race ./plansnapshot` passes.
+- [x] 1.3 Implement Snapshot eligibility, Observation Failure, and the consumer-owned Observer boundary, and verify every Snapshot outcome-classification row plus cancellation and concurrency with `go test -race ./plansnapshot`.
 
 ## 2. GitHub Milestone Snapshot
 
