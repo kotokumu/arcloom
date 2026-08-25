@@ -55,6 +55,13 @@ Evidence Packet `PC-2026-08-25-v1.1` is frozen for this design. Version 1.1 narr
 
 Plan Control accepts one current valid Plan. It does not establish the Plan from an external Provider.
 
+The caller establishes that current snapshot from authoritative external facts
+for the control decision. Plan Control validates only the Plan's structural
+validity and does not establish authority, freshness, application safety, or
+semantic completion from those facts. A supplied context cancellation or
+deadline is caller-owned termination of the control request and is returned as
+that context error, not represented as a Plan Control FailureError.
+
 | ID | Rule | Source |
 |---|---|---|
 | FR-1 | Missing or invalid current Plan produces a stable input failure without calling the external AI boundary. | PLC-1 |
@@ -113,7 +120,7 @@ N/A. This Change defines no measurable performance, capacity, availability, or s
 |---|---|---|---|
 | Plan | Provider-independent planning intent in the subject or proposed-revision role | Immutable value composed of its preserved Plan elements | Every Plan crossing Plan Control is structurally valid. A revision creates another Plan and does not mutate the current Plan. |
 | Plan Control Assessment | One valid Plan-specific semantic judgment made by the external AI | The assessed Plan value and exactly one outcome | It has exactly one supported outcome. `Revise` relates the assessed Plan to exactly one valid unequal Plan. Other outcomes contain no revised Plan. |
-| Plan Control Failure | The reason that no valid Assessment was established | One stable failure category for the call | It never coexists with a valid Assessment. Insufficient information is not a Failure. |
+| Plan Control Failure | One of the five stable `FailureCode` categories explaining why no valid Assessment was established | One stable failure category for the call | It never coexists with a valid Assessment. Supplied context cancellation/deadline is caller-owned termination, not a Failure. Insufficient information is not a Failure. |
 
 Observation material and the raw AI response are passive boundary artifacts. Current requirements give neither artifact independent identity, lifecycle, behavior, or Arcloom-owned invariants.
 
@@ -125,7 +132,7 @@ Observation material and the raw AI response are passive boundary artifacts. Cur
 | External AI | Authors semantic judgment represented by | Plan Control Assessment | Exactly one valid judgment per successful call. |
 | Plan Control Assessment | Concerns | Current Plan | Exactly one assessed Plan retained in the immutable Assessment. |
 | `Revise` Assessment | Proposes | Plan | Exactly one valid Plan unequal to the assessed Plan; no external lifecycle is created. |
-| Plan Control call | Produces | Assessment or Failure | Exactly one valid Assessment or one error, never both. |
+| Plan Control call | Produces | Assessment, stable Failure, or supplied context error | Exactly one valid Assessment, one of the five stable Failures, or the supplied context error, never both. |
 | Plan Control call | Uses transiently | Observation material | Caller owns its meaning and lifecycle; Plan Control does not retain it. |
 
 #### Concept minimality
@@ -151,8 +158,8 @@ Observation material and the raw AI response are passive boundary artifacts. Cur
 | Completion, retention, revision, or insufficiency judgment | External AI | Current Plan and supplied observations | Semantic content of the judgment | AI decision behavior and completion semantics | Arcloom preserves rather than replaces the judgment. |
 | Assessment outcome exclusivity and subject association | Plan Control Assessment | Supported outcomes and current Plan | One valid immutable Assessment | Plan Control result semantics change | A Provider response does not own Arcloom result invariants. |
 | Revised-Plan cardinality and inequality | Plan Control Assessment | Current and proposed Plans | One valid unequal proposed Plan | Revision rules change | Plan owns individual Plan validity, not the relationship. |
-| Stable reason that no Assessment exists | Plan Control Failure | Input, AI response, boundary, and cancellation facts | Assessment/Failure distinction | Failure contract changes | Insufficient information remains an Assessment. |
-| Establish one Assessment or Failure | Plan Controller | Capability preconditions, Concepts, and external AI boundary | Stateless result/error exclusivity | Plan Control contract changes | Plan does not own control of planning intent. |
+| Stable reason that no Assessment exists | Plan Control Failure | Input, AI response, and AI boundary facts | Assessment/Failure distinction | Failure contract changes | Supplied context termination remains a caller-owned context error; insufficient information remains an Assessment. |
+| Establish one Assessment, Failure, or context termination | Plan Controller | Capability preconditions, Concepts, external AI boundary, and supplied context | Stateless result/error exclusivity | Plan Control contract changes | Plan does not own control of planning intent. |
 | Forward observation material for AI interpretation | Plan Controller | Caller-supplied value | No owned observation state | Observation sources change | No universal Observation Concept is justified. |
 | AI Provider adaptation | Concrete AI Agent Provider Module | Provider protocol and consumer-owned Port | Provider-specific transient data | Provider, model, or protocol changes | Plan Control must not depend on an SDK or Provider DTO. |
 | Authoritative Plan and observation facts | External Contexts | Provider-native authority and lifecycle | Durable external state | External system changes | Arcloom owns no authoritative store. |
@@ -230,6 +237,9 @@ const (
 // AssessorResponse is an untrusted passive boundary artifact. Claims and
 // ProposedPlans intentionally admit unknown claims, invalid Plan zero values,
 // and invalid cardinalities so Assess can own provider-independent validation.
+// The Assessor must not mutate either returned slice until Assess has finished
+// reading it; Assess snapshots the selected Plan into the returned Assessment
+// and retains neither input slice.
 type AssessorResponse struct {
 	Claims        []Outcome
 	ProposedPlans []plan.Plan
@@ -253,9 +263,14 @@ type Assessor[O any] func(
 	observations O,
 ) (AssessorResponse, error)
 
-// Assess establishes exactly one Assessment or returns its zero value and an
-// error. After input validation it invokes assessor exactly once. The call may
-// incur the Assessor's documented operational effects, but Assess does not
+// Assess establishes exactly one Assessment with nil error, or returns the
+// zero Assessment with one of the five stable Failure categories or the
+// supplied context error. The caller supplies current as a snapshot
+// established from authoritative external facts; Plan Control validates only
+// structural Plan validity. After input validation it invokes assessor exactly
+// once. A supplied context cancellation or deadline is caller-owned
+// termination and is returned as that context error, not as FailureError. The
+// call may incur the Assessor's documented operational effects, but Assess does not
 // authorize or apply a Plan, perform Tasks, or persist authoritative state.
 func Assess[O any](
 	ctx context.Context,
@@ -298,7 +313,8 @@ const (
 )
 
 // FailureError is provider-independent and does not unwrap Provider errors.
-// Cancellation is returned as the supplied context error instead.
+// Its zero value has empty Code and Error "plan control failed". Cancellation
+// is returned as the supplied context error instead.
 type FailureError struct {
 	// unexported
 }
@@ -313,7 +329,7 @@ func (*FailureError) Code() FailureCode
 |---|---|---|---|
 | `Assess[O]` | Non-nil context, valid current Plan, non-nil Assessor | Returns one immutable Assessment associated with current, or zero Assessment plus error; invokes Assessor exactly once after validation | No persistence, Authorization, Plan application, or Task execution; the Assessor interaction may transmit data, consume tokens, incur cost, emit telemetry, or create Provider-side state |
 | `Assessor[O]` | Receives a valid current Plan; until return, caller does not mutate state reachable from `O` unless that state synchronizes access | Returns one passive provider-independent response artifact; after `ctx.Done()`, stops waiting for the Provider and returns | Never mutates state reachable from `O`; matching context error means cancellation; wrapped `ErrUntranslatableAIResponse` means contract failure; other errors become boundary failure; Provider transmission and retention follow the concrete Provider contract |
-| `AssessorResponse` | Provider syntax was decoded far enough to identify claims and proposal cardinality; claims may be unknown, Plan values may be invalid zero values, and cardinalities may be invalid | `Assess` reads it only after the Assessor relinquishes mutation of the returned slices | Exactly one known claim; `Revise` requires one valid unequal Plan; other outcomes require no Plan |
+| `AssessorResponse` | Provider syntax was decoded far enough to identify claims and proposal cardinality; claims may be unknown, Plan values may be invalid zero values, and cardinalities may be invalid | The Assessor keeps both slices immutable until `Assess` finishes reading them; `Assess` snapshots the selected Plan and retains neither slice | Exactly one known claim; `Revise` requires one valid unequal Plan; other outcomes require no Plan |
 | `Assessment` | Constructed only after response validation | Outcome, subject Plan, and optional revised Plan remain mutually consistent | Zero value never crosses as success |
 | `FailureError` | No valid Assessment exists | `errors.As` exposes one stable category | Provider errors and payloads do not unwrap or cross the boundary |
 
@@ -552,7 +568,7 @@ Success tests assert only the public `Outcome`, `AssessedPlan`, and `ProposedPla
 
 | Concern | Verification |
 |---|---|
-| Assessment/Failure exclusivity | Every success has nil error; every error has zero Assessment |
+| Assessment/Failure/context exclusivity | Every success has nil error; every Failure or supplied context error has zero Assessment |
 | Call isolation | Successive calls with correlated but different Plans, observations, and responses retain only their own values |
 | Concurrent isolation | Correlated concurrent calls produce their own Assessments under `go test -race` |
 | Stateless repetition | Repeating established inputs after discarding prior values establishes an equivalent result |
