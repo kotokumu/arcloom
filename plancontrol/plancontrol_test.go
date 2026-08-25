@@ -353,13 +353,7 @@ func TestAssessInvokesAssessorExactlyOnce(t *testing.T) {
 	calls := 0
 	got, err := Assess(context.Background(), current, "observation once", func(_ context.Context, received plan.Plan, _ string) (AssessorResponse, error) {
 		calls++
-		if diff := cmp.Diff(current, received, cmp.Comparer(func(want, got plan.Plan) bool {
-			wantConditions, gotConditions := want.AcceptanceConditions(), got.AcceptanceConditions()
-			wantTasks, gotTasks := want.Tasks(), got.Tasks()
-			wantDate, wantHasDate := want.TargetDate()
-			gotDate, gotHasDate := got.TargetDate()
-			return want.IsValid() == got.IsValid() && want.Name() == got.Name() && want.Goal().Text() == got.Goal().Text() && cmp.Equal(wantConditions, gotConditions, cmp.Comparer(func(want, got plan.AcceptanceCondition) bool { return want.Statement() == got.Statement() })) && cmp.Equal(wantTasks, gotTasks, cmp.Comparer(func(want, got plan.Task) bool { return want.Name() == got.Name() })) && wantHasDate == gotHasDate && (!wantHasDate || wantDate.String() == gotDate.String())
-		})); diff != "" {
+		if diff := cmp.Diff(true, current.Equal(received)); diff != "" {
 			t.Errorf("Assessor current Plan mismatch (-want +got):\n%s", diff)
 		}
 		return AssessorResponse{Claims: []Outcome{Retain}}, nil
