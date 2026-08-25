@@ -73,7 +73,8 @@ func (a restAccess) observe(ctx context.Context, binding observerBinding) (githu
 		}
 		outcome, err := a.readTaskPage(ctx, binding, target)
 		if err != nil {
-			return githubFactSet{}, err
+			facts.tasks.markIncomplete()
+			return facts, err
 		}
 		next, continueReading := facts.admitTaskPage(outcome)
 		if !continueReading {

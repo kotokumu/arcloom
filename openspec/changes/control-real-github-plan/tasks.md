@@ -6,9 +6,9 @@
 
 ## 2. GitHub Milestone Snapshot
 
-- [ ] 2.1 Extend the private GitHub Milestone representation mapping to establish current native state and member progress from one observation, and verify mapping tests cover open, closed, unknown, duplicate-name, and incomplete membership cases.
-- [ ] 2.2 Implement the GitHub Milestone Snapshot Observer against the `plansnapshot` Port, and verify exact target binding, complete current Plan reconstruction, partial progress, pagination, and provider-failure isolation with `go test -race ./githubplan`.
-- [ ] 2.3 Verify repeated and concurrent GitHub observations use current facts without mixed target, response, cancellation, or Provider detail, and make `go test -race ./githubplan ./plansnapshot` pass.
+- [x] 2.1 Extend the private GitHub Milestone representation mapping to establish current native state and member progress from one observation, and verify mapping tests cover open, closed, unknown, duplicate-name, and incomplete membership cases.
+- [x] 2.2 Implement the GitHub Milestone Snapshot Observer against the `plansnapshot` Port, and verify exact target binding, complete current Plan reconstruction, partial progress, pagination, and provider-failure isolation with `go test -race ./githubplan`.
+- [x] 2.3 Verify repeated and concurrent GitHub observations use current facts without mixed target, response, cancellation, or Provider detail, and make `go test -race ./githubplan ./plansnapshot` pass.
 
 ## 3. Generic Authorization
 

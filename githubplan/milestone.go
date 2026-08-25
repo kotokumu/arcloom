@@ -25,6 +25,14 @@ type dateFact struct {
 	value string
 }
 
+type nativeState uint8
+
+const (
+	nativeStateUnknown nativeState = iota
+	nativeStateOpen
+	nativeStateClosed
+)
+
 // rootFact contains only GitHub-owned facts. Plan validation and location
 // correspondence are deliberately deferred to the selected scheme.
 type rootFact struct {
@@ -32,6 +40,7 @@ type rootFact struct {
 	title   textFact
 	content textFact
 	date    dateFact
+	state   nativeState
 }
 
 type rootFactOutcome struct {
@@ -48,7 +57,7 @@ func decodeMilestoneRoot(document responseDocument, number ResourceNumber) rootF
 	if !ok || rootNumber != number.value {
 		return rootFactOutcome{}
 	}
-	fact := rootFact{number: rootNumber, date: dateFact{state: dateAbsent}}
+	fact := rootFact{number: rootNumber, date: dateFact{state: dateAbsent}, state: decodeNativeState(object["state"])}
 	if value, exists := rawString(object["title"]); exists {
 		fact.title = textFact{value: value, available: true}
 	}
@@ -63,6 +72,21 @@ func decodeMilestoneRoot(document responseDocument, number ResourceNumber) rootF
 		}
 	}
 	return rootFactOutcome{fact: fact, available: true}
+}
+
+func decodeNativeState(raw json.RawMessage) nativeState {
+	value, ok := rawString(raw)
+	if !ok {
+		return nativeStateUnknown
+	}
+	switch value {
+	case "open":
+		return nativeStateOpen
+	case "closed":
+		return nativeStateClosed
+	default:
+		return nativeStateUnknown
+	}
 }
 
 func decodeJSONObject(body []byte) (map[string]json.RawMessage, bool) {

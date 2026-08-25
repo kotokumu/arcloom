@@ -15,6 +15,7 @@ type taskItemFact struct {
 	title       string
 	titleValid  bool
 	pullRequest bool
+	state       nativeState
 }
 
 // taskFactSet is a per-observation collection of coherent page facts.
@@ -61,6 +62,7 @@ func decodeTaskFactPage(body []byte) ([]taskItemFact, bool) {
 		fact := taskItemFact{}
 		fact.id, fact.idValid = rawPositiveInt(object["id"])
 		fact.title, fact.titleValid = rawString(object["title"])
+		fact.state = decodeNativeState(object["state"])
 		if marker, exists := object["pull_request"]; exists && strings.TrimSpace(string(marker)) != "null" {
 			fact.pullRequest = true
 		}
@@ -131,7 +133,7 @@ func (s *taskFactSet) admit(items []taskItemFact) {
 		}
 		if index, exists := s.indexes[item.id]; exists {
 			s.complete = false
-			if s.members[index].title != item.title {
+			if !sameProgressFacts(s.members[index], item) {
 				s.members = append(s.members[:index], s.members[index+1:]...)
 				delete(s.indexes, item.id)
 				for id, memberIndex := range s.indexes {
@@ -146,4 +148,8 @@ func (s *taskFactSet) admit(items []taskItemFact) {
 		s.indexes[item.id] = len(s.members)
 		s.members = append(s.members, item)
 	}
+}
+
+func sameProgressFacts(left, right taskItemFact) bool {
+	return left.title == right.title && left.state == right.state && left.pullRequest == right.pullRequest
 }
