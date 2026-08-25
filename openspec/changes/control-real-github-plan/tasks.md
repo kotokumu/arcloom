@@ -12,8 +12,8 @@
 
 ## 3. Generic Authorization
 
-- [ ] 3.1 Implement immutable non-empty Policy and Rule evaluation for exact consumer-established subjects, and verify the deny-overrides, all-permit, and otherwise-undecidable matrix with `go test -race ./authorization`.
-- [ ] 3.2 Implement subject-bound Evaluation and verify semantic subject immutability for the Evaluation lifetime, missing or failed evidence, cancellation, and repeated or concurrent Policy evaluation with `go test -race ./authorization`.
+- [x] 3.1 Implement immutable non-empty Policy and Rule evaluation for exact consumer-established subjects, and verify the deny-overrides, all-permit, and otherwise-undecidable matrix with `go test -race ./authorization`.
+- [x] 3.2 Implement subject-bound Evaluation and verify semantic subject immutability for the Evaluation lifetime, missing or failed evidence, cancellation, and repeated or concurrent Policy evaluation with `go test -race ./authorization`.
 
 ## 4. Plan Application Request
 
