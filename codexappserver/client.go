@@ -1,4 +1,4 @@
-// Package codexappserver defines the contract implemented by the separately
+// Package codexappserver defines the Client API implemented by the separately
 // developed Codex app-server Go SDK.
 package codexappserver
 

@@ -1,5 +1,3 @@
-// Package codexappserver defines the contract implemented by the separately
-// developed Codex app-server Go SDK.
 package codexappserver
 
 import (
