@@ -79,7 +79,7 @@ func main() {
 				if readyDirectory := os.Getenv("CODEX_STUB_READY_DIRECTORY"); readyDirectory != "" {
 					_ = os.WriteFile(filepath.Join(readyDirectory, "blocked.ready"), []byte("ready"), 0o600)
 				}
-				waitForever()
+				remainNonCooperativeUntilKilled()
 			}
 		case "turn/start":
 			var turnInput struct {
@@ -134,7 +134,7 @@ func main() {
 				_ = responses.Encode(map[string]any{"jsonrpc": "2.0", "method": "item/commandExecution/outputDelta", "params": map[string]any{"delta": "outside material"}})
 			}
 			if mode == "hang" || (mode == "mixed" && material.Observations == "hang") {
-				waitForever()
+				remainNonCooperativeUntilKilled()
 			}
 			output := os.Getenv("CODEX_STUB_OUTPUT")
 			if mode == "mixed" && material.Observations == "success" {
@@ -206,7 +206,7 @@ func main() {
 	}
 }
 
-func waitForever() {
+func remainNonCooperativeUntilKilled() {
 	for {
 		time.Sleep(time.Hour)
 	}

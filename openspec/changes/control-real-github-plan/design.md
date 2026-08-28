@@ -49,7 +49,7 @@ The capability specs under this Change are normative. The following table assign
 |---|---|---|
 | Race safety | Supported concurrent calls share no per-invocation state. | \`go test -race ./...\` plus concurrent contract tests |
 | Cancellation | Every external boundary returns the caller context error when cancellation occurs before a result is established. | Boundary cancellation tests |
-| Bounded Codex shutdown | A cancelled assessment returns no later than the configured finite grace period plus test scheduling tolerance. | Helper-process protocol test with a non-cooperative child |
+| Bounded Codex shutdown | A cancelled assessment returns no later than the configured finite grace period plus test scheduling tolerance. | Process contract test using a non-cooperative Codex app-server protocol stub |
 | Dependency isolation | Provider-independent Packages import no GitHub or Codex Package and no Provider DTO or error crosses their public contracts. | Import review and black-box contract tests |
 | Statelessness | No Product Package persists Plan, progress, Assessment, Authorization, request, acknowledgement, session, or loop history. | Design and code review; live proof starts from fresh external facts |
 
@@ -418,7 +418,7 @@ func NewAssessor[O any](
 | \`github-plan-snapshot/*\` | Valid facts produce exact Plan/progress; invalid, incomplete, and unavailable observations do not produce a current Plan. | Table-driven HTTP contract tests and race tests. | \`githubplan\`, \`plansnapshot\` | Passing Go tests. |
 | \`authorization/*\` | Exact subject forwarding and aggregate decisions fail closed. | Table-driven unit tests, cancellation tests, import review. | \`authorization\` | Passing Go tests and dependency check. |
 | \`plan-application-request/*\` | Only Authorized enters a possibly-sent Attempt; every receipt certainty maps exactly; no state claim. | Table-driven unit tests with the Actor Port only. | \`planapplication\` | Passing Go tests. |
-| \`codex-plan-control-assessment/*\` | Valid protocol yields the existing Plan Control response; drift, cancellation, and concurrency fail safely. | Helper-process JSON-RPC contract tests; no live model. | \`codexplancontrol\` | Passing Go tests and bounded-time assertions. |
+| \`codex-plan-control-assessment/*\` | Valid protocol yields the existing Plan Control response; drift, cancellation, and concurrency fail safely. | Process contract tests against a Codex app-server protocol stub; no live model. | \`codexplancontrol\` | Passing Go tests and bounded-time assertions. |
 | Canonical contracts | Authorization is Change-independent; GitHub observation is read-only; no lifecycle owner or authoritative store exists. | Architecture, import, and source review. | Design reviewer | Review record. |
 | CA-1 through CA-6 | Real observation, Revise, current Authorization, one Actor request, external reflection, exact re-observation, named completion evidence, and Complete are recorded. | Opt-in external verification; excluded from CI. | Host/proof operator | Disposable Verification Evidence Record with native references. |
 
@@ -435,10 +435,10 @@ func NewAssessor[O any](
 | Revision invariant | Valid/equal/invalid Plan combinations | Construct Revision | Only valid unequal pair succeeds. | Unit | Uses Plan-owned equality. |
 | Application receipt mapping | Each Authorization decision and receipt-evidence kind | Request application | Exact authorization or receipt outcome and at most one Actor call. | Unit | Do not assert private call order beyond safety boundary. |
 | Application cancellation | Cancellation occurs at each Plan Application precedence boundary | Request application | The exact context-error or receipt-evidence row is preserved. | Unit | No retry. |
-| Codex structured output | Helper process emits supported handshake and one final response | Assess | Existing AssessorResponse is returned. | Process contract | No Provider data crosses. |
-| Codex request meaning | Every Plan element and caller-owned observation value varies independently | Assess through a capturing helper | The helper receives the exact semantic Plan and observation material with existing Plan Control outcome meanings. | External-boundary contract | Do not assert exact prompt prose. |
-| Codex protocol drift | Helper emits each completed-invalid or interaction-failure case | Assess | Failure follows the Codex failure-classification table. | Process contract | Tests consume only the required protocol subset. |
-| Codex bounded cancellation | Helper ignores cooperative termination | Cancel one assessment | That assessment returns within grace and another concurrent assessment remains unaffected. | Process contract | Do not assert process count or identity. |
+| Codex structured output | Codex app-server protocol stub emits a supported handshake and one final response | Assess | Existing AssessorResponse is returned. | Process contract | No Provider data crosses. |
+| Codex request meaning | Every Plan element and caller-owned observation value varies independently | Assess through a capturing Codex app-server protocol stub | The protocol stub receives the exact semantic Plan and observation material with existing Plan Control outcome meanings. | External-boundary contract | Do not assert exact prompt prose. |
+| Codex protocol drift | Codex app-server protocol stub emits each completed-invalid or interaction-failure case | Assess | Failure follows the Codex failure-classification table. | Process contract | Tests consume only the required protocol subset. |
+| Codex bounded cancellation | Codex app-server protocol stub ignores cooperative termination | Cancel one assessment | That assessment returns within grace and another concurrent assessment remains unaffected. | Process contract | Do not assert process count or identity. |
 
 #### Invariant Tests
 

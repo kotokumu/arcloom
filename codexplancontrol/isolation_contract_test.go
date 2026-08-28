@@ -14,17 +14,17 @@ import (
 	"github.com/kotokumu/arcloom/plancontrol"
 )
 
-const contractHelperStartupTimeout = 5 * time.Second
+const protocolStubStartupTimeout = 5 * time.Second
 
 func TestNewAssessor_boundsCancellationAndIsolatesConcurrentAssessments(t *testing.T) {
-	helperDirectory := t.TempDir()
-	helperPath := filepath.Join(helperDirectory, "codex")
-	build := exec.Command("go", "build", "-o", helperPath, "./testdata/codexstub")
+	stubDirectory := t.TempDir()
+	stubPath := filepath.Join(stubDirectory, "codex")
+	build := exec.Command("go", "build", "-o", stubPath, "./testdata/codexappserverstub")
 	build.Dir = "."
 	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build Codex contract helper: %v\n%s", err, output)
+		t.Fatalf("build Codex app-server protocol stub: %v\n%s", err, output)
 	}
-	t.Setenv("PATH", helperDirectory)
+	t.Setenv("PATH", stubDirectory)
 
 	current := must(plan.New(
 		"Cancellation Plan",
@@ -58,14 +58,14 @@ func TestNewAssessor_boundsCancellationAndIsolatesConcurrentAssessments(t *testi
 			}{assessment: assessment, err: err}
 		}()
 
-		readyDeadline := time.After(contractHelperStartupTimeout)
+		readyDeadline := time.After(protocolStubStartupTimeout)
 		for {
 			if _, err := os.Stat(capturePath); err == nil {
 				break
 			}
 			select {
 			case <-readyDeadline:
-				t.Fatal("Codex helper did not start")
+				t.Fatal("Codex app-server protocol stub did not start")
 			default:
 				time.Sleep(time.Millisecond)
 			}
@@ -115,14 +115,14 @@ func TestNewAssessor_boundsCancellationAndIsolatesConcurrentAssessments(t *testi
 			result <- err
 		}()
 
-		readyDeadline := time.After(contractHelperStartupTimeout)
+		readyDeadline := time.After(protocolStubStartupTimeout)
 		for {
 			if _, err := os.Stat(filepath.Join(readyDirectory, "blocked.ready")); err == nil {
 				break
 			}
 			select {
 			case <-readyDeadline:
-				t.Fatal("Codex helper did not block before turn input")
+				t.Fatal("Codex app-server protocol stub did not block before turn input")
 			default:
 				time.Sleep(time.Millisecond)
 			}
@@ -186,7 +186,7 @@ func TestNewAssessor_boundsCancellationAndIsolatesConcurrentAssessments(t *testi
 			successfulResult <- successResult{assessment: assessment, err: err}
 		}()
 
-		readyDeadline := time.After(contractHelperStartupTimeout)
+		readyDeadline := time.After(protocolStubStartupTimeout)
 		for {
 			_, hangErr := os.Stat(filepath.Join(readyDirectory, "hang.ready"))
 			_, successErr := os.Stat(filepath.Join(readyDirectory, "success.ready"))
@@ -195,7 +195,7 @@ func TestNewAssessor_boundsCancellationAndIsolatesConcurrentAssessments(t *testi
 			}
 			select {
 			case <-readyDeadline:
-				t.Fatal("concurrent helpers did not receive isolated material")
+				t.Fatal("concurrent Codex app-server protocol stubs did not receive isolated material")
 			default:
 				time.Sleep(time.Millisecond)
 			}
@@ -228,14 +228,14 @@ func TestNewAssessor_boundsCancellationAndIsolatesConcurrentAssessments(t *testi
 }
 
 func TestNewAssessor_repeatedAssessmentsRetainNoPriorJudgment(t *testing.T) {
-	helperDirectory := t.TempDir()
-	helperPath := filepath.Join(helperDirectory, "codex")
-	build := exec.Command("go", "build", "-o", helperPath, "./testdata/codexstub")
+	stubDirectory := t.TempDir()
+	stubPath := filepath.Join(stubDirectory, "codex")
+	build := exec.Command("go", "build", "-o", stubPath, "./testdata/codexappserverstub")
 	build.Dir = "."
 	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build Codex contract helper: %v\n%s", err, output)
+		t.Fatalf("build Codex app-server protocol stub: %v\n%s", err, output)
 	}
-	t.Setenv("PATH", helperDirectory)
+	t.Setenv("PATH", stubDirectory)
 	t.Setenv("CODEX_STUB_MODE", "correlated")
 	t.Setenv("CODEX_STUB_CAPTURE", filepath.Join(t.TempDir(), "capture.json"))
 	readyDirectory := t.TempDir()

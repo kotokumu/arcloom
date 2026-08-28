@@ -15,14 +15,14 @@ import (
 )
 
 func TestNewAssessor_mapsExactMaterialToPlanControlResponses(t *testing.T) {
-	helperDirectory := t.TempDir()
-	helperPath := filepath.Join(helperDirectory, "codex")
-	build := exec.Command("go", "build", "-o", helperPath, "./testdata/codexstub")
+	stubDirectory := t.TempDir()
+	stubPath := filepath.Join(stubDirectory, "codex")
+	build := exec.Command("go", "build", "-o", stubPath, "./testdata/codexappserverstub")
 	build.Dir = "."
 	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build Codex contract helper: %v\n%s", err, output)
+		t.Fatalf("build Codex app-server protocol stub: %v\n%s", err, output)
 	}
-	t.Setenv("PATH", helperDirectory)
+	t.Setenv("PATH", stubDirectory)
 
 	type assessmentMaterial struct {
 		CurrentPlan struct {
