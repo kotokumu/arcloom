@@ -1,78 +1,107 @@
 ## Purpose
 
-Obtain a read-only Codex-backed Plan Control judgment with provider-independent meaning and without retaining authoritative AI session state.
+Obtains a read-only Codex-backed Plan Control judgment with provider-independent meaning and without retaining authoritative AI session state.
 
 ## ADDED Requirements
 
-### Requirement: CPCA-1 Valid Plan Control judgment
+### Requirement: valid-plan-control-judgment
 
-An assessment SHALL yield exactly one valid provider-independent Plan Control judgment: Complete, Retain, Revise, or InsufficientInformation.
+A successful Codex-backed assessment MUST yield exactly one valid provider-independent Plan Control Assessment: Complete, Retain, Revise, or Insufficient Information.
 
-#### Scenario: Plan should be revised
+- **振る舞いの規則**: Revise contains exactly one valid Proposed Plan. Complete, Retain, and Insufficient Information contain no Proposed Plan.
+- **参照**: [related] `openspec/specs/plan-control/spec.md` (PLC-3 and PLC-5)
 
-- **WHEN** the judgment is Revise
-- **THEN** the assessment includes one valid proposed Plan
+#### Scenario: Plan should be revised [happy]
 
-#### Scenario: Plan should not be revised
+- **GIVEN** Codex establishes a valid Revise judgment for the assessed material
+- **WHEN** the assessment succeeds
+- **THEN** it contains exactly one valid Proposed Plan
 
-- **WHEN** the judgment is Complete, Retain, or InsufficientInformation
-- **THEN** the assessment does not include a proposed Plan
+#### Scenario: Plan should not be revised [happy]
 
-### Requirement: CPCA-2 Exact current assessment material
+- **GIVEN** Codex establishes Complete, Retain, or Insufficient Information
+- **WHEN** the assessment succeeds
+- **THEN** it contains no Proposed Plan
 
-The assessment SHALL consider the exact current Plan and caller-owned observation material supplied for that invocation.
+### Requirement: exact-current-assessment-material
 
-#### Scenario: Assessment material is supplied
+A Codex-backed assessment MUST concern the exact current Plan and caller-owned observation material supplied for that invocation.
 
-- **WHEN** an assessment is requested
-- **THEN** its judgment is associated only with that Plan and observation material
+- **入力と受理**: The caller supplies one valid current Plan and immutable observation material whose vocabulary and meaning remain caller-owned.
+- **振る舞いの規則**: The judgment is associated only with that Plan and observation material.
 
-### Requirement: CPCA-3 Read-only assessment boundary
+#### Scenario: Assessment material is supplied [happy]
 
-Assessment SHALL NOT modify the Plan, authorize a revision, request application, or mutate an external provider.
+- **GIVEN** a caller has one valid current Plan and caller-owned observation material
+- **WHEN** the caller requests a Codex-backed assessment
+- **THEN** the judgment is associated only with that exact supplied material
 
-#### Scenario: Assessment proposes a revision
+### Requirement: read-only-assessment-boundary
 
-- **WHEN** the judgment is Revise
-- **THEN** the proposed Plan remains only a proposal
+A Codex-backed assessment MUST remain read-only and MUST NOT authorize or apply a Plan revision.
 
-### Requirement: CPCA-4 Invalid AI output is not a successful assessment
+- **副作用**: Assessment modifies neither supplied material nor any external provider and makes no authorization or application request.
 
-Missing, malformed, ambiguous, conflicting, or failed AI output SHALL NOT produce a successful Plan Control judgment.
+#### Scenario: Assessment proposes a revision [happy]
 
-#### Scenario: Output has conflicting meanings
+- **GIVEN** the assessment returns Revise with one valid Proposed Plan
+- **WHEN** the caller receives the assessment
+- **THEN** the Proposed Plan remains only a proposal and no external state has changed
 
-- **WHEN** AI output cannot be interpreted as exactly one valid judgment
-- **THEN** no successful assessment is returned
+### Requirement: invalid-ai-output
 
-### Requirement: CPCA-5 Independent assessments
+Missing, malformed, ambiguous, conflicting, or failed AI output MUST NOT produce a successful Plan Control Assessment.
 
-Each assessment SHALL be independent of prior assessments and SHALL retain no authoritative AI session state.
+- **失敗の扱い**: No provider protocol detail becomes a successful provider-independent judgment.
 
-#### Scenario: A Plan is reassessed
+#### Scenario: Output has conflicting meanings [error]
 
-- **WHEN** an assessment is requested after an earlier assessment
-- **THEN** the new result is based on the current supplied material rather than retained prior session state
+- **GIVEN** returned AI output cannot represent exactly one valid Plan Control Assessment
+- **WHEN** the output is considered
+- **THEN** no successful assessment is established
 
-### Requirement: CPCA-6 Cancellation and concurrency
+### Requirement: independent-assessments
 
-Assessment SHALL respond to caller cancellation within a bounded interval, and concurrent assessments SHALL not exchange Plans, observations, or judgments.
+Each Codex-backed assessment MUST be independent of prior and concurrent assessments and retain no authoritative AI session state.
 
-#### Scenario: Assessment is cancelled
+- **振る舞いの規則**: A later assessment depends only on its current supplied material.
+- **排他・冪等**: Concurrent assessments exchange no Plan, observation, or judgment state.
 
-- **WHEN** the caller cancels an in-progress assessment
-- **THEN** no successful judgment is returned and the assessment terminates within the configured bound
+#### Scenario: A Plan is reassessed [happy]
 
-#### Scenario: Assessments run concurrently
+- **GIVEN** one or more earlier assessments exist
+- **WHEN** the caller requests another assessment with current material
+- **THEN** the new result is based on that current material rather than retained prior session state
 
-- **WHEN** distinct assessments run concurrently
+#### Scenario: Assessments run concurrently [concurrency]
+
+- **GIVEN** distinct current Plans and observation material
+- **WHEN** callers request their assessments concurrently
 - **THEN** each result refers only to its own Plan and observation material
 
-### Requirement: CPCA-7 Compatible safe Host configuration
+### Requirement: bounded-assessment-cancellation
 
-The Host SHALL supply a trusted compatible Codex installation and valid assessment inputs. The adapter SHALL always select the declared read-only assessment constraints and SHALL expose no configuration that relaxes them. Incompatible or unsafe local inputs SHALL prevent interaction.
+A cancelled in-progress assessment MUST establish no successful judgment and terminate within its accepted finite shutdown bound.
 
-#### Scenario: Configuration is unsafe
+- **入力と受理**: Safe Host Configuration includes a positive finite shutdown bound.
+- **失敗の扱い**: Cancellation before success returns no assessment no later than that bound plus scheduling tolerance.
 
-- **WHEN** local assessment input is incompatible with or attempts to relax the read-only assessment boundary
-- **THEN** no AI interaction begins
+#### Scenario: Assessment is cancelled [error]
+
+- **GIVEN** an assessment is in progress under an accepted finite shutdown bound
+- **WHEN** the caller cancels it before success
+- **THEN** no successful judgment is returned and the interaction terminates within that bound plus scheduling tolerance
+
+### Requirement: safe-host-configuration
+
+The capability MUST begin an external-AI interaction only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
+
+- **前提条件**: The Host supplies a trusted compatible Codex installation.
+- **入力と受理**: Local assessment inputs and the positive finite shutdown bound must be valid and compatible. Read-only and no-approval constraints are fixed and not caller-relaxable.
+- **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents external-AI interaction.
+
+#### Scenario: Configuration is unsafe [error]
+
+- **GIVEN** local assessment input is incompatible or attempts to relax the read-only boundary
+- **WHEN** the Host requests an assessment
+- **THEN** no external-AI interaction begins

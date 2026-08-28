@@ -6,8 +6,9 @@
 |---|---|
 | Product value, scope, capabilities, and principles | \`PRODUCT.md\` |
 | Component responsibilities, external Context ownership, and permitted dependencies | \`ARCHITECTURE.md\` |
+| Capability boundary, concepts, relationships, and requirement candidates | \`model.md\` |
 | Observable behavior and acceptance conditions | Specs under this OpenSpec change |
-| Concepts, Package boundaries, public contracts, verification design, and design choices for this Change | This DesignDoc |
+| Package boundaries, public contracts, verification design, and design choices for this Change | This DesignDoc |
 | Implementation order and completion status | \`tasks.md\` |
 
 ## 1. Purpose / Non-Goals
@@ -33,16 +34,14 @@
 
 The capability specs under this Change are normative. The following table assigns their behavior to design owners without restating individual scenarios.
 
-| ID | Function | Observable rule | Decision owner |
+| Requirement group | Function | Observable rule | Decision owner |
 |---|---|---|---|
-| FR-1 | Plan snapshot | One fresh target-bound GitHub observation yields a current Plan only from coherent, complete, valid Plan facts. | Plan Snapshot and Plan |
-| FR-2 | Progress evidence | The same observation yields provider-independent representation and member progress with explicit membership completeness. | Plan Representation Progress |
-| FR-3 | Authorization | One non-empty Policy evaluates the exact consumer-established subject using deny-overrides, all-permit, otherwise-undecidable semantics. | Authorization Policy and Decision |
-| FR-4 | Plan revision | One target, current Plan, and unequal proposed Plan retain one exact immutable revision meaning. | Plan Revision |
-| FR-5 | Application request | Only a revision Authorized in the same invocation can enter a possibly-sent Application Attempt, and that Attempt is never retried. | Plan Application Attempt |
-| FR-6 | Request result | Authorization denial or uncertainty and each degree of request-receipt certainty remain distinct and never establish external state. | Plan Application Result |
-| FR-7 | Codex assessment | One disposable read-only Codex interaction translates to the existing Plan Control Assessor response or fails closed. | Codex Plan Control adapter and Plan Control |
-| FR-8 | Re-observation | A later fresh snapshot alone establishes the next current Plan; correspondence does not by itself prove causality. | Plan Snapshot and disposable proof context |
+| \`github-plan-snapshot/*\` | Plan snapshot and progress | One fresh target-bound GitHub observation yields a current Plan only from coherent, complete, valid facts and preserves provider-independent progress otherwise. | GitHub Plan Snapshot and Plan |
+| \`authorization/*\` | Authorization | One non-empty Policy evaluates the exact consumer-established subject using deny-overrides, all-permit, otherwise-undecidable semantics. | Authorization Policy and Evaluation |
+| \`plan-application-request/exact-plan-revision\` | Plan revision | One target, current Plan, and unequal proposed Plan retain one exact immutable revision meaning. | Plan Revision |
+| \`plan-application-request/current-authorization-required\` and \`at-most-one-transmission\` | Application request | Only a Revision Authorized in the same invocation can enter a possibly-sent Application Attempt, and that Attempt is never retried. | Plan Application Attempt |
+| \`plan-application-request/request-interaction-result\` through \`stateless-provider-independent-meaning\` | Request result and re-observation | Authorization and receipt outcomes remain distinct; only later fresh observation establishes external Plan state. | Plan Application Result and GitHub Plan Snapshot |
+| \`codex-plan-control-assessment/*\` | Codex assessment | One disposable read-only Codex interaction translates to the existing Plan Control Assessment or fails closed. | Codex Plan Control adapter and Plan Control |
 
 ### 2.2 Non-Functional Requirements
 
@@ -60,49 +59,37 @@ These criteria verify this Change without introducing a Product workflow or dura
 
 | ID | Acceptance criterion |
 |---|---|
-| CA-1 | The proof operator selects one real GitHub Milestone target and records an initial current Snapshot whose Plan and representation progress were established from that target. |
+| CA-1 | The proof operator selects one real GitHub Milestone target and records an initial GitHub Plan Snapshot whose current Plan and representation progress were established from that target. |
 | CA-2 | Codex assesses the exact initial Plan with caller-owned observation material and returns a valid Revise assessment containing one exact proposed Plan. |
 | CA-3 | The exact stable target reference, current Plan, and proposed Plan form one Revision; current externally authoritative authorization evidence bound to that Revision establishes Authorized; and one external Actor interaction yields ReceiptAcknowledged. Any other receipt outcome leaves this proof incomplete. |
-| CA-4 | A later current Snapshot independently establishes the external Plan after the Actor interaction and is compared with the proposed Plan without claiming causality from correspondence. |
+| CA-4 | A later GitHub Plan Snapshot independently establishes the current external Plan after the Actor interaction and is compared with the proposed Plan without claiming causality from correspondence. |
 | CA-5 | The proof record names the external facts used as Goal and acceptance-condition evidence, and Codex returns Complete for the later current Plan and those facts. |
-| CA-6 | The record contains references to the selected target, both Snapshots, both assessments, Revision, the subject-bound externally authoritative authorization evidence, and ReceiptAcknowledged evidence; it is disposable, operator-owned, and establishes neither authoritative external state nor a mandatory operation order. |
+| CA-6 | The record contains references to the selected target, both GitHub Plan Snapshots, both assessments, Revision, the subject-bound externally authoritative authorization evidence, and ReceiptAcknowledged evidence; it is disposable, operator-owned, and establishes neither authoritative external state nor a mandatory operation order. |
 
 ## 3. Structural Design
 
-### 3.1 Conceptual Model
+### 3.1 Concept-to-design mapping
 
-| Concept | Meaning | Identity | Rule / invariant | Authority or lifecycle owner |
-|---|---|---|---|---|
-| Plan | Immutable provider-independent planning intent. | Its complete semantic value. | Name, Goal, conditions, Tasks, and optional date satisfy Plan invariants. | Plan owns meaning; no Arcloom store owns an authoritative instance. |
-| External Plan Target Reference | Stable provider-independent reference to the exact externally owned representation to which a revision refers. | Non-empty Context and target identity strings. | The immutable reference identifies but does not contain or establish target state. | Plan Application Request Module owns value validity; Planning Context owns target lifecycle. |
-| Plan Representation Scheme | Correspondence between one native representation and Plan/progress meaning. | Selected representation kind. | Root role, field sources, Task membership, and native-state mapping stay coherent. | Planning Provider Module. |
-| Versioned Plan Representation Payload Format | Recognized envelope and members embedded in a native representation. | Format version. | A version is decoded according to its own complete contract; unsupported versions are unavailable. | Planning Provider Module. |
-| Plan Snapshot | One disposable coherent result from one fresh observation. | One target-bound invocation. | A current Plan is present only when required Plan facts are complete and valid. | Plan Snapshot owns result invariants; external facts remain Planning Context-owned. |
-| Plan Representation Progress | Provider-independent progress facts for one snapshot. | Overall representation state plus ordered observed members; member names may repeat. | State is Open, Closed, or Unknown; membership is Complete or Incomplete; no state establishes Plan completion. | Disposable snapshot result. |
-| Assessment Observation Material | Caller-selected facts supplied for one assessment. | One assessment invocation. | It has no universal Arcloom vocabulary and remains immutable during assessment. | Caller and external fact owners. |
-| Authorization Policy | One non-empty set of typed Rules. | Its immutable Rule set. | Empty or invalid Policy cannot authorize. | Consumer supplies it; Authorization owns aggregation semantics. |
-| Authorization Rule | One cohesive interpretation of current authorization facts for an exact subject. | Rule implementation within a Policy. | It yields Permit, Deny, Unknown, or failure for that subject. | Rule owns interpretation; external Context owns facts. |
-| Authorization Decision | Recalculable aggregate verdict produced by a Policy. | Authorized, Denied, or Undecidable. | Any Deny is Denied; all Permit is Authorized; otherwise Undecidable. | Authorization owns verdict semantics. |
-| Authorization Evaluation | Immutable association between one exact consumer-established subject and its aggregate Decision. | One Policy evaluation invocation and subject. | The subject and reachable state remain semantically immutable for the Evaluation's complete lifetime, and the Decision cannot be reused without that association. | Disposable Authorization result. |
-| Plan Revision | Exact proposed alteration of one current Plan for one stable target reference. | Target reference, current Plan, and proposed Plan together. | Both Plans are valid and unequal; target/current provenance is a Host precondition. | Disposable application input. |
-| Plan Application Request | Passive external instruction concerning one exact revision. | Its revision. | It contains no authorization or transmission state and cannot establish target state. | Plan Application Request Module. |
-| Plan Application Attempt | Invocation-local safety state for authorizing and possibly transmitting one request. | One invocation and revision. | AuthorizationDenied and AuthorizationUndecidable are terminal without transmission; once transmission may have begun, the Attempt never returns to a sendable state or retries. | Disposable Plan Application Request Module state. |
-| Request Receipt Evidence | External evidence about whether the exact request was received. | Actor response for one request. | ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, and ReceiptUncertain describe only request receipt, never mutation or completion. | External Actor supplies it; Plan Application Request Module validates its meaning. |
-| Plan Application Result | Provider-independent classification of one Application Attempt. | One application-request invocation. | AuthorizationDenied, AuthorizationUndecidable, and the four receipt-evidence states remain distinct from target state. | Plan Application Request Module. |
-| Plan Control Assessment | Existing immutable external-AI judgment for one current Plan. | Exact assessed Plan and one outcome. | Revise alone contains one valid unequal proposed Plan. | Plan Control owns result invariants; external AI owns judgment. |
-| Disposable Codex Interaction | One provider-specific assessment exchange. | One process, connection, thread, and turn. | No prior session is required; one final structured response is admissible; cancellation is call-local. | Codex Provider adapter. |
-| Verification Evidence Record | Passive references proving that this Change's acceptance criteria were exercised for one real target. | One operator-selected proof run. | It records exact inputs and externally owned evidence without asserting authority, causality, or a reusable workflow. | Proof operator; discarded after verification. |
+The specification concepts and invariants are defined in \`model.md\` and the delta specs. This section records only their physical realization and responsibility placement.
 
-The proof composition is not a Product Component. Its Verification Evidence Record is a disposable verification artifact, not authoritative Product state or a repeated lifecycle owner.
+| Specification concept | Design representation | Responsibility / lifecycle placement |
+|---|---|---|
+| Plan | Existing immutable value in \`plan\`, extended with semantic equality | \`plan\` protects validity and equality; no Arcloom store owns an authoritative Plan. |
+| GitHub Milestone Target, GitHub Plan Snapshot, Representation Progress | Provider-independent values and observation contract in \`plansnapshot\`; GitHub binding in \`githubplan\` | \`plansnapshot\` protects result coherence; \`githubplan\` owns provider mapping; the Planning Context owns external facts. |
+| Authorization Subject, Policy, Rule Conclusion, Evaluation | Generic typed values and evaluation contract in \`authorization\` | \`authorization\` owns aggregation and subject binding; consumers and external Contexts own subject validity and evidence. |
+| External Plan Target Reference, Plan Revision, Application Request, Request Receipt Evidence, Plan Application Result | Immutable values and application contract in \`planapplication\` | \`planapplication\` protects one attempt; the Actor owns receipt evidence and action-time mutation; the Planning Context owns target state. |
+| Codex Assessment Interaction and Safe Host Configuration | Plan Control Assessor implementation and validated Host inputs in \`codexplancontrol\` | \`codexplancontrol\` owns provider translation and interaction lifecycle; \`plancontrol\` retains provider-independent assessment meaning. |
+
+The disposable proof composition is not a Product Component. Its evidence record is operator-owned verification material, not authoritative Product state or a repeated lifecycle owner.
 
 ### 3.2 Responsibility Assignment
 
 | Responsibility / decision | Owner | Information and authority used | Invariant protected | Not owner / reason |
 |---|---|---|---|---|
 | Validate Plan structure and semantic equality | Plan | Complete Plan values | Only valid immutable Plans participate in revisions and assessments. | Plan Control and application do not duplicate Plan semantics. |
-| Map GitHub Milestone facts to Plan meaning | GitHub Plan Representation Scheme | GitHub root, payload, Issue membership, native state | One representation has one coherent mapping. | Plan Snapshot owns result coherence, not GitHub mapping. |
+| Map GitHub Milestone facts to Plan meaning | GitHub Plan Representation Scheme | GitHub root, payload, Issue membership, native state | One representation has one coherent mapping. | GitHub Plan Snapshot owns result coherence, not GitHub mapping. |
 | Recognize and decode \`arcloom-plan\` versions | Versioned payload format in \`githubplan\` | Payload bytes and declared version | Versions coexist without partial interpretation. | HTTP access and Plan do not own serialization. |
-| Establish current Plan eligibility | Plan Snapshot | One Scheme projection plus Plan invariants | Incomplete or invalid required facts never expose a current Plan. | Host does not assemble validity procedurally. |
+| Establish current Plan eligibility | GitHub Plan Snapshot | One Scheme projection plus Plan invariants | Incomplete or invalid required facts never expose a current Plan. | Host does not assemble validity procedurally. |
 | Classify representation progress completeness and states | Plan Representation Progress | Coherent mapped progress facts | Unknown state differs from incomplete membership; repeated member names remain observable; no state establishes Complete. | Plan does not own actual progress. |
 | Interpret one authorization fact | Authorization Rule | Exact subject and current external facts | Failure or unavailable fact never contributes Permit. | Policy aggregates but does not acquire facts. |
 | Aggregate Rule conclusions and bind the result | Authorization Policy and Evaluation | Rule conclusions for one exact subject | Deny-overrides/all-permit semantics have one owner and the Decision remains associated with its subject. | Each consumer does not reimplement policy. |
@@ -131,7 +118,7 @@ No production Package is added for proof composition. Opt-in verification code c
 | Source Package | Target Package | Public contract used | Dependency reason | Details that do not cross |
 |---|---|---|---|---|
 | \`plansnapshot\` | \`plan\` | Plan values and invariants | Snapshot may expose one valid current Plan. | Provider targets and progress do not enter Plan. |
-| \`githubplan\` | \`plansnapshot\` | Observer and result values | GitHub implements the Plan Snapshot observation boundary. | HTTP DTOs, IDs, URLs, payload bytes, and errors. |
+| \`githubplan\` | \`plansnapshot\` | Observer and result values | GitHub implements the GitHub Plan Snapshot observation boundary. | HTTP DTOs, IDs, URLs, payload bytes, and errors. |
 | \`githubplan\` | \`plan\` | Plan construction | Scheme reconstructs provider-independent Plan meaning. | GitHub state does not enter Plan. |
 | \`planapplication\` | \`authorization\` | Typed Policy and subject-bound Evaluation | The exact Revision is authorized during the request invocation. | Authorization does not depend on Plan or target semantics. |
 | \`planapplication\` | \`plan\` | Plan values and equality | Revision protects current/proposed invariants. | Actor protocol and receipt state do not enter Plan. |
@@ -428,10 +415,10 @@ func NewAssessor[O any](
 
 | Requirement / acceptance criterion | Observable behavior | Automated test or verification | Owner | Evidence |
 |---|---|---|---|---|
-| GHPS-1 through GHPS-6 | Valid facts produce exact Plan/progress; invalid, incomplete, and unavailable observations do not produce a current Plan. | Table-driven HTTP contract tests and race tests. | \`githubplan\`, \`plansnapshot\` | Passing Go tests. |
-| AUTH-1 through AUTH-5 | Exact subject forwarding and aggregate decisions fail closed. | Table-driven unit tests, cancellation tests, import review. | \`authorization\` | Passing Go tests and dependency check. |
-| PAR-1 through PAR-8, including PAR-2A | Only Authorized enters a possibly-sent Attempt; every receipt certainty maps exactly; no state claim. | Table-driven unit tests with the Actor Port only. | \`planapplication\` | Passing Go tests. |
-| CPCA-1 through CPCA-7 | Valid protocol yields the existing Plan Control response; drift, cancellation, and concurrency fail safely. | Helper-process JSON-RPC contract tests; no live model. | \`codexplancontrol\` | Passing Go tests and bounded-time assertions. |
+| \`github-plan-snapshot/*\` | Valid facts produce exact Plan/progress; invalid, incomplete, and unavailable observations do not produce a current Plan. | Table-driven HTTP contract tests and race tests. | \`githubplan\`, \`plansnapshot\` | Passing Go tests. |
+| \`authorization/*\` | Exact subject forwarding and aggregate decisions fail closed. | Table-driven unit tests, cancellation tests, import review. | \`authorization\` | Passing Go tests and dependency check. |
+| \`plan-application-request/*\` | Only Authorized enters a possibly-sent Attempt; every receipt certainty maps exactly; no state claim. | Table-driven unit tests with the Actor Port only. | \`planapplication\` | Passing Go tests. |
+| \`codex-plan-control-assessment/*\` | Valid protocol yields the existing Plan Control response; drift, cancellation, and concurrency fail safely. | Helper-process JSON-RPC contract tests; no live model. | \`codexplancontrol\` | Passing Go tests and bounded-time assertions. |
 | Canonical contracts | Authorization is Change-independent; GitHub observation is read-only; no lifecycle owner or authoritative store exists. | Architecture, import, and source review. | Design reviewer | Review record. |
 | CA-1 through CA-6 | Real observation, Revise, current Authorization, one Actor request, external reflection, exact re-observation, named completion evidence, and Complete are recorded. | Opt-in external verification; excluded from CI. | Host/proof operator | Disposable Verification Evidence Record with native references. |
 

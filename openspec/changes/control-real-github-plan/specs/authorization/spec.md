@@ -1,72 +1,92 @@
 ## Purpose
 
-Provide a generic, recalculable authorization decision for the exact subject supplied by a consumer without retaining authoritative authorization state.
+Provides a generic, recalculable authorization decision for the exact subject supplied by a consumer without retaining authoritative authorization state.
 
 ## ADDED Requirements
 
-### Requirement: AUTH-1 Exact authorization subject
+### Requirement: exact-authorization-subject
 
-Authorization SHALL evaluate the exact subject supplied by the consumer against the supplied policy without interpreting or substituting its domain meaning. The consumer SHALL supply a subject whose validity is already established by the subject's owner.
+Authorization MUST evaluate the exact established Authorization Subject supplied by the consumer and bind the resulting Authorization Evaluation to that subject.
 
-#### Scenario: Valid subject and policy
+- **入力と受理**: The consumer supplies an Authorization Subject whose domain validity has already been established by its owner and a valid Authorization Policy.
+- **振る舞いの規則**: Authorization neither interprets nor substitutes the subject's domain meaning. The resulting Evaluation contains that exact subject and its aggregate Decision.
+- **失敗の扱い**: An empty or otherwise invalid Policy cannot produce Authorized.
 
-- **WHEN** a consumer requests authorization with an established subject and valid policy
-- **THEN** the resulting decision refers to that exact subject
+#### Scenario: Valid subject and policy [happy]
 
-#### Scenario: Policy is invalid
+- **GIVEN** a consumer has an established Authorization Subject and a valid Authorization Policy
+- **WHEN** the consumer requests authorization
+- **THEN** the resulting Evaluation refers to that exact subject
 
-- **WHEN** the policy is empty or otherwise invalid
+#### Scenario: Policy is invalid [error]
+
+- **GIVEN** an established Authorization Subject and an empty or otherwise invalid Policy
+- **WHEN** the consumer requests authorization
 - **THEN** the result is not Authorized
 
-### Requirement: AUTH-2 Decision semantics
+### Requirement: authorization-decision-semantics
 
-Authorization SHALL decide Denied when any applicable rule denies the subject, Authorized when every applicable rule permits it, and Undecidable otherwise.
+Authorization MUST aggregate current Rule Conclusions using deny-overrides, all-permit, otherwise-undecidable semantics.
 
-#### Scenario: A rule denies
+- **振る舞いの規則**: At least one Deny produces Denied; every applicable Rule yielding Permit produces Authorized; every other combination produces Undecidable.
 
-- **WHEN** at least one applicable rule returns Deny
-- **THEN** the decision is Denied
+#### Scenario: A rule denies [happy]
 
-#### Scenario: All rules permit
+- **GIVEN** a valid Policy whose applicable Rules include at least one Deny
+- **WHEN** the Policy is evaluated for an exact Authorization Subject
+- **THEN** the Decision is Denied
 
-- **WHEN** every applicable rule returns Permit
-- **THEN** the decision is Authorized
+#### Scenario: All rules permit [happy]
 
-#### Scenario: No definitive result exists
+- **GIVEN** a valid Policy whose every applicable Rule yields Permit
+- **WHEN** the Policy is evaluated for an exact Authorization Subject
+- **THEN** the Decision is Authorized
 
-- **WHEN** no rule denies and at least one applicable rule cannot permit
-- **THEN** the decision is Undecidable
+#### Scenario: No definitive result exists [boundary]
 
-### Requirement: AUTH-3 Missing evidence fails closed
+- **GIVEN** a valid Policy with no Deny and at least one applicable Rule that cannot yield Permit
+- **WHEN** the Policy is evaluated for an exact Authorization Subject
+- **THEN** the Decision is Undecidable
 
-Missing, unavailable, invalid, or failed evidence SHALL NOT produce Permit.
+### Requirement: missing-authorization-evidence
 
-#### Scenario: Required evidence is unavailable
+Missing, unavailable, invalid, or failed authorization evidence MUST NOT produce Permit.
 
-- **WHEN** a rule cannot establish its required evidence
-- **THEN** that rule does not permit the subject
+- **振る舞いの規則**: A Rule that cannot establish the evidence it requires yields no permission for the subject.
 
-### Requirement: AUTH-4 Cancellation establishes no decision
+#### Scenario: Required evidence is unavailable [error]
 
-Cancellation before completion SHALL establish no authorization decision.
+- **GIVEN** an applicable Rule requires evidence for an exact Authorization Subject
+- **WHEN** that evidence cannot be established
+- **THEN** the Rule does not permit the subject
 
-#### Scenario: Evaluation is cancelled
+### Requirement: authorization-cancellation
 
-- **WHEN** authorization evaluation is cancelled before completion
-- **THEN** no decision is established
+Cancellation before authorization completion MUST establish no Authorization Decision.
 
-### Requirement: AUTH-5 Recalculation and isolation
+- **失敗の扱い**: The caller observes its cancellation outcome and receives no established Evaluation.
 
-Each authorization decision SHALL be recalculated from the current supplied subject, policy, and evidence, and concurrent decisions SHALL remain isolated.
+#### Scenario: Evaluation is cancelled [error]
 
-Evaluation SHALL NOT modify the supplied subject. The subject and state reachable from it SHALL remain semantically immutable for the complete lifetime of the returned subject-bound Evaluation. A policy used concurrently SHALL NOT exchange subject, evidence, or decision state between evaluations.
+- **GIVEN** authorization evaluation has not completed
+- **WHEN** the caller cancels the evaluation
+- **THEN** no Authorization Decision is established
 
-#### Scenario: Prior authorization exists
+### Requirement: authorization-recalculation-and-isolation
 
-- **WHEN** the same subject is evaluated again with changed policy or evidence
-- **THEN** the new decision is based only on the current evaluation inputs
+Each Authorization Evaluation MUST be recalculated from its current supplied subject, Policy, and evidence and remain isolated from other evaluations.
 
-#### Scenario: Subjects are evaluated concurrently
+- **振る舞いの規則**: Prior Decisions are not inputs to a later Evaluation. Authorization does not modify the supplied subject, whose reachable semantic state remains unchanged for the Evaluation's lifetime.
+- **排他・冪等**: Concurrent evaluations exchange no subject, evidence, or Decision state.
 
-- **WHEN** distinct subjects are evaluated concurrently
-- **THEN** each decision refers only to its own subject and evidence
+#### Scenario: Prior authorization exists [happy]
+
+- **GIVEN** the same Authorization Subject has a prior Evaluation and its Policy or evidence has changed
+- **WHEN** the subject is evaluated again
+- **THEN** the new Decision is based only on the current Evaluation inputs
+
+#### Scenario: Subjects are evaluated concurrently [concurrency]
+
+- **GIVEN** distinct Authorization Subjects and their current Policies and evidence
+- **WHEN** consumers evaluate them concurrently
+- **THEN** each Evaluation refers only to its own subject and evidence

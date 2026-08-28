@@ -1,146 +1,199 @@
 ## Purpose
 
-Request external application of an exact authorized Plan revision while preserving uncertainty. The external Actor owns action-time interpretation and mutation, while the Planning Context remains authoritative for target state and lifecycle.
+Requests external application of an exact authorized Plan Revision while preserving uncertainty and leaving target state and lifecycle authoritative in the Planning Context.
 
 ## ADDED Requirements
 
-### Requirement: PAR-1 Exact Plan revision
+### Requirement: exact-plan-revision
 
-A Plan application request SHALL identify one target, its caller-established current Plan, and one proposed Plan.
+A Plan application request MUST concern one exact valid Plan Revision.
 
-#### Scenario: Revision is valid
+- **入力と受理**: A Revision contains one External Plan Target Reference, one valid caller-established current Plan, and one valid meaningfully unequal proposed Plan.
+- **振る舞いの規則**: The Application Request preserves those exact values.
+- **失敗の扱い**: An invalid or meaningfully unchanged Revision produces no external application request.
+- **参照**: [related] `openspec/specs/plan/spec.md`
 
-- **WHEN** the current and proposed Plans are valid and meaningfully different
-- **THEN** the request represents that exact revision for the exact target
+#### Scenario: Revision is valid [happy]
 
-#### Scenario: Revision is invalid or unchanged
+- **GIVEN** one valid target reference and valid meaningfully different current and proposed Plans
+- **WHEN** the caller establishes a Plan Revision
+- **THEN** it represents that exact revision for that exact target
 
-- **WHEN** either Plan is invalid or the Plans are meaningfully equal
-- **THEN** no external application is requested
+#### Scenario: Revision is invalid or unchanged [error]
 
-### Requirement: PAR-2 Caller-established target association
+- **GIVEN** either Plan is invalid or the current and proposed Plans are meaningfully equal
+- **WHEN** the caller requests external application
+- **THEN** no Application Request is sent
 
-The capability SHALL preserve the association supplied by the caller between the target and the current Plan without asserting that it independently verified the association.
+### Requirement: caller-established-target-association
 
-#### Scenario: Caller supplies an association
+The capability MUST preserve the caller-established association between the External Plan Target Reference and current Plan without claiming independent verification.
 
-- **WHEN** a valid application request is considered
-- **THEN** the same target and current Plan association is used throughout that consideration
+- **前提条件**: The caller owns the precondition that the target and current Plan concern the same fresh external observation.
+- **振る舞いの規則**: The same target/current association remains part of the Revision throughout one consideration.
 
-### Requirement: PAR-2A Invalid application input
+#### Scenario: Caller supplies an association [happy]
 
-An invalid Revision or missing Actor SHALL produce a stable invalid-input failure and SHALL NOT contact an Actor. An invalid Authorization Policy SHALL produce AuthorizationUndecidable and SHALL NOT contact an Actor.
+- **GIVEN** a caller has established a valid target/current Plan association
+- **WHEN** its valid Revision is considered for external application
+- **THEN** that same association is preserved without an independent verification claim
 
-#### Scenario: Revision or Actor is invalid
+### Requirement: invalid-application-input
 
-- **WHEN** the Revision is invalid or no Actor is supplied
-- **THEN** the capability reports the applicable stable invalid-input failure and sends no request
+Invalid application input MUST prevent Actor contact and produce the applicable stable failure meaning.
 
-#### Scenario: Authorization Policy is invalid
+- **入力と受理**: A valid Revision, valid Authorization Policy, and Actor are required.
+- **失敗の扱い**: An invalid Revision or missing Actor produces a stable invalid-input failure. An invalid Authorization Policy produces AuthorizationUndecidable.
+- **副作用**: Invalid input sends no Application Request.
 
-- **WHEN** the Authorization Policy is invalid
-- **THEN** the result is AuthorizationUndecidable and sends no request
+#### Scenario: Revision or Actor is invalid [error]
 
-### Requirement: PAR-3 Current authorization is required
+- **GIVEN** an invalid Revision or no Actor
+- **WHEN** the caller requests external application
+- **THEN** the applicable stable invalid-input failure is reported and no Actor is contacted
 
-An external Actor SHALL receive a Plan application request only when the exact revision is Authorized during the current invocation.
+#### Scenario: Authorization Policy is invalid [error]
 
-#### Scenario: Revision is Authorized
+- **GIVEN** a valid Revision and Actor but an invalid Authorization Policy
+- **WHEN** the caller requests external application
+- **THEN** the result is AuthorizationUndecidable and no Actor is contacted
 
-- **WHEN** the current authorization decision is Authorized
-- **THEN** the exact revision may be sent to the Actor
+### Requirement: current-authorization-required
 
-#### Scenario: Revision is Denied
+An Actor MUST receive an Application Request only when the exact Revision is Authorized during the current invocation.
 
-- **WHEN** the current authorization decision is Denied
+- **前提条件**: Authorization evaluates the exact Revision as its Authorization Subject.
+- **振る舞いの規則**: Current Authorized permits one possible transmission; current Denied produces AuthorizationDenied; current Undecidable produces AuthorizationUndecidable.
+- **副作用**: Denied or Undecidable sends no Application Request.
+- **参照**: [[authorization/exact-authorization-subject]]; [[authorization/authorization-decision-semantics]]
+
+#### Scenario: Revision is Authorized [happy]
+
+- **GIVEN** the exact Revision is Authorized in the current invocation
+- **WHEN** the caller requests external application
+- **THEN** that exact Revision may be sent to the Actor
+
+#### Scenario: Revision is Denied [permission]
+
+- **GIVEN** the exact Revision is Denied in the current invocation
+- **WHEN** the caller requests external application
 - **THEN** the result is AuthorizationDenied and no request is sent to the Actor
 
-#### Scenario: Revision is Undecidable
+#### Scenario: Revision is Undecidable [permission]
 
-- **WHEN** the current authorization decision is Undecidable
+- **GIVEN** the exact Revision is Undecidable in the current invocation
+- **WHEN** the caller requests external application
 - **THEN** the result is AuthorizationUndecidable and no request is sent to the Actor
 
-#### Scenario: A prior authorization exists
+#### Scenario: A prior authorization exists [permission]
 
-- **WHEN** the exact revision was Authorized in an earlier invocation but is not Authorized in the current invocation
+- **GIVEN** the exact Revision was Authorized earlier but is not Authorized in the current invocation
+- **WHEN** the caller requests external application
 - **THEN** no request is sent to the Actor
 
-### Requirement: PAR-4 At most one transmission
+### Requirement: at-most-one-transmission
 
-One invocation SHALL transmit the application request to the Actor at most once and SHALL NOT retry after the Actor might have received it.
+One application-request invocation MUST transmit to the Actor at most once and MUST NOT retry after receipt may have occurred.
 
-#### Scenario: Actor receipt is uncertain
+- **排他・冪等**: Once transmission may have begun, the same invocation cannot become sendable again.
 
-- **WHEN** communication fails after the Actor might have received the request
-- **THEN** the capability does not retransmit the request
+#### Scenario: Actor receipt is uncertain [idempotency]
 
-### Requirement: PAR-5 Request-interaction result
+- **GIVEN** an Authorized Application Request may have reached the Actor
+- **WHEN** communication fails before receipt can be established
+- **THEN** the invocation does not retransmit that request
 
-The result SHALL describe only the application-request interaction and SHALL distinguish AuthorizationDenied, AuthorizationUndecidable, ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, and ReceiptUncertain.
+### Requirement: request-interaction-result
 
-#### Scenario: Actor explicitly acknowledges
+A Plan Application Result MUST describe only authorization or request receipt and keep all defined outcomes distinct.
 
-- **WHEN** the Actor explicitly acknowledges the request
-- **THEN** the result is ReceiptAcknowledged without claiming the external Plan changed
+- **振る舞いの規則**: The result is exactly AuthorizationDenied, AuthorizationUndecidable, ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, or ReceiptUncertain.
+- **副作用**: No result claims that the external Plan changed.
 
-#### Scenario: Actor explicitly refuses
+#### Scenario: Actor explicitly acknowledges [happy]
 
-- **WHEN** the Actor explicitly refuses the request
-- **THEN** the result is ReceiptRefused
+- **GIVEN** the Actor explicitly acknowledges receipt of the exact Application Request
+- **WHEN** the capability establishes the result
+- **THEN** it is ReceiptAcknowledged without claiming that the external Plan changed
 
-#### Scenario: Receipt cannot be determined
+#### Scenario: Actor explicitly refuses [happy]
 
-- **WHEN** the capability cannot establish whether the Actor received the request
+- **GIVEN** the Actor explicitly refuses the exact Application Request
+- **WHEN** the capability establishes the result
+- **THEN** it is ReceiptRefused
+
+#### Scenario: Receipt cannot be determined [error]
+
+- **GIVEN** the capability cannot establish whether the Actor received the request
+- **WHEN** it establishes the result
 - **THEN** the result is ReceiptUncertain
 
-#### Scenario: Request was definitely not received
+#### Scenario: Request was definitely not received [happy]
 
-- **WHEN** the capability establishes that the Actor did not receive the request
+- **GIVEN** the capability establishes that the Actor did not receive the request
+- **WHEN** it establishes the result
 - **THEN** the result is KnownNotReceived
 
-### Requirement: PAR-6 Cancellation preserves uncertainty
+### Requirement: cancellation-preserves-uncertainty
 
-Cancellation SHALL prevent transmission when it occurs before sending and preserve uncertainty when it occurs after receipt may have happened.
+Cancellation MUST prevent transmission when observed before sending and preserve the strongest established receipt meaning after transmission may have begun.
 
-#### Scenario: Cancelled before transmission
+- **振る舞いの規則**: Established ReceiptAcknowledged, ReceiptRefused, or KnownNotReceived remains the result. Without stronger evidence after possible receipt, the result is ReceiptUncertain.
+- **排他・冪等**: Cancellation never causes retry.
+- **失敗の扱い**: Cancellation before Actor invocation returns the caller's cancellation outcome and sends no request. An Actor that observes cancellation before transmission yields KnownNotReceived.
 
-- **WHEN** the invocation is cancelled before transmission begins
+#### Scenario: Cancelled before transmission [error]
+
+- **GIVEN** an application-request invocation has not begun transmission
+- **WHEN** cancellation is observed
 - **THEN** no request is sent to the Actor
 
-#### Scenario: Cancelled after possible receipt
+#### Scenario: Cancelled after possible receipt [boundary]
 
-- **WHEN** the invocation is cancelled after the Actor might have received the request and no explicit acknowledgment or refusal exists
+- **GIVEN** the Actor might have received the request and no explicit acknowledgment or refusal exists
+- **WHEN** cancellation is observed
 - **THEN** the result is ReceiptUncertain
 
-#### Scenario: Receipt evidence is established before cancellation
+#### Scenario: Receipt evidence is established before cancellation [boundary]
 
-- **WHEN** ReceiptAcknowledged, ReceiptRefused, or KnownNotReceived is established before cancellation is observed
-- **THEN** the result preserves that exact receipt evidence and no retry occurs
+- **GIVEN** ReceiptAcknowledged, ReceiptRefused, or KnownNotReceived is established
+- **WHEN** cancellation is observed afterward
+- **THEN** the result preserves that exact evidence and no retry occurs
 
-#### Scenario: Cancellation wins before Actor invocation
+#### Scenario: Cancellation wins before Actor invocation [error]
 
-- **WHEN** cancellation is observed before Actor invocation begins
-- **THEN** the supplied cancellation result is returned and no request is sent
+- **GIVEN** cancellation has been observed before Actor invocation begins
+- **WHEN** the application-request invocation resolves
+- **THEN** the caller's cancellation outcome is returned and no request is sent
 
-#### Scenario: Actor observes cancellation before transmission
+#### Scenario: Actor observes cancellation before transmission [boundary]
 
-- **WHEN** the Actor has been invoked but observes cancellation before beginning transmission
-- **THEN** the Actor does not transmit and the result is KnownNotReceived
+- **GIVEN** the Actor has been invoked but has not begun transmission
+- **WHEN** the Actor observes cancellation
+- **THEN** it does not transmit and the result is KnownNotReceived
 
-### Requirement: PAR-7 External state requires fresh observation
+### Requirement: external-state-requires-fresh-observation
 
-No application result SHALL establish the current external Plan; only a later current observation may establish it.
+No Plan Application Result MUST establish the current external Plan; only a later current observation may establish it.
 
-#### Scenario: Application was acknowledged
+- **振る舞いの規則**: Receipt evidence concerns the request interaction only and cannot establish mutation, completion, or causality.
+- **参照**: [[github-plan-snapshot/current-authoritative-snapshot]]
 
-- **WHEN** the caller needs to know the current external Plan after acknowledgment
-- **THEN** the caller must use a fresh authoritative observation
+#### Scenario: Application was acknowledged [happy]
 
-### Requirement: PAR-8 Stateless and provider-independent meaning
+- **GIVEN** an Application Request resulted in ReceiptAcknowledged
+- **WHEN** the caller needs the current external Plan
+- **THEN** the caller uses a fresh authoritative observation to establish it
 
-The capability SHALL retain no authoritative application state and SHALL express the request without provider-specific mutation semantics.
+### Requirement: stateless-provider-independent-meaning
 
-#### Scenario: A later invocation begins
+The application-request capability MUST retain no authoritative application state and express no provider-specific mutation semantics.
 
+- **振る舞いの規則**: A later invocation receives no prior Result as authoritative input.
+- **副作用**: The capability owns neither external target state nor a durable application lifecycle.
+
+#### Scenario: A later invocation begins [happy]
+
+- **GIVEN** one or more prior Plan Application Results exist
 - **WHEN** another application request is considered
-- **THEN** no prior result is treated as authoritative input for that request
+- **THEN** no prior Result is treated as authoritative input for that request
