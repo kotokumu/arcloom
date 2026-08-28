@@ -83,7 +83,7 @@ Each Codex-backed assessment MUST be independent of prior and concurrent assessm
 
 A cancelled in-progress assessment MUST establish no successful judgment and terminate within its accepted finite shutdown bound.
 
-- **入力と受理**: Safe Host Configuration includes a positive finite shutdown bound.
+- **入力と受理**: The supplied Codex app-server SDK Client is configured with a positive finite shutdown bound before it is composed with the Plan Control adapter.
 - **失敗の扱い**: Cancellation before success returns no assessment no later than that bound plus scheduling tolerance.
 
 #### Scenario: Assessment is cancelled [error]
@@ -96,8 +96,8 @@ A cancelled in-progress assessment MUST establish no successful judgment and ter
 
 The capability MUST begin an external-AI interaction only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
 
-- **前提条件**: The Host supplies a trusted compatible Codex installation.
-- **入力と受理**: Local assessment inputs and the positive finite shutdown bound must be valid and compatible. Read-only and no-approval constraints are fixed and not caller-relaxable.
+- **前提条件**: The Host supplies a trusted compatible Codex installation through a Codex app-server SDK Client that satisfies the accepted lifecycle contract.
+- **入力と受理**: Local assessment inputs must be valid and compatible. The SDK owns validation of its positive finite shutdown bound and app-server lifecycle configuration. Read-only and no-approval constraints are fixed and not caller-relaxable.
 - **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents external-AI interaction.
 
 #### Scenario: Configuration is unsafe [error]

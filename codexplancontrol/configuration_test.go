@@ -1,12 +1,9 @@
-// Package codexplancontrol adapts a trusted local Codex installation to the
-// provider-independent Plan Control assessor contract.
 package codexplancontrol
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -117,44 +114,11 @@ func TestNewWorkingDirectory(t *testing.T) {
 	}
 }
 
-func TestNewShutdownGrace(t *testing.T) {
-	type args struct {
-		value time.Duration
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    ShutdownGrace
-		wantErr bool
-	}{
-		{name: "minimum positive duration", args: args{value: time.Nanosecond}, want: ShutdownGrace{value: time.Nanosecond, valid: true}},
-		{name: "maximum duration", args: args{value: 30 * time.Second}, want: ShutdownGrace{value: 30 * time.Second, valid: true}},
-		{name: "zero duration", args: args{value: 0}, wantErr: true},
-		{name: "negative duration", args: args{value: -time.Nanosecond}, wantErr: true},
-		{name: "above maximum", args: args{value: 30*time.Second + time.Nanosecond}, wantErr: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewShutdownGrace(tt.args.value)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("NewShutdownGrace() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if tt.wantErr {
-				return
-			}
-			if !cmp.Equal(tt.want, got, cmp.AllowUnexported(ShutdownGrace{})) {
-				t.Errorf("NewShutdownGrace() = %v, want %v\ndiff=%s", got, tt.want, cmp.Diff(tt.want, got, cmp.AllowUnexported(ShutdownGrace{})))
-			}
-		})
-	}
-}
-
 func TestNewConfiguration(t *testing.T) {
 	type args struct {
 		model            Model
 		reasoningEffort  ReasoningEffort
 		workingDirectory WorkingDirectory
-		shutdownGrace    ShutdownGrace
 	}
 	tests := []struct {
 		name string
@@ -167,21 +131,19 @@ func TestNewConfiguration(t *testing.T) {
 				model:            Model{value: "gpt-5.6-sol", valid: true},
 				reasoningEffort:  ReasoningEffort{value: "high", valid: true},
 				workingDirectory: WorkingDirectory{value: "/work", valid: true},
-				shutdownGrace:    ShutdownGrace{value: 2 * time.Second, valid: true},
 			},
 			want: Configuration{
 				model:            Model{value: "gpt-5.6-sol", valid: true},
 				reasoningEffort:  ReasoningEffort{value: "high", valid: true},
 				workingDirectory: WorkingDirectory{value: "/work", valid: true},
-				shutdownGrace:    ShutdownGrace{value: 2 * time.Second, valid: true},
 			},
 		},
 		{name: "zero values remain invalid", args: args{}, want: Configuration{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewConfiguration(tt.args.model, tt.args.reasoningEffort, tt.args.workingDirectory, tt.args.shutdownGrace); !cmp.Equal(tt.want, got, cmp.AllowUnexported(Configuration{}, Model{}, ReasoningEffort{}, WorkingDirectory{}, ShutdownGrace{})) {
-				t.Errorf("NewConfiguration() = %v, want %v\ndiff=%s", got, tt.want, cmp.Diff(tt.want, got, cmp.AllowUnexported(Configuration{}, Model{}, ReasoningEffort{}, WorkingDirectory{}, ShutdownGrace{})))
+			if got := NewConfiguration(tt.args.model, tt.args.reasoningEffort, tt.args.workingDirectory); !cmp.Equal(tt.want, got, cmp.AllowUnexported(Configuration{}, Model{}, ReasoningEffort{}, WorkingDirectory{})) {
+				t.Errorf("NewConfiguration() = %v, want %v\ndiff=%s", got, tt.want, cmp.Diff(tt.want, got, cmp.AllowUnexported(Configuration{}, Model{}, ReasoningEffort{}, WorkingDirectory{})))
 			}
 		})
 	}

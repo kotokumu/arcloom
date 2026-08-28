@@ -27,6 +27,8 @@
 - A product-wide Observation schema or a common Provider interface.
 - Mutable Issue-as-Plan, GitHub Projects, Linear, or another planning Provider.
 - Stabilizing the experimental \`Change\` concept.
+- Implementing the Codex app-server Go SDK in this Change; this Change defines
+  and consumes only the SDK contract required by Plan Control.
 
 ## 2. Behavior Design
 
@@ -49,7 +51,7 @@ The capability specs under this Change are normative. The following table assign
 |---|---|---|
 | Race safety | Supported concurrent calls share no per-invocation state. | \`go test -race ./...\` plus concurrent contract tests |
 | Cancellation | Every external boundary returns the caller context error when cancellation occurs before a result is established. | Boundary cancellation tests |
-| Bounded Codex shutdown | A cancelled assessment returns no later than the configured finite grace period plus test scheduling tolerance. | Process contract test using a non-cooperative Codex app-server protocol stub |
+| Bounded Codex shutdown | A cancelled assessment returns no later than the SDK-configured finite grace period plus test scheduling tolerance. | Codex app-server Go SDK process contract test; the Plan Control adapter verifies cancellation propagation at its Client boundary. |
 | Dependency isolation | Provider-independent Packages import no GitHub or Codex Package and no Provider DTO or error crosses their public contracts. | Import review and black-box contract tests |
 | Statelessness | No Product Package persists Plan, progress, Assessment, Authorization, request, acknowledgement, session, or loop history. | Design and code review; live proof starts from fresh external facts |
 
@@ -78,7 +80,7 @@ The specification concepts and invariants are defined in \`model.md\` and the de
 | GitHub Milestone Target, GitHub Plan Snapshot, Representation Progress | Provider-independent values and observation contract in \`plansnapshot\`; GitHub binding in \`githubplan\` | \`plansnapshot\` protects result coherence; \`githubplan\` owns provider mapping; the Planning Context owns external facts. |
 | Authorization Subject, Policy, Rule Conclusion, Evaluation | Generic typed values and evaluation contract in \`authorization\` | \`authorization\` owns aggregation and subject binding; consumers and external Contexts own subject validity and evidence. |
 | External Plan Target Reference, Plan Revision, Application Request, Request Receipt Evidence, Plan Application Result | Immutable values and application contract in \`planapplication\` | \`planapplication\` protects one attempt; the Actor owns receipt evidence and action-time mutation; the Planning Context owns target state. |
-| Codex Assessment Interaction and Safe Host Configuration | Plan Control Assessor implementation and validated Host inputs in \`codexplancontrol\` | \`codexplancontrol\` owns provider translation and interaction lifecycle; \`plancontrol\` retains provider-independent assessment meaning. |
+| Codex Assessment Interaction and Safe Host Configuration | Plan Control Assessor implementation in \`codexplancontrol\` and an SDK contract in \`codexappserver\` | \`codexplancontrol\` owns Plan assessment translation; the separately developed SDK owns app-server communication and interaction lifecycle; \`plancontrol\` retains provider-independent assessment meaning. |
 
 The disposable proof composition is not a Product Component. Its evidence record is operator-owned verification material, not authoritative Product state or a repeated lifecycle owner.
 
@@ -96,10 +98,38 @@ The disposable proof composition is not a Product Component. Its evidence record
 | Preserve target/current/proposed identity | Plan Revision | Stable target reference and two Plans | Authorization and Actor request concern the same revision. | Assessment has no target; Authorization does not inspect it. |
 | Protect one external application attempt | Plan Application Attempt | Revision, current Policy, and Request Receipt Evidence | No request without current Authorization; once receipt is possible, the attempt is never retried. | Actor owns action-time mutation; Authorization owns only permission. |
 | Perform action-time conflict judgment and GitHub mutation | External Actor | Current native state and permissions | Native safety and resulting state stay outside Arcloom. | GitHub Provider is read-only in this Change. |
-| Translate Codex protocol | \`codexplancontrol\` | Host configuration and experimental app-server protocol | Provider details cannot weaken Plan Control response semantics. | Plan Control remains provider-independent. |
+| Translate Plan assessment material and output | \`codexplancontrol\` | Exact Plan, caller-owned observation material, and one SDK-completed final output | Provider output cannot weaken Plan Control response semantics. | The SDK does not depend on Plan or Plan Control. |
+| Complete one read-only Codex app-server turn | Codex app-server Go SDK | SDK configuration, app-server protocol, and process authority | Process, transport, protocol, and shutdown failures never become a completed turn. | \`codexplancontrol\` does not launch or stop processes and does not parse JSON-RPC. |
 | Select observation vocabulary | Assessor consumer | Facts needed for its control judgment | No universal Observation model is invented. | Codex adapter only encodes supplied material. |
 | Schedule or repeat operations | Host composition | Deployment-specific policy | No Arcloom Package owns a fixed Feedback Loop lifecycle. | No workflow, runtime, or orchestrator Package is introduced. |
 | Preserve proof completeness without becoming authoritative | Verification Evidence Record | Native references and disposable contract results selected by the proof operator | Every CA-1 through CA-6 relation is inspectable without treating the record as external state or causality. | Product Components do not own the record. |
+
+#### Codex SDK boundary review
+
+Risk level: High. The change introduces a public Package contract and changes the
+boundary between Plan assessment translation and an external Provider protocol.
+The user approved the interface-only SDK boundary before construction.
+
+| Candidate | Remove or merge test | Decision | Reason |
+|---|---|---|---|
+| Codex Assessment Interaction | Merge into Plan Control Assessment | Keep | The external interaction has Provider-owned failure, isolation, safety, and cancellation conditions that do not define Assessment meaning. |
+| Codex app-server Go SDK boundary | Keep inside \`codexplancontrol\` | Separate | Process/transport/protocol lifecycle changes independently of Plan material and outcome translation and has another evidenced AI consumer. |
+| Generic process controller, helper, or transport utility | Extract from the SDK | Reject | No consumer requires process semantics independent of the Codex app-server contract. |
+
+| Independent scenario / confidence | Primary owner | Expected propagation | Verdict |
+|---|---|---|---|
+| App-server protocol, launch, or completion representation changes / Evidence-backed plausible | Codex app-server Go SDK | SDK implementation and SDK tests; Client changes only if completed read-only Turn semantics change. | Pass |
+| Process exits, blocks, or changes cooperative shutdown / Evidence-backed plausible | Codex app-server Go SDK | SDK lifecycle implementation and bounded process tests. | Pass |
+| Assessment concurrency increases / Committed | SDK for interaction isolation; \`codexplancontrol\` for material/result isolation | SDK race/process tests and adapter unit tests. | Pass |
+| A second Arcloom consumer needs Codex / Evidence-backed plausible | Its consumer-owned adapter plus the SDK | The SDK is reused without Plan imports; the new consumer owns its judgment translation. | Pass |
+| Observation vocabulary or Plan Control outcomes change / Evidence-backed plausible or Speculative | Assessor consumer, Plan, and \`codexplancontrol\` | Plan material/output translation and adapter tests; no SDK lifecycle change. | Pass |
+| Startup cost creates pressure for reuse / Evidence-backed plausible | Codex app-server Go SDK | SDK internals may change only while the isolated read-only Turn and bounded-cancellation contract remains true. No session extension point is added now. | Pass |
+| Transport changes away from a child stdio process / Speculative | Codex app-server Go SDK | Reconsider SDK internals when supported; no current interface extension. | Risk only |
+
+| Boundary candidate | Consumer and constraint | Dependency direction | Simpler alternative | Decision |
+|---|---|---|---|---|
+| \`codexappserver.Client\` | \`codexplancontrol\` needs one isolated read-only completed Turn while external protocol and process lifecycle remain hidden. | \`codexplancontrol\` depends on the SDK contract; the SDK never depends on Plan or Plan Control. | A direct function cannot publish the separately verified SDK lifecycle contract. | Accept |
+| Generic process abstraction | No current non-Codex consumer or invariant. | N/A | Keep process details inside the future SDK implementation. | Reject |
 
 ### 3.3 Package Design
 
@@ -111,7 +141,8 @@ The disposable proof composition is not a Product Component. Its evidence record
 | \`authorization\` | Generic Policy, Rule, subject-bound Evaluation, and aggregate Decision semantics. | Rule, Policy, Evaluation, Decision. | Rule iteration and failure localization. | Standard library only. |
 | \`planapplication\` | Stable target reference and Plan Revision invariants, Authorization gating, Actor request Port, Application Attempt safety, and request-result classification. | Target Reference, Revision, Request, Actor, Receipt Evidence, Result, RequestApplication. | Exact one-attempt classification and defensive value handling. | \`plan\`, \`authorization\`, standard library. |
 | \`plancontrol\` | Existing provider-independent Assessment semantics. | Existing Assessor and Assessment contracts. | Response validation. | \`plan\`, standard library. |
-| \`codexplancontrol\` | Codex app-server implementation of the Assessor Port. | Validated Configuration, Observation Encoder, Assessor construction. | Process lifecycle, JSON-RPC, prompt/schema, correlation, DTOs, shutdown. | \`plan\`, \`plancontrol\`, standard library. |
+| \`codexappserver\` | Contract surface of the separately developed Codex app-server Go SDK. | Read-only Turn Request, Completed Turn, Client. | Future SDK implementation details including process lifecycle, transport, JSON-RPC, correlation, and bounded shutdown. | Standard library only in this Change. |
+| \`codexplancontrol\` | Codex-backed implementation of the Assessor Port through the SDK contract. | Validated assessment Configuration, Observation Encoder, Assessor construction. | Plan material encoding, assessment instructions/schema, and final-output translation. | \`codexappserver\`, \`plan\`, \`plancontrol\`, standard library. |
 
 No production Package is added for proof composition. Opt-in verification code composes public contracts as a test/Host concern and owns no domain decision.
 
@@ -123,8 +154,9 @@ No production Package is added for proof composition. Opt-in verification code c
 | \`planapplication\` | \`authorization\` | Typed Policy and subject-bound Evaluation | The exact Revision is authorized during the request invocation. | Authorization does not depend on Plan or target semantics. |
 | \`planapplication\` | \`plan\` | Plan values and equality | Revision protects current/proposed invariants. | Actor protocol and receipt state do not enter Plan. |
 | \`plancontrol\` | \`plan\` | Plan values | Existing Assessment concerns one exact current Plan. | AI protocol does not enter Plan Control. |
-| \`codexplancontrol\` | \`plancontrol\` | Consumer-owned Assessor Port | Codex provides one concrete external-AI judgment. | JSON-RPC, process, model metadata, and raw output. |
+| \`codexplancontrol\` | \`plancontrol\` | Consumer-owned Assessor Port | Codex provides one concrete external-AI judgment. | SDK contracts, model metadata, and raw output. |
 | \`codexplancontrol\` | \`plan\` | Plan serialization input | The adapter supplies the exact current Plan to Codex. | Codex representation does not redefine Plan. |
+| \`codexplancontrol\` | \`codexappserver\` | Client, ReadOnlyTurnRequest, and CompletedTurn | The adapter requests one isolated read-only turn without owning Provider communication. | Plan, Observation, AssessorResponse, FailureCode, process, and JSON-RPC details do not cross in the wrong direction. |
 
 ### 3.4 Interface Design
 
@@ -335,6 +367,53 @@ func RequestApplication(
 #### Codex Plan Control Assessor
 
 \`\`\`go
+package codexappserver
+
+type ReadOnlyTurnRequest struct {
+    /* private immutable construction material */
+}
+
+// NewReadOnlyTurnRequest validates non-blank model, reasoning effort,
+// instructions, and input; an absolute working directory; and a JSON object
+// output schema. Invalid material returns an error and a zero request without
+// beginning an app-server interaction.
+func NewReadOnlyTurnRequest(
+    model string,
+    reasoningEffort string,
+    workingDirectory string,
+    developerInstructions string,
+    input string,
+    outputSchema string,
+) (ReadOnlyTurnRequest, error)
+
+func (r ReadOnlyTurnRequest) Model() string
+func (r ReadOnlyTurnRequest) ReasoningEffort() string
+func (r ReadOnlyTurnRequest) WorkingDirectory() string
+func (r ReadOnlyTurnRequest) DeveloperInstructions() string
+func (r ReadOnlyTurnRequest) Input() string
+func (r ReadOnlyTurnRequest) OutputSchema() string
+
+type CompletedTurn struct {
+    FinalOutput string
+}
+
+// Client is the contract implemented by the separately developed Go SDK.
+// CompleteReadOnlyTurn owns one isolated app-server interaction, permits no
+// approval, network, tool, or mutation capability, returns only one completed
+// final output, honors cancellation, and completes shutdown within the SDK's
+// accepted finite bound. The same Client accepts concurrent calls and isolates
+// each call's material, session, result, and cancellation; cancelling one call
+// does not affect another. Invalid request, protocol, lifecycle, or shutdown
+// failure returns an error and no CompletedTurn.
+type Client interface {
+    CompleteReadOnlyTurn(
+        context.Context,
+        ReadOnlyTurnRequest,
+    ) (CompletedTurn, error)
+}
+\`\`\`
+
+\`\`\`go
 package codexplancontrol
 
 type Model struct { /* non-empty Codex model identifier */ }
@@ -346,26 +425,23 @@ func NewReasoningEffort(value string) (ReasoningEffort, error)
 type WorkingDirectory struct { /* existing absolute directory */ }
 func NewWorkingDirectory(value string) (WorkingDirectory, error)
 
-type ShutdownGrace struct { /* positive duration up to 30 seconds */ }
-func NewShutdownGrace(value time.Duration) (ShutdownGrace, error)
-
 type Configuration struct { /* immutable cohesive values */ }
 func NewConfiguration(
     model Model,
     reasoningEffort ReasoningEffort,
     workingDirectory WorkingDirectory,
-    shutdownGrace ShutdownGrace,
 ) Configuration
 
 // ObservationEncoder preserves caller vocabulary and must not mutate input.
 type ObservationEncoder[O any] func(context.Context, O) (string, error)
 
-// NewAssessor validates Configuration and encoder without starting Codex.
-// The public contract always launches the trusted Host-installed codex
-// app-server with read-only sandbox and no mutation approval; callers cannot
-// select another executable or relax those constraints. Each invocation
-// implements the existing Plan Control Assessor contract independently.
+// NewAssessor validates Client, including typed nil implementations,
+// Configuration, and encoder without beginning an SDK interaction. Each
+// invocation supplies one exact read-only Turn to the Client and implements
+// the existing Plan Control Assessor contract independently. SDK errors and
+// Provider details never cross that contract.
 func NewAssessor[O any](
+    client codexappserver.Client,
     configuration Configuration,
     encode ObservationEncoder[O],
 ) (plancontrol.Assessor[O], error)
@@ -378,8 +454,9 @@ func NewAssessor[O any](
 | Plan Snapshot Observer | Host/control composition needs one coherent current Plan and progress value from an external target. | Provider reads, identity, pagination, and representation mapping. | Existing Plan Representation Observer produces comparison evidence and cannot expose current Plan or progress. |
 | Authorization Rule | Policy needs substitutable current external fact interpretations for an exact consumer-established subject. | Approval/permission Provider access and fact vocabulary. | A boolean or pre-established decision loses Rule failure, Unknown, and recalculation semantics. |
 | Plan Application Actor | Application request needs an external owner for action-time mutation and receipt evidence. | Human/agent/system protocol and GitHub mutation. | Direct GitHub mutation lacks the required concurrency/idempotency guarantees. |
-| Plan Control Assessor | Existing Plan Controller needs one external AI judgment. | Codex process and protocol. | Plan Control must remain independent of the experimental Provider. |
+| Plan Control Assessor | Existing Plan Controller needs one external AI judgment. | Codex SDK contract and output. | Plan Control must remain independent of the experimental Provider. |
 | Observation Encoder | Assessor consumer owns observation meaning while the Codex adapter needs serializable material. | Caller vocabulary. | A universal Observation model would couple unrelated evidence sources. |
+| Codex app-server SDK Client | \`codexplancontrol\` needs one completed read-only Turn while process and protocol concerns evolve independently. | Process lifecycle, transport, JSON-RPC, correlation, app-server DTOs, and bounded shutdown. | Keeping the concrete process implementation in \`codexplancontrol\` gives Plan assessment translation and Provider infrastructure different change drivers in one Package. |
 
 #### Snapshot outcome classification
 
@@ -418,7 +495,8 @@ func NewAssessor[O any](
 | \`github-plan-snapshot/*\` | Valid facts produce exact Plan/progress; invalid, incomplete, and unavailable observations do not produce a current Plan. | Table-driven HTTP contract tests and race tests. | \`githubplan\`, \`plansnapshot\` | Passing Go tests. |
 | \`authorization/*\` | Exact subject forwarding and aggregate decisions fail closed. | Table-driven unit tests, cancellation tests, import review. | \`authorization\` | Passing Go tests and dependency check. |
 | \`plan-application-request/*\` | Only Authorized enters a possibly-sent Attempt; every receipt certainty maps exactly; no state claim. | Table-driven unit tests with the Actor Port only. | \`planapplication\` | Passing Go tests. |
-| \`codex-plan-control-assessment/*\` | Valid protocol yields the existing Plan Control response; drift, cancellation, and concurrency fail safely. | Process contract tests against a Codex app-server protocol stub; no live model. | \`codexplancontrol\` | Passing Go tests and bounded-time assertions. |
+| \`codex-plan-control-assessment/*\` adapter behavior | A completed SDK Turn yields the existing Plan Control response; invalid AI output, cancellation, and concurrency fail safely. | Unit tests against the Client contract; no process and no live model. | \`codexplancontrol\` | Passing Go tests. |
+| Codex app-server communication and lifecycle | Protocol, process, cancellation, and concurrent SDK interactions satisfy the Client contract. | Unit and process contract tests owned by the separately developed Go SDK. | Codex app-server Go SDK | SDK verification evidence before live composition. |
 | Canonical contracts | Authorization is Change-independent; GitHub observation is read-only; no lifecycle owner or authoritative store exists. | Architecture, import, and source review. | Design reviewer | Review record. |
 | CA-1 through CA-6 | Real observation, Revise, current Authorization, one Actor request, external reflection, exact re-observation, named completion evidence, and Complete are recorded. | Opt-in external verification; excluded from CI. | Host/proof operator | Disposable Verification Evidence Record with native references. |
 
@@ -435,10 +513,10 @@ func NewAssessor[O any](
 | Revision invariant | Valid/equal/invalid Plan combinations | Construct Revision | Only valid unequal pair succeeds. | Unit | Uses Plan-owned equality. |
 | Application receipt mapping | Each Authorization decision and receipt-evidence kind | Request application | Exact authorization or receipt outcome and at most one Actor call. | Unit | Do not assert private call order beyond safety boundary. |
 | Application cancellation | Cancellation occurs at each Plan Application precedence boundary | Request application | The exact context-error or receipt-evidence row is preserved. | Unit | No retry. |
-| Codex structured output | Codex app-server protocol stub emits a supported handshake and one final response | Assess | Existing AssessorResponse is returned. | Process contract | No Provider data crosses. |
-| Codex request meaning | Every Plan element and caller-owned observation value varies independently | Assess through a capturing Codex app-server protocol stub | The protocol stub receives the exact semantic Plan and observation material with existing Plan Control outcome meanings. | External-boundary contract | Do not assert exact prompt prose. |
-| Codex protocol drift | Codex app-server protocol stub emits each completed-invalid or interaction-failure case | Assess | Failure follows the Codex failure-classification table. | Process contract | Tests consume only the required protocol subset. |
-| Codex bounded cancellation | Codex app-server protocol stub ignores cooperative termination | Cancel one assessment | That assessment returns within grace and another concurrent assessment remains unaffected. | Process contract | Do not assert process count or identity. |
+| Codex structured output | Client returns one completed final output | Assess | Existing AssessorResponse is returned. | Unit | No Provider data crosses. |
+| Codex request meaning | Every Plan element and caller-owned observation value varies independently | Assess through a capturing Client | The Client receives the exact semantic Plan and observation material with existing Plan Control outcome meanings. | Unit boundary | Do not assert exact instruction prose. |
+| Codex protocol or lifecycle failure | Client returns an error | Assess | Failure follows the Codex failure-classification table without exposing the SDK error. | Unit boundary | JSON-RPC and process cases belong to SDK tests. |
+| Codex bounded cancellation | Client blocks until caller cancellation | Cancel one assessment | The adapter propagates cancellation and another concurrent assessment remains unaffected. | Unit boundary | The SDK separately proves its finite process shutdown bound. |
 
 #### Invariant Tests
 
@@ -479,6 +557,40 @@ Testability feedback:
 - Snapshot and progress require named constructors so tests can express complete and incomplete evidence without boolean flags.
 - No Repository, clock, workflow, or shared-session mock is required.
 
+### 3.7 Detailed Design and TDD Plan
+
+| Implementation unit | Responsibility / contract | Dependencies | Behavior and test | Representation decision |
+|---|---|---|---|---|
+| \`codexappserver\` contracts | Publish one validated immutable read-only Turn request, one completed result, and the concurrent Client lifecycle guarantee. | Standard library. | Constructor and accessor unit tests plus compile-time use through adapter tests; SDK behavior remains pending task 5.5. | One small contract Package; no process implementation or generic abstraction. |
+| \`codexplancontrol\` Configuration | Validate Model, Reasoning Effort, and Working Directory used in one Turn request. | Standard library. | Existing table-driven validation tests without Shutdown Grace. | Immutable values and one cohesive Configuration value. |
+| \`codexplancontrol\` Assessor | Encode exact material, construct one ReadOnlyTurnRequest, call Client, and translate final output. | \`codexappserver\`, \`plan\`, \`plancontrol\`. | Capturing Client tests for all outcomes, failures, cancellation, repetition, and concurrency. | Function-based Assessor plus the approved external Client interface; no internal service or controller. |
+| Removed process implementation | No longer an Arcloom Plan adapter responsibility. | None. | Existing process contract tests and protocol stub are removed; equivalent evidence is required from task 5.5. | No compatibility shim because the API is unmerged. |
+
+| Behavior / criterion | Construction mode | Red or baseline | Smallest implementation | Refactor target / evidence |
+|---|---|---|---|---|
+| Missing or typed-nil Client, invalid request material, or invalid assessment configuration starts no interaction | TDD | Change \`NewAssessor\` tests to require Client and remove process configuration; add failing request-constructor cases. | Add the immutable SDK request contract and validate Client. | Passing focused constructor tests. |
+| Exact material and four outcomes cross only the Client boundary | TDD | Replace process-capturing tests with a failing in-memory Client test. | Construct ReadOnlyTurnRequest and decode CompletedTurn.FinalOutput. | Delete process and JSON-RPC code after equivalent adapter behavior passes. |
+| Client and final-output failures fail closed | TDD | Replace protocol-mode cases with Client-error and completed-output cases. | Map Client error to boundary failure and retain strict output decoding. | Passing failure classification tests with no SDK error exposure. |
+| Cancellation, repetition, and concurrency stay isolated | TDD | Replace child-process cases with controllable Client calls. | Forward context and keep every call stateless. | Race-tested adapter evidence; process shutdown evidence remains task 5.5. |
+
+### 3.8 Construction Log
+
+| Cycle | Evidence |
+|---|---|
+| Red | In-memory Client tests replaced process-bound assertions; request-constructor tests failed against the zero-value scaffold; typed-nil Client and full concurrent-material cases exposed missing boundary guarantees. |
+| Green | Added the immutable validated SDK request contract, adapted one assessment through \`Client\`, rejected nil Client forms, and mapped only the completed final output into Plan Control meaning. |
+| Refactor | Removed the child-process launcher, JSON-RPC implementation, protocol stub, shutdown configuration, and process-owned tests from \`codexplancontrol\`; lifecycle verification remains task 5.5 under the SDK owner. |
+| Verify | Focused race tests passed 20 repetitions; repository race tests, lint, module tidy diff, strict OpenSpec validation, and three independent boundary reviews passed. |
+
+### 3.9 Design Conformance Review
+
+| Boundary | Result |
+|---|---|
+| \`codexappserver\` | Contains only the SDK-facing Turn contract and its local value validation; no process, transport, JSON-RPC, Plan, or Plan Control responsibility. |
+| \`codexplancontrol\` | Contains only assessment configuration, exact material encoding, Client invocation, and final-output translation; it owns no Codex process lifecycle. |
+| Dependency and minimality | Dependency remains \`codexplancontrol\` to \`codexappserver\`; no helper, utility, common, shared-session, process-controller, or speculative transport abstraction was introduced. |
+| Verification ownership | Adapter unit and race tests verify Plan Control behavior; SDK lifecycle and protocol tests remain explicitly pending in task 5.5. |
+
 ## 4. Design Decisions
 
 ### 4.1 External Actor owns GitHub mutation
@@ -517,11 +629,11 @@ Testability feedback:
 - Rejected: Boolean success or retry on an Actor error.
 - Reason: A failed response after transmission may duplicate work if retried and never proves resulting GitHub state.
 
-### 4.7 Codex process is disposable per assessment
+### 4.7 Codex app-server lifecycle belongs to its Go SDK
 
-- Adopted: One app-server process/connection/thread/turn per Assessor invocation with bounded cancellation.
-- Rejected: Shared long-lived Codex thread or session pool.
-- Reason: The app-server protocol is experimental; disposable ownership isolates protocol drift, output correlation, cancellation, and authoritative-state risk.
+- Adopted: \`codexplancontrol\` consumes a Client contract for one isolated read-only Turn. The separately developed SDK owns process, transport, JSON-RPC, correlation, and bounded shutdown.
+- Rejected: Process and protocol implementation inside \`codexplancontrol\`, and a shared long-lived Codex thread or session pool in Plan Control.
+- Reason: Plan assessment translation changes with Plan Control meaning; app-server communication and lifecycle change with Codex. The boundary keeps both owners cohesive and permits another Codex consumer without importing Plan semantics.
 
 ### 4.8 Observation vocabulary remains caller-owned
 
@@ -541,17 +653,18 @@ Testability feedback:
 |---|---|
 | External Actor acknowledges receipt but applies a partial or different revision. | Treat acknowledgement only as receipt; compare a later fresh Plan exactly and require another control judgment for deviations. |
 | Authorization facts change after decision. | Recalculate immediately before the one Actor request; the Actor still owns action-time conflict and permission checks. |
-| Codex app-server protocol changes. | Isolate the consumed JSON-RPC subset, use structured output, and fail closed in process contract tests. |
+| Codex app-server protocol, launch contract, or transport changes. | Confine the change to the Go SDK and its contract tests; \`codexplancontrol\` continues to consume one completed read-only Turn. |
+| The SDK contract is present before its implementation. | Keep live Codex composition incomplete and explicit until the separately developed SDK supplies passing lifecycle and protocol verification evidence. |
 | GitHub API version \`2022-11-28\` is retired. | Keep version and DTO handling inside \`githubplan\`; update its contract tests without changing provider-independent Packages. |
 | A stable target reference can be mapped to the wrong native target by a Host or Actor. | Require non-empty Context and identity values, preserve them exactly through Revision and Request, and leave action-time native-target validation with the Actor. |
 | Live proof depends on real credentials, exact approval, and Actor availability. | Keep it opt-in, require explicit Host inputs, and never infer approval from repository access. |
-| Disposable process per assessment costs startup time. | Accept the cost for isolation; optimize only after measured need without changing the Assessor contract. |
+| An isolated SDK interaction may incur process startup cost. | Accept the cost until the SDK implementation measures a need for another lifecycle without weakening the Client or Assessor contracts. |
 
 ## 5. Impact, Migration, and Rollback
 
 ### Impact
 
-- Additive Packages: \`plansnapshot\`, \`authorization\`, \`planapplication\`, and \`codexplancontrol\`.
+- Additive Packages: \`plansnapshot\`, \`authorization\`, \`planapplication\`, the \`codexappserver\` SDK contract, and \`codexplancontrol\`.
 - Additive read-side API in \`githubplan\`; existing Plan Representation observation and creation-preview contracts remain.
 - Additive semantic equality in \`plan\`; \`plancontrol\` delegates its existing comparison rule to that owner.
 - \`PRODUCT.md\` and \`ARCHITECTURE.md\` replace Change-specific Authorization and the Plan Change Target with the generic Authorization and Plan Application Request boundaries.
@@ -559,14 +672,15 @@ Testability feedback:
 ### Migration
 
 - No data migration exists because Arcloom owns no persistent state.
-- Existing callers remain source compatible.
+- The unmerged \`codexplancontrol\` API changes before release to require a
+  \`codexappserver.Client\`; no released caller compatibility is affected.
 - New Hosts opt into each contract independently and retain target/provenance in their composition.
 
 ### Rollback
 
-- Remove the additive Packages and GitHub Snapshot API, restore the previous canonical-document terminology, and retain the existing read-only observer, dry-run preview, and Plan Control APIs.
+- Remove the additive Packages and GitHub Snapshot API, including the SDK contract, restore the previous canonical-document terminology, and retain the existing read-only observer, dry-run preview, and Plan Control APIs.
 - No external data rollback is performed. Any GitHub change is owned and recorded by the external Actor and Planning Context.
 
 ## Open Questions
 
-None. Provider-specific external Actor protocol and the real Plan selected for proof are Host inputs and do not alter these contracts.
+None.

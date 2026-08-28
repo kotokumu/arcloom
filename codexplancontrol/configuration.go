@@ -1,4 +1,4 @@
-// Package codexplancontrol adapts a trusted local Codex installation to the
+// Package codexplancontrol adapts a Codex app-server SDK Client to the
 // provider-independent Plan Control assessor contract.
 package codexplancontrol
 
@@ -7,16 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
-
-const maximumShutdownGrace = 30 * time.Second
 
 var (
 	errInvalidModel            = errors.New("codex plan control: invalid model")
 	errInvalidReasoningEffort  = errors.New("codex plan control: invalid reasoning effort")
 	errInvalidWorkingDirectory = errors.New("codex plan control: invalid working directory")
-	errInvalidShutdownGrace    = errors.New("codex plan control: invalid shutdown grace")
 )
 
 // Model is a non-empty Codex model identifier accepted from the Host.
@@ -71,26 +67,12 @@ func NewWorkingDirectory(value string) (WorkingDirectory, error) {
 	return WorkingDirectory{value: value, valid: true}, nil
 }
 
-// ShutdownGrace bounds termination of a cancelled Codex interaction.
-type ShutdownGrace struct {
-	value time.Duration
-	valid bool
-}
-
-// NewShutdownGrace accepts a positive duration no greater than 30 seconds.
-func NewShutdownGrace(value time.Duration) (ShutdownGrace, error) {
-	if value <= 0 || value > maximumShutdownGrace {
-		return ShutdownGrace{}, errInvalidShutdownGrace
-	}
-	return ShutdownGrace{value: value, valid: true}, nil
-}
-
-// Configuration is immutable Safe Host Configuration for Codex assessment.
+// Configuration contains immutable Plan assessment inputs supplied to the
+// Codex app-server SDK. Process lifecycle configuration belongs to that SDK.
 type Configuration struct {
 	model            Model
 	reasoningEffort  ReasoningEffort
 	workingDirectory WorkingDirectory
-	shutdownGrace    ShutdownGrace
 }
 
 // NewConfiguration combines independently validated Host values without I/O.
@@ -98,19 +80,16 @@ func NewConfiguration(
 	model Model,
 	reasoningEffort ReasoningEffort,
 	workingDirectory WorkingDirectory,
-	shutdownGrace ShutdownGrace,
 ) Configuration {
 	return Configuration{
 		model:            model,
 		reasoningEffort:  reasoningEffort,
 		workingDirectory: workingDirectory,
-		shutdownGrace:    shutdownGrace,
 	}
 }
 
 func (c Configuration) isValid() bool {
 	return c.model.valid &&
 		c.reasoningEffort.valid &&
-		c.workingDirectory.valid &&
-		c.shutdownGrace.valid
+		c.workingDirectory.valid
 }

@@ -3,13 +3,16 @@ package codexplancontrol
 import (
 	"context"
 	"errors"
+	"reflect"
 
+	"github.com/kotokumu/arcloom/codexappserver"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/plancontrol"
 )
 
 var (
 	errInvalidConfiguration      = errors.New("codex plan control: invalid configuration")
+	errInvalidClient             = errors.New("codex plan control: invalid app-server Client")
 	errInvalidObservationEncoder = errors.New("codex plan control: invalid observation encoder")
 	errAssessmentUnavailable     = errors.New("codex plan control: assessment unavailable")
 )
@@ -26,9 +29,20 @@ type ObservationEncoder[O any] func(context.Context, O) (string, error)
 // telemetry, token use, and cost remain properties of the Host-installed
 // Codex service. The interaction neither authorizes nor applies a Plan change.
 func NewAssessor[O any](
+	client codexappserver.Client,
 	configuration Configuration,
 	encode ObservationEncoder[O],
 ) (plancontrol.Assessor[O], error) {
+	if client == nil {
+		return nil, errInvalidClient
+	}
+	clientValue := reflect.ValueOf(client)
+	switch clientValue.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		if clientValue.IsNil() {
+			return nil, errInvalidClient
+		}
+	}
 	if !configuration.isValid() {
 		return nil, errInvalidConfiguration
 	}
@@ -55,6 +69,6 @@ func NewAssessor[O any](
 		if err := ctx.Err(); err != nil {
 			return plancontrol.AssessorResponse{}, err
 		}
-		return assessWithCodex(ctx, configuration, current, encoded)
+		return assessWithCodex(ctx, client, configuration, current, encoded)
 	}, nil
 }
