@@ -23,15 +23,15 @@
 
 ## 5. Codex Plan Control Adapter
 
-- [ ] 5.1 [`codex-plan-control-assessment/safe-host-configuration`, `codex-plan-control-assessment/bounded-assessment-cancellation`] Implement cohesive validated Model, Reasoning Effort, Working Directory, and bounded Shutdown Grace values; keep executable selection and read-only/no-approval constraints fixed inside the adapter; and verify invalid inputs start no interaction.
-- [ ] 5.2 [`codex-plan-control-assessment/valid-plan-control-judgment`, `codex-plan-control-assessment/exact-current-assessment-material`, `codex-plan-control-assessment/read-only-assessment-boundary`] Implement one disposable Codex app-server assessment and verify through a capturing helper that every Plan element and caller-owned observation value reaches the boundary semantically unchanged and maps to the existing four Plan Control outcomes.
-- [ ] 5.3 [`codex-plan-control-assessment/invalid-ai-output`] Fail closed according to the Codex failure-classification table without exposing Provider details, and verify every protocol-drift and FailureCode case with `go test -race ./codexplancontrol`.
-- [ ] 5.4 [`codex-plan-control-assessment/independent-assessments`, `codex-plan-control-assessment/bounded-assessment-cancellation`] Implement bounded caller cancellation and concurrent-assessment isolation, and verify only observable material/result isolation and an unaffected concurrent assessment with `go test -race ./codexplancontrol`.
+- [x] 5.1 [`codex-plan-control-assessment/safe-host-configuration`, `codex-plan-control-assessment/bounded-assessment-cancellation`] Implement cohesive validated Model, Reasoning Effort, Working Directory, and bounded Shutdown Grace values; keep executable selection and read-only/no-approval constraints fixed inside the adapter; and verify invalid inputs start no interaction.
+- [x] 5.2 [`codex-plan-control-assessment/valid-plan-control-judgment`, `codex-plan-control-assessment/exact-current-assessment-material`, `codex-plan-control-assessment/read-only-assessment-boundary`] Implement one disposable Codex app-server assessment and verify through a capturing helper that every Plan element and caller-owned observation value reaches the boundary semantically unchanged and maps to the existing four Plan Control outcomes.
+- [x] 5.3 [`codex-plan-control-assessment/invalid-ai-output`] Fail closed according to the Codex failure-classification table without exposing Provider details, and verify every protocol-drift and FailureCode case with `go test -race ./codexplancontrol`.
+- [x] 5.4 [`codex-plan-control-assessment/independent-assessments`, `codex-plan-control-assessment/bounded-assessment-cancellation`] Implement bounded caller cancellation and concurrent-assessment isolation, and verify only observable material/result isolation and an unaffected concurrent assessment with `go test -race ./codexplancontrol`.
 
 ## 6. Structural and Repository Verification
 
-- [ ] 6.1 [design-only structural verification] Review imports and public contracts to verify provider-independent Packages depend only inward, Provider DTOs and errors do not cross Ports, Provider Modules do not implement application Ports, and no workflow, runtime, orchestrator, persistence, utility, helper, or common package was introduced.
-- [ ] 6.2 [verification-only for every Requirement referenced by tasks 1.2–5.4 and 7.1–7.3] Run `go mod tidy -diff`, `go test -v -race ./...`, `golangci-lint run`, `openspec validate --specs --strict`, and `openspec validate --changes --strict`, and resolve every failure.
+- [x] 6.1 [design-only structural verification] Review imports and public contracts to verify provider-independent Packages depend only inward, Provider DTOs and errors do not cross Ports, Provider Modules do not implement application Ports, and no workflow, runtime, orchestrator, persistence, utility, helper, or common package was introduced.
+- [x] 6.2 [verification-only for every Requirement referenced by tasks 1.2–5.4 and 7.1–7.3] Run `go mod tidy -diff`, `go test -v -race ./...`, `golangci-lint run`, `openspec validate --specs --strict`, and `openspec validate --changes --strict`, and resolve every failure.
 
 ## 7. One Real Plan Proof
 
