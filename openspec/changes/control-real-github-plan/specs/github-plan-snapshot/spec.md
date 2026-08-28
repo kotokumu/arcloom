@@ -1,104 +1,143 @@
 ## Purpose
 
-Establish a current Plan and provider-independent progress evidence from one authoritative GitHub Milestone observation without making Arcloom authoritative for either.
+Establishes a current Plan and provider-independent progress from one authoritative GitHub Milestone observation without making Arcloom authoritative for either.
 
 ## ADDED Requirements
 
-### Requirement: GHPS-1 Exact Milestone target
+### Requirement: exact-milestone-target
 
-The capability SHALL observe the exact GitHub repository and positive Milestone number supplied by the caller.
+GitHub Plan Snapshot observation MUST concern the exact valid GitHub Milestone Target supplied by the caller.
 
-#### Scenario: Invalid target
+- **入力と受理**: The target contains a valid repository identity and positive Milestone number.
+- **失敗の扱い**: An invalid target is rejected before GitHub access.
 
-- **WHEN** the repository identity or Milestone number is invalid
-- **THEN** the capability reports an invalid target without accessing GitHub
+#### Scenario: Valid target is observed [happy]
 
-### Requirement: GHPS-2 Current authoritative snapshot
+- **GIVEN** a caller has one valid GitHub Milestone Target
+- **WHEN** the caller requests a GitHub Plan Snapshot
+- **THEN** the observation concerns exactly that repository and Milestone number
 
-Each snapshot SHALL be derived from a current observation of the targeted GitHub Milestone and its current membership.
+#### Scenario: Invalid target [error]
 
-#### Scenario: Re-observe changed facts
+- **GIVEN** a target with an invalid repository identity or Milestone number
+- **WHEN** the caller requests a GitHub Plan Snapshot
+- **THEN** the capability reports invalid target input without accessing GitHub
 
-- **WHEN** GitHub facts have changed since an earlier snapshot
-- **THEN** a new snapshot reflects the newly observed facts rather than the earlier snapshot
+### Requirement: current-authoritative-snapshot
 
-### Requirement: GHPS-3 Current Plan eligibility
+Each successful GitHub Plan Snapshot MUST be derived from a fresh observation of the targeted GitHub Milestone and its currently observable membership.
 
-The capability SHALL expose a current Plan only when the required GitHub facts are known, coherent, valid, and complete.
+- **振る舞いの規則**: Earlier GitHub Plan Snapshots are not fact sources for a later observation.
 
-#### Scenario: Plan facts are complete
+#### Scenario: Re-observe changed facts [happy]
 
-- **WHEN** the current Milestone representation contains a valid and complete Plan
-- **THEN** the snapshot contains that Plan
+- **GIVEN** GitHub facts have changed since an earlier GitHub Plan Snapshot
+- **WHEN** the caller requests a new GitHub Plan Snapshot
+- **THEN** it reflects the newly observed facts rather than the earlier GitHub Plan Snapshot
 
-#### Scenario: Plan facts are not trustworthy
+### Requirement: current-plan-eligibility
 
-- **WHEN** required Plan facts are missing, conflicting, invalid, or incomplete
-- **THEN** the snapshot does not contain a Plan, preserves any coherent representation progress, and does not claim that an authoritative Plan is absent
+A GitHub Plan Snapshot MUST expose a current Plan only when all required current GitHub facts and membership are known, coherent, valid, and complete.
 
-#### Scenario: Payload cannot establish Plan meaning
+- **振る舞いの規則**: A valid complete representation yields that current Plan. A coherent root and Representation Progress remain observable without a current Plan when Plan meaning or complete membership cannot be established.
+- **失敗の扱い**: Missing, conflicting, invalid, incomplete, unsupported, or unusable required Plan facts never produce a current Plan and never establish authoritative Plan absence.
+- **参照**: [related] `openspec/specs/plan/spec.md`; [related] `openspec/specs/github-plan-representation-observation/spec.md`
 
-- **WHEN** the current root and membership progress are coherent but the Plan payload is missing, unsupported, or unusable
-- **THEN** a successful snapshot contains that progress without a current Plan
+#### Scenario: Plan facts are complete [happy]
 
-#### Scenario: Membership cannot be completed
+- **GIVEN** the current Milestone representation contains a valid and complete Plan
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** the GitHub Plan Snapshot contains that current Plan
 
-- **WHEN** the current root and some coherent member progress are established but complete membership cannot be established
-- **THEN** a successful snapshot contains incomplete progress without a current Plan
+#### Scenario: Plan facts are not trustworthy [error]
 
-#### Scenario: Known Plan values violate Plan invariants
+- **GIVEN** required Plan facts are missing, conflicting, invalid, or incomplete
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot from a coherent current root and progress
+- **THEN** it contains no current Plan, preserves coherent Representation Progress, and does not claim authoritative Plan absence
 
-- **WHEN** the current root and membership progress are coherent but known Plan values violate Plan invariants
-- **THEN** a successful snapshot contains the coherent progress without a current Plan
+#### Scenario: Payload cannot establish Plan meaning [error]
 
-### Requirement: GHPS-4 Provider-independent progress
+- **GIVEN** the current root and membership progress are coherent but required Plan narrative meaning is missing, unsupported, or unusable
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** it contains that progress without a current Plan
 
-The snapshot SHALL express overall representation state, member names and states, and membership completeness without exposing GitHub-specific identities or lifecycle terms. Representation state SHALL remain observation material and SHALL NOT establish that the Plan is Complete.
+#### Scenario: Membership cannot be completed [boundary]
 
-#### Scenario: Current membership is complete
+- **GIVEN** the current root and some coherent member progress are established but complete membership cannot be established
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** it contains Incomplete Representation Progress without a current Plan
 
-- **WHEN** all current Milestone members and their states are known
-- **THEN** the snapshot contains provider-independent item names, states, and a complete progress indication
+#### Scenario: Known Plan values violate Plan invariants [error]
 
-#### Scenario: Current membership is incomplete
+- **GIVEN** the current root and membership progress are coherent but known Plan values violate Plan invariants
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** it contains the coherent progress without a current Plan
 
-- **WHEN** complete Milestone membership cannot be established
-- **THEN** the snapshot marks progress as incomplete
+### Requirement: provider-independent-progress
 
-#### Scenario: Distinct members have the same name
+A GitHub Plan Snapshot MUST express Representation Progress without GitHub-specific identity or lifecycle meaning and MUST NOT treat representation state as Plan completion.
 
-- **WHEN** distinct observed members have the same name
-- **THEN** progress preserves each observed member and the snapshot exposes no current Plan when the duplicate names violate Plan invariants
+- **振る舞いの規則**: Progress contains overall state, ordered observed member names and states, and Complete or Incomplete membership. Overall and member states are Open, Closed, or Unknown.
+- **参照**: [related] `openspec/specs/plan-control/spec.md` (PLC-2)
 
-### Requirement: GHPS-5 Observation failure does not become state
+#### Scenario: Current membership is complete [happy]
 
-An unavailable or unsuccessful GitHub observation SHALL NOT be represented as a successful current snapshot or as authoritative absence. Observation SHALL fail when no coherent current root and representation progress can be established. Inability to complete member collection after a coherent root is established SHALL instead produce a successful snapshot with incomplete progress and no current Plan.
+- **GIVEN** all current Milestone members and their states are known
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** it contains provider-independent member names and states with Complete membership
 
-#### Scenario: GitHub cannot be observed
+#### Scenario: Current membership is incomplete [boundary]
 
-- **WHEN** GitHub facts cannot be obtained or interpreted safely
-- **THEN** no successful current snapshot is returned
+- **GIVEN** complete Milestone membership cannot be established after coherent progress is known
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** its Representation Progress has Incomplete membership
 
-#### Scenario: Root cannot be established
+#### Scenario: Distinct members have the same name [boundary]
 
-- **WHEN** the current root fact cannot be established
-- **THEN** observation fails without a snapshot and without claiming authoritative absence
+- **GIVEN** distinct observed members have the same name
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** progress preserves every observed member and the GitHub Plan Snapshot contains no current Plan when those names violate Plan invariants
 
-#### Scenario: Member collection fails after the root
+### Requirement: observation-failure
 
-- **WHEN** a coherent current root is established but member collection later becomes unavailable
-- **THEN** a successful snapshot contains incomplete progress and no current Plan
+An unavailable or unsuccessful GitHub observation MUST NOT become a successful current GitHub Plan Snapshot or authoritative absence.
 
-### Requirement: GHPS-6 Isolation of observations
+- **振る舞いの規則**: A coherent current root with partial member progress produces a successful GitHub Plan Snapshot with Incomplete progress and no current Plan.
+- **失敗の扱い**: When no coherent current root and Representation Progress can be established, observation returns no successful GitHub Plan Snapshot and makes no absence claim.
 
-Cancellation or concurrency SHALL NOT cause one observation to yield another observation's result.
+#### Scenario: GitHub cannot be observed [error]
 
-#### Scenario: Observation is cancelled
+- **GIVEN** no coherent current root and Representation Progress can be obtained or interpreted safely
+- **WHEN** the caller requests a GitHub Plan Snapshot
+- **THEN** no successful current GitHub Plan Snapshot is returned
 
-- **WHEN** the caller cancels an observation before completion
-- **THEN** no successful snapshot is returned for that observation
+#### Scenario: Root cannot be established [error]
 
-#### Scenario: Targets are observed concurrently
+- **GIVEN** the current root fact cannot be established
+- **WHEN** the caller requests a GitHub Plan Snapshot
+- **THEN** observation fails without a GitHub Plan Snapshot and without claiming authoritative absence
 
-- **WHEN** distinct targets are observed concurrently
+#### Scenario: Member collection fails after the root [boundary]
+
+- **GIVEN** a coherent current root and some member progress are established before complete membership becomes unavailable
+- **WHEN** the caller requests a GitHub Plan Snapshot
+- **THEN** a successful GitHub Plan Snapshot contains Incomplete progress and no current Plan
+
+### Requirement: observation-isolation
+
+Each GitHub Plan Snapshot observation MUST remain bound to its own target and caller lifecycle.
+
+- **排他・冪等**: Concurrent observations exchange no target or result facts.
+- **失敗の扱い**: Cancellation before success yields no successful GitHub Plan Snapshot for that invocation.
+
+#### Scenario: Observation is cancelled [error]
+
+- **GIVEN** a GitHub Plan Snapshot observation has not completed
+- **WHEN** its caller cancels the observation
+- **THEN** no successful GitHub Plan Snapshot is returned for that invocation
+
+#### Scenario: Targets are observed concurrently [concurrency]
+
+- **GIVEN** distinct valid GitHub Milestone Targets
+- **WHEN** callers observe them concurrently
 - **THEN** each result contains facts only for its own target
