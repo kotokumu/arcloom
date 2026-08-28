@@ -1,28 +1,4 @@
-## Purpose
-
-Defines how Arcloom produces an inspectable, dependency-aware plan of GitHub creation requests for a provider-independent Plan without sending requests or claiming that external state changed.
-
-## Conceptual Model
-
-### GitHub Repository Target
-
-A GitHub Repository Target identifies a GitHub.com repository locally without asserting that it exists or is accessible. It consists of exact owner and repository-name segments. Each segment is valid UTF-8, contains at least one code point outside Unicode `White_Space`, excludes `/` and the line-break code points prohibited for a Plan name, and is otherwise preserved exactly. GitHub remote naming rules are not local validity rules.
-
-### GitHub Plan Representation
-
-A GitHub Plan Representation is exactly Milestone or Issue. It is selected explicitly and is never inferred from Plan content.
-
-### Versioned Plan Narrative
-
-A Versioned Plan Narrative begins with a machine-readable `arcloom-plan:v1` block and is followed by a human-readable narrative. The block losslessly preserves the exact Plan values assigned to it. For Milestone representation these are Goal and ordered Acceptance Conditions. For Issue representation they are Goal, ordered Acceptance Conditions, and present or absent Target Date. Plan name and Tasks are represented natively in both representations, and a Milestone Target Date is also native. The human narrative presents Plan meaning but is never a reconstruction source.
-
-### Creation Request Plan
-
-A Creation Request Plan is a passive, deterministic, immutable description of GitHub creation operations. It contains one GitHub Repository Target, one GitHub Plan Representation, the declared GitHub.com compatibility version, ordered Planned Requests, and their dependencies. It neither contains Provider-assigned identifiers nor asserts that an operation can or will succeed.
-
-A Planned Request is one create-Milestone, create-Issue, or add-Sub-issue operation with its exact Plan-derived inputs. A Symbolic Result Reference identifies a required result kind from an earlier Planned Request in the same Creation Request Plan. It cannot be dangling, forward, cross-plan, or result-kind incompatible.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: GPCD-1 Explicit GitHub target and representation
 

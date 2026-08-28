@@ -1,28 +1,4 @@
-## Purpose
-
-Defines how a read-only GitHub Planning Provider reconstructs a provider-independent Plan observation from one bound GitHub Milestone or parent Issue without owning or mutating the external facts.
-
-## Conceptual Model
-
-### GitHub Plan Target
-
-A GitHub Plan Target binds one GitHub Repository Target, one GitHub Plan Representation, and one positive GitHub Resource Number for its lifetime. Resource Number is distinct from every other GitHub identifier. The binding identifies the external subject but never enters the provider-independent Observation.
-
-### Observed GitHub Facts
-
-An Observed GitHub Fact is either native representation meaning or meaning recovered from the leading Versioned Plan Narrative block. Milestone native facts provide Plan name, Target Date, and Task membership; its payload provides Goal and Acceptance Conditions. Issue native facts provide Plan name and Task membership; its payload provides Goal, Acceptance Conditions, and Target Date. Human narrative content contributes no fact.
-
-A known value that violates Plan meaning becomes a Plan Validation Violation. A required fact that cannot be established becomes Unavailable Information at the narrowest affected Plan Location while independently established facts remain usable.
-
-### Task Collection Establishment
-
-Task Collection Establishment contains coherent external Task resources and Complete or Incomplete membership. Membership is Complete only when the entire external collection is established. Repeated observation of one external resource with the same title contributes one Task and makes membership Incomplete; conflicting titles for one resource contribute neither title and make membership Incomplete. Distinct resources remain distinct until Plan collection rules are applied, even when their titles are equal.
-
-### GitHub Observation Outcome
-
-One observation request produces either a valid provider-independent Observation or the supplied caller cancellation or deadline outcome before success. Other inability to establish GitHub facts is represented inside a valid Observation as localized Unavailable Information. This capability never treats a GitHub outcome as authoritative root absence and never exposes Provider failure detail, credentials, request metadata, redirect targets, or target identity.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: GHPO-1 Explicit target binding
 
