@@ -1,24 +1,4 @@
-## Purpose
-
-Plan Control supplies an externally established Plan snapshot and delivery observations to an external AI that controls the Plan toward completion, while Arcloom validates and represents the AI result without becoming the executor or authoritative Plan store.
-
-## Conceptual Model
-
-### Plan Snapshot and Delivery Observations
-
-A Plan Snapshot is one valid current Plan established from authoritative external facts for one control decision. The resulting assessment remains associated with that exact Plan Snapshot. A Delivery Observation is caller-supplied evidence made available to the external AI without Plan Control defining a fixed observation vocabulary or reinterpreting its semantics.
-
-### Plan Control Assessment
-
-A Plan Control Assessment is exactly Complete, Retain, Revise, or Insufficient Information. Complete means the external AI determines that the Plan Goal and Acceptance Conditions have been achieved. Retain means it determines that the current Plan remains suitable. Revise means it supplies exactly one Proposed Plan. Insufficient Information means it cannot decide from available observations. Task completion is evidence but is neither necessary nor sufficient for Complete.
-
-A Proposed Plan is structurally valid and differs from the Plan Snapshot in at least one exact Plan element value. It exists only for Revise.
-
-### Plan Control Failure
-
-A Plan Control Failure produces no valid assessment. Invalid input identifies an unusable Plan Snapshot. AI Boundary Failure means no AI response was established because the external interaction failed while the caller lifecycle remained active. AI Contract Failure means a returned response has an invalid or contradictory form or Proposed Plan. Caller cancellation or deadline expiration before a valid response remains the caller lifecycle outcome rather than either AI failure.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: PLC-1 Plan control subject
 
