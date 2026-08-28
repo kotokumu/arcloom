@@ -1,6 +1,8 @@
-schema: spec-driven
+schema: quality-spec
 
 context: |
+  Project: Arcloom
+
   Canonical document ownership:
   - PRODUCT.md defines Arcloom's product concept, scope, capabilities, and principles.
   - ARCHITECTURE.md defines system boundaries, Component responsibilities, ownership, and dependency rules.
@@ -8,17 +10,67 @@ context: |
   - docs/DEVELOPMENT.md governs product design, implementation, testing, and review.
   Repository administration and development-environment maintenance do not require OpenSpec unless they change product behavior or structure.
 
+  Knowledge index:
+  - Specification rules and publication protocol: openspec/specs/README.md
+  - Conceptual modeling method and completion checks: openspec/specs/MODELING.md
+  - Specification review criteria and severity: openspec/specs/REVIEW.md
+  - Requirement block structure: openspec/specs/_schema/requirement-structure.json
+  - Main spec and interface contract examples: openspec/templates/
+
+# context identifies authoritative documents; it does not require an agent to read or obey them.
+# rules are advisory instructions injected into artifact-generation instructions.
+# OpenSpec CLI does not mechanically verify that an agent followed them.
 rules:
   proposal:
-    - Identify PRODUCT.md or ARCHITECTURE.md as affected only when the Change alters their subject matter, without restating their content.
+    - >-
+      Before writing, read `openspec/specs/README.md` and `openspec/specs/MODELING.md` completely and follow their capability-boundary, concept-ownership, SSOT, and decision-deferral rules.
+    - >-
+      Read affected existing main specs and prefer their capabilities and terminology. Do not add a capability without explaining why no existing capability owns the changed guarantee.
+    - >-
+      Identify PRODUCT.md or ARCHITECTURE.md as affected only when the Change alters their subject matter, without restating their content.
+    - >-
+      Before completion, confirm that proposal.md records scope, affected capabilities, major concepts, known Requirement IDs, and decisions required before modeling.
+  model:
+    - >-
+      Before writing, read `proposal.md`, `openspec/specs/MODELING.md`, `openspec/specs/README.md`, and affected existing main specs completely and follow their modeling, terminology, and ownership rules.
+    - >-
+      Analyze in the order defined by `openspec/specs/MODELING.md`; do not add a representation or concept merely because the template contains a field for it.
+    - >-
+      Before completion, perform the self-check in `openspec/specs/MODELING.md`. Do not proceed to specs while an unresolved decision can change a Requirement's meaning, scope, or observable result.
+  specs:
+    - >-
+      Before writing, read `model.md` when the selected schema defines it, then read `openspec/specs/README.md`, `openspec/specs/REVIEW.md`, `openspec/specs/_schema/requirement-structure.json`, and affected existing main specs completely and follow their specification rules and structure.
+    - >-
+      When the selected schema defines model.md, do not create delta specs while it contains an unresolved decision that can change a Requirement's meaning, scope, or observable result.
+    - >-
+      Before completion, review every criterion in `openspec/specs/REVIEW.md`, resolve P0 and P1 findings, and strictly validate the change after all delta specs exist.
   design:
-    - Review ARCHITECTURE.md when the Change affects system boundaries, Component responsibilities, ownership, dependency rules, Ports, or external Contexts.
-    - Treat design.md as the DesignDoc required by docs/DEVELOPMENT.md and follow that document completely.
+    - >-
+      Before writing, read `proposal.md`, `model.md` when the selected schema defines it, every delta spec, `openspec/specs/README.md`, and `docs/DEVELOPMENT.md` completely and follow their specification/design separation, SSOT, and product-development rules.
+    - >-
+      Review ARCHITECTURE.md when the Change affects system boundaries, Component responsibilities, ownership, dependency rules, Ports, or external Contexts.
+    - >-
+      Treat design.md as the DesignDoc required by docs/DEVELOPMENT.md. Mapping specification concepts to physical structures must not replace the Conceptual Model with database, API, UI, Class, or Package structures.
+    - >-
+      Before completion, confirm that specifications, design decisions, and safely deferrable Open Questions remain separate and that no unresolved issue can change the specification.
+  tasks:
+    - >-
+      Before writing, read `proposal.md`, `model.md` when the selected schema defines it, every delta spec, `design.md`, `openspec/specs/README.md`, and `docs/DEVELOPMENT.md` completely and follow their Requirement-traceability, verification, TDD, and publication rules.
+    - >-
+      Do not turn unresolved decisions into implementation tasks. Stop and request a specification decision when tasks cannot be determined without one.
+    - >-
+      For quality-spec changes, do not include main-spec Conceptual Model updates in apply tasks. Publish Conceptual Model and Requirement changes together with `node tools/archive-change.mjs <change-name>`.
 
 operations:
   apply:
     guidance:
+      - Before apply, read proposal.md, model.md when the selected schema defines it, every delta spec, design.md, and tasks.md and continue following the rules injected into their artifact instructions.
       - Follow docs/DEVELOPMENT.md, including its TDD and design-conformance requirements.
+      - If implementation reveals a specification ambiguity or contradiction, do not guess; update the applicable artifact or request a decision.
+      - Do not update a main spec's Conceptual Model during apply.
   archive:
     guidance:
+      - Before archiving a quality-spec change, confirm that model.md has exactly `None.` under Unresolved Decisions.
+      - For quality-spec changes, direct `openspec archive` does not publish Conceptual Model replacements; use `node tools/archive-change.mjs <change-name>`.
+      - For quality-spec changes, do not complete publication until the archive command rejects unknown delta sections and completes strict validation of both the change and all main specs.
       - Update PRODUCT.md or ARCHITECTURE.md only when the accepted Change alters their subject matter.
