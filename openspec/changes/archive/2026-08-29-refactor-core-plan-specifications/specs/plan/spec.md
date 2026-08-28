@@ -1,30 +1,4 @@
-## Purpose
-
-Defines the provider-independent meaning and minimum structural validity of a Plan that Arcloom can use without owning an external planning system's facts.
-
-## Conceptual Model
-
-### Plan composition
-
-A Plan is provider-independent. It contains exactly one name, one Goal, one or more ordered Acceptance Conditions, zero or more ordered Tasks, and an optional Target Date. Provider resources, identifiers, and fields are not Plan elements.
-
-### Plan Text
-
-Plan names, Goals, Acceptance Conditions, and Task names are Plan Text. Plan Text is valid UTF-8 and contains at least one code point outside the Unicode `White_Space` property. Its exact value is preserved without case folding, whitespace rewriting, or Unicode normalization. Plan names and Task names are single-line and therefore exclude CR (`U+000D`), LF (`U+000A`), NEL (`U+0085`), line separator (`U+2028`), and paragraph separator (`U+2029`).
-
-### Plan Collections
-
-Acceptance Conditions and Tasks are ordered Plan Collections. Acceptance Condition identity is its exact statement. Task identity is its exact name. Each identity is unique within its collection, and declared order is part of the Plan.
-
-### Target Date
-
-A Target Date is either absent or one canonical calendar date. A present value is exactly ten ASCII characters in `YYYY-MM-DD` form and represents a valid proleptic Gregorian date from `0001-01-01` through `9999-12-31`. It carries no time, time zone, whitespace, or Provider-specific deadline meaning.
-
-### Plan validity and violations
-
-A Plan is valid exactly when its composition and every contained value satisfy the rules above. A Plan Validation Violation identifies a stable violation category, the affected Plan element kind, and the input index when a collection member is affected. No ordering among simultaneous independent violations is part of the Plan contract.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: PLN-1 Plan vocabulary
 
