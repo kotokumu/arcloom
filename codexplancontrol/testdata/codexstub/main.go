@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type request struct {
@@ -78,7 +79,7 @@ func main() {
 				if readyDirectory := os.Getenv("CODEX_STUB_READY_DIRECTORY"); readyDirectory != "" {
 					_ = os.WriteFile(filepath.Join(readyDirectory, "blocked.ready"), []byte("ready"), 0o600)
 				}
-				select {}
+				waitForever()
 			}
 		case "turn/start":
 			var turnInput struct {
@@ -133,7 +134,7 @@ func main() {
 				_ = responses.Encode(map[string]any{"jsonrpc": "2.0", "method": "item/commandExecution/outputDelta", "params": map[string]any{"delta": "outside material"}})
 			}
 			if mode == "hang" || (mode == "mixed" && material.Observations == "hang") {
-				select {}
+				waitForever()
 			}
 			output := os.Getenv("CODEX_STUB_OUTPUT")
 			if mode == "mixed" && material.Observations == "success" {
@@ -202,5 +203,11 @@ func main() {
 			}
 			_, _ = os.Stdout.Write(append(encodedNotification, '\n'))
 		}
+	}
+}
+
+func waitForever() {
+	for {
+		time.Sleep(time.Hour)
 	}
 }
