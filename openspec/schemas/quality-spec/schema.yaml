@@ -1,0 +1,144 @@
+name: quality-spec
+version: 1
+description: Proposal, conceptual modeling, observable specifications, design, and implementation tasks
+
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Problem, intended outcomes, scope, and affected capabilities
+    template: proposal.md
+    instruction: |
+      Define why the change is needed and establish its product boundary.
+
+      Read existing main specs before proposing a new capability. Prefer an existing
+      product capability when it already owns the changed behavior. Do not create a
+      capability for a technical layer, data structure, framework, or shared utility.
+
+      State measurable success criteria without prescribing implementation. List the
+      affected existing Requirement IDs, major concepts, and likely owning capabilities.
+      Record decisions required to begin modeling when they can change scope, behavior,
+      or acceptance. Do not guess.
+
+      If the change is a pure refactor, tooling, or documentation change with no
+      product behavior change, declare no capabilities and set skip_specs: true in
+      .openspec.yaml. Do not invent a requirement to satisfy the workflow.
+
+      Keep technical implementation choices out of this artifact.
+    requires: []
+
+  - id: model
+    generates: model.md
+    description: Capability boundary, consumers, events, concepts, ownership, and ambiguity resolution
+    template: model.md
+    instruction: |
+      Analyze the specification concepts before enumerating requirements.
+
+      Start from consumers and observable interactions or events, then extract only the concepts, states,
+      classifications, relationships, constraints, invariants, and lifecycle rules
+      needed to understand the requirements. Do not fill a representation merely
+      because the template offers it. Research existing specs and reuse their canonical
+      terms and concept ownership.
+
+      Distinguish specification concepts from physical database, API, UI, class, and package
+      structures. Record only the attributes and relationships needed to understand
+      the contract. Separate the conceptual model from behavior.
+
+      Carry every Decisions Required item from proposal.md into the analysis. Resolve it
+      or keep it in model.md's Unresolved Decisions; model.md is the current-state SSOT.
+      Map each requirement candidate to its actor, trigger, guarantee, and concepts.
+      If an unresolved decision changes a requirement's meaning, scope, or observable
+      result, stop before specs and obtain a decision. An empty Unresolved Decisions
+      section means that no blocking ambiguity remains; it does not mean assumptions
+      may be hidden. For skip_specs changes, record why the work is pure implementation
+      and why no observable contract changes.
+    requires:
+      - proposal
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Observable guarantees grounded in the approved conceptual model
+    template: spec.md
+    instruction: |
+      Create one delta spec per capability declared in proposal.md. Read model.md first.
+      Do not proceed while model.md contains unresolved decisions that change scope,
+      behavior, or expected results.
+
+      A specification defines WHAT the system guarantees. It does not describe HOW the
+      implementation works. Use the prescribed requirement block structure.
+
+      Physical database schemas, API payload shapes, UI component structures, classes,
+      and packages belong to design or their canonical contract SSOT. Do not restate
+      them as requirements or as the conceptual model.
+
+      The permanent conceptual model belongs in the owning main spec's Conceptual Model.
+      model.md records complete replacement content under Main Spec Conceptual Model
+      Replacements for deterministic publication.
+      Delta specs contain only OpenSpec-standard Requirement operations; do not add a
+      custom concept-change section. Do not duplicate a concept owned by another
+      capability; reference it.
+
+      Use OpenSpec delta sections exactly:
+      - ADDED Requirements for new behavior
+      - MODIFIED Requirements with the complete updated requirement
+      - REMOVED Requirements with Reason and Migration
+      - RENAMED Requirements with FROM and TO
+
+      Every Requirement must have at least one Scenario. Each Scenario must identify
+      the actor, precondition, action, and observable outcome. Add error, boundary,
+      permission, concurrency, or idempotency scenarios when the contract depends on
+      them. A Scenario must not introduce a rule absent from its Requirement.
+
+      New capabilities include a concrete Purpose of at least 50 characters so the
+      archived main spec passes strict validation. Existing capability deltas omit Purpose.
+      Do not add any other level-two section: OpenSpec 1.10.0 ignores it during
+      archive. Put requirement-specific links in the References block inside that
+      Requirement. Put conceptual-model sources inside the published model content.
+    requires:
+      - model
+
+  - id: design
+    generates: design.md
+    description: Technical decisions that realize the approved analysis and specifications
+    template: design.md
+    instruction: |
+      Explain HOW to implement the approved specifications. Read proposal.md,
+      model.md, and every delta spec before making technical decisions.
+
+      Include only context needed to explain decisions. Map specification concepts to
+      physical components without treating database or API structures as conceptual model elements.
+      Record alternatives and consequences for significant decisions.
+
+      Open Questions may contain only decisions safely deferrable without changing the
+      specifications, architecture choice, or task breakdown. Resolve all other
+      ambiguity before completing this artifact.
+    requires:
+      - proposal
+      - model
+      - specs
+
+  - id: tasks
+    generates: tasks.md
+    description: Requirement-traceable implementation and verification checklist
+    template: tasks.md
+    instruction: |
+      Break implementation into dependency-ordered tasks. Every task must use checkbox
+      syntax and include the Requirement slug it implements or state that it is a
+      design-only task. Include the observable test or check that proves completion.
+
+      Do not add a task that updates a main spec's Conceptual Model during apply.
+      Conceptual Model publication belongs to the archive command documented by the
+      specification methodology. Do not create tasks from unresolved decisions.
+    requires:
+      - specs
+      - design
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Read proposal.md, model.md, delta specs, design.md, and tasks.md. Implement pending
+    tasks in dependency order. Keep requirement references and verification results
+    current. Pause when implementation reveals a specification ambiguity or contradicts
+    the approved analysis or specification. Do not update main specs from model.md during
+    apply. Conceptual Model and Requirement changes are published together later by the
+    template's archive command.

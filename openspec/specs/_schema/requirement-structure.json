@@ -1,0 +1,55 @@
+{
+  "$comment": "Requirement block order and Scenario tags. This file is the machine-readable counterpart of openspec/specs/README.md.",
+  "version": 1,
+  "requirement_slug_pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+  "lead": {
+    "max_sentences": 3,
+    "normative_keyword": "MUST"
+  },
+  "blocks": [
+    {
+      "label": "前提条件",
+      "purpose": "操作を適用できる事前状態、権限、参照対象の存在条件"
+    },
+    {
+      "label": "入力と受理",
+      "purpose": "入力、許容範囲、既定、受理・拒否条件"
+    },
+    {
+      "label": "振る舞いの規則",
+      "purpose": "判定、計算、状態遷移、外部から観察できる出力"
+    },
+    {
+      "label": "副作用",
+      "purpose": "関連状態、履歴、通知への変化と変化させないもの"
+    },
+    {
+      "label": "排他・冪等",
+      "purpose": "同時実行、再送、重複、原子性"
+    },
+    {
+      "label": "失敗の扱い",
+      "purpose": "consumerが観察できる失敗結果と失敗時に維持する状態"
+    },
+    {
+      "label": "参照",
+      "purpose": "Requirementが依存するinterface、API、data、policy、external contractのSSOT"
+    }
+  ],
+  "scenario": {
+    "required_steps": ["GIVEN", "WHEN", "THEN"],
+    "types": [
+      "happy",
+      "error",
+      "boundary",
+      "permission",
+      "concurrency",
+      "idempotency",
+      "compatibility"
+    ]
+  },
+  "cross_reference": {
+    "syntax": "[[<capability-path>/<requirement-slug>]]",
+    "pattern": "\\[\\[[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)+\\]\\]"
+  }
+}
