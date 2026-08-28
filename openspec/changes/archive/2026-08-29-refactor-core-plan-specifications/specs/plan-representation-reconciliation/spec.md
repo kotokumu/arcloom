@@ -1,39 +1,4 @@
-## Purpose
-
-Defines how Arcloom determines whether an externally observed representation matches an expected Plan while preserving external authority and distinguishing known differences from unavailable information.
-
-## Conceptual Model
-
-### Observation
-
-An Observation is one immutable, provider-independent projection of facts about one bound external Plan target. It is coherent when every known fact concerns that target and no detected contradiction remains among known facts.
-
-Observation Root State is exactly one of Present, Authoritatively Absent, or Unavailable. Authoritatively Absent and Unavailable roots have no descendant facts. A Present root classifies Plan name and Goal independently as a known valid value, a known Plan Validation Violation, or Unavailable. Target Date is known present with a valid value, known absent, a known invalid-target-date violation, or Unavailable. Each Acceptance Condition and Task collection contains distinct valid members, known Plan Validation Violations, and Complete or Incomplete membership. An unavailable scalar has neither a value nor a violation. An invalid member appears only as a violation.
-
-### Plan Location
-
-A Plan Location identifies one provider-independent semantic position: Plan root, Plan name, Goal, Acceptance Condition collection or member, Task collection or member, or Target Date. A member location is identified by exact statement or name, never by collection index or Provider identity. Root and collection locations cover their descendants.
-
-### Evidence
-
-Evidence is the complete basis for one Reconciliation Determination. It contains unique, canonically ordered Differences and Unavailable Information after covering rules are applied.
-
-A Difference is exactly one of:
-
-| Kind | Meaning | Payload |
-|---|---|---|
-| `ExpectedAbsent` | Expected Plan meaning is known absent. | Expected meaning only. |
-| `UnexpectedPresent` | Observed Plan meaning is known but not expected. | Observed meaning only. |
-| `ValueDifferent` | Expected and observed scalar meanings are known and unequal. | Both meanings. |
-| `InvalidObserved` | Observed meaning violates a Plan invariant. | One stable Plan Validation Violation category. |
-
-Unavailable Information identifies a Plan Location whose required meaning cannot be established. It is not a Difference and contains no Provider failure detail. A covering root item suppresses all descendant Evidence. An incomplete collection prevents an omitted expected member from becoming `ExpectedAbsent` while preserving Differences established from observed members.
-
-### Reconciliation Determination
-
-`Satisfied` means that Evidence is empty. `NotSatisfied` means that Evidence contains at least one Difference and no Unavailable Information. `Undecidable` means that Evidence contains Unavailable Information; every non-covered Difference remains available. No other fact determines the result.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: PRR-1 Reconciliation subject and target binding
 
