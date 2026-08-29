@@ -39,8 +39,8 @@
 | Application Request | Passive instruction concerning one exact Revision | Its Revision | `plan-application-request`; it owns request meaning without mutation state. |
 | Request Receipt Evidence | External evidence about receipt of one exact request | ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, or ReceiptUncertain | `plan-application-request`; it owns receipt classification, not target state. |
 | Plan Application Result | Outcome of one authorization-and-request consideration | AuthorizationDenied, AuthorizationUndecidable, or Request Receipt Evidence | `plan-application-request`; it preserves uncertainty categories. |
-| Codex Assessment Interaction | One disposable read-only external-AI assessment exchange | One current Plan and caller-owned observation material | `codex-plan-control-assessment`; it owns Codex-specific safety and isolation. |
-| Safe Host Configuration | Trusted compatible local conditions under which assessment may begin | Compatible Codex installation and inputs; read-only constraints cannot be relaxed | `codex-plan-control-assessment`; it owns interaction admission. |
+| Codex Assessment Interaction | One disposable read-only external-AI assessment exchange | One current Plan and caller-owned observation material | `codex-plan-control-assessment`; it owns Plan material, judgment translation, and assessment isolation through the SDK boundary. |
+| Safe Host Configuration | Trusted compatible local conditions under which assessment may begin | Host-selected Codex 0.149.1 executable, positive finite shutdown bound, and fixed read-only execution constraints | `codexappserver`; the SDK owns executable, protocol, configuration, sandbox, and lifecycle admission while the adapter separately owns Plan-assessment input validity. |
 
 ### 3-1. Authorization decision table
 
@@ -125,7 +125,7 @@ A Codex Assessment Interaction is one disposable read-only assessment of an exac
 
 ### Safe Host Configuration
 
-Safe Host Configuration consists of a trusted compatible Codex installation and valid local assessment inputs under fixed read-only constraints. A consumer cannot relax those constraints. Incompatible or unsafe configuration prevents any external-AI interaction from beginning.
+Safe Host Configuration consists of a Host-selected Codex 0.149.1 executable, a positive finite shutdown bound, and fixed execution constraints. The `codexappserver` SDK owns admission of those lifecycle and safety conditions. Every Turn uses approval policy `never` and a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox. Effective MCP servers, Apps, Hooks, and Web Search inherited from Host configuration are rejected before a Turn begins. A consumer cannot relax these constraints. The `codexplancontrol` adapter separately owns validation of Plan-assessment inputs. Incompatible or unsafe SDK configuration prevents any external-AI Turn from beginning.
 ```
 
 ---
@@ -145,7 +145,7 @@ Safe Host Configuration consists of a trusted compatible Codex installation and 
 | `invalid-ai-output` | AI output is unusable | No successful assessment results | Codex Assessment Interaction | error |
 | `independent-assessments` | Caller reassesses or runs concurrently | No retained or exchanged state affects results | Codex Assessment Interaction | concurrency |
 | `bounded-assessment-cancellation` | Caller cancels in progress | No judgment and termination within configured bound | Codex Assessment Interaction | error, boundary |
-| `safe-host-configuration` | Host supplies local configuration | Unsafe or relaxable inputs begin no interaction | Safe Host Configuration | error |
+| `safe-host-configuration` | Host supplies local configuration | Unsafe, incompatible, or relaxable inputs begin no external-AI Turn | Safe Host Configuration | error |
 | `exact-milestone-target` | Caller selects target | Exact valid target is observed | GitHub Milestone Target | happy, error |
 | `current-authoritative-snapshot` | Caller observes again | Current facts, not prior facts, determine result | GitHub Plan Snapshot | happy |
 | `current-plan-eligibility` | Observation establishes facts | Current Plan appears only from complete coherent valid facts | GitHub Plan Snapshot, Representation Progress | happy, error, boundary |
