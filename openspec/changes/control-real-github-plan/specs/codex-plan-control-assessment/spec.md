@@ -84,24 +84,32 @@ Each Codex-backed assessment MUST be independent of prior and concurrent assessm
 A cancelled in-progress assessment MUST establish no successful judgment and terminate within its accepted finite shutdown bound.
 
 - **入力と受理**: The supplied Codex app-server SDK Client is configured with a positive finite shutdown bound before it is composed with the Plan Control adapter.
-- **失敗の扱い**: Cancellation before success returns no assessment no later than that bound plus scheduling tolerance.
+- **状態と遷移**: Success is established only after the correlated Turn reports `completed`, one translatable final output is established, and cancellation has not already occurred. Cancellation after that establishment does not replace success.
+- **失敗の扱い**: Cancellation before success returns no assessment with an error matching the supplied context error no later than that bound plus scheduling tolerance. A concurrent shutdown failure remains observable without hiding the context error.
 
 #### Scenario: Assessment is cancelled [error]
 
 - **GIVEN** an assessment is in progress under an accepted finite shutdown bound
 - **WHEN** the caller cancels it before success
-- **THEN** no successful judgment is returned and the interaction terminates within that bound plus scheduling tolerance
+- **THEN** no successful judgment is returned, the error matches the supplied context error, and the interaction terminates within that bound plus scheduling tolerance
 
 ### Requirement: safe-host-configuration
 
-The capability MUST begin an external-AI interaction only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
+The capability MUST begin an external-AI Turn only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
 
-- **前提条件**: The Host supplies a trusted compatible Codex installation through a Codex app-server SDK Client that satisfies the accepted lifecycle contract.
-- **入力と受理**: Local assessment inputs must be valid and compatible. The SDK owns validation of its positive finite shutdown bound and app-server lifecycle configuration. Read-only and no-approval constraints are fixed and not caller-relaxable.
-- **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents external-AI interaction.
+- **前提条件**: The Host supplies an absolute executable path for Codex 0.149.1 through a Codex app-server SDK Client that satisfies the accepted lifecycle contract.
+- **入力と受理**: Local assessment inputs must be valid and compatible. The SDK validates the executable path and positive finite shutdown bound before process start, verifies the app-server version before starting a Thread, and revalidates mutable request paths before each call. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox.
+- **構成の隔離**: Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
+- **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents an external-AI Turn. Configuration that only the app-server can validate may start and initialize the process but cannot start a Thread or Turn after incompatibility is established.
 
 #### Scenario: Configuration is unsafe [error]
 
 - **GIVEN** local assessment input is incompatible or attempts to relax the read-only boundary
 - **WHEN** the Host requests an assessment
-- **THEN** no external-AI interaction begins
+- **THEN** no external-AI Turn begins
+
+#### Scenario: Codex app-server is incompatible [error]
+
+- **GIVEN** the configured executable starts an app-server that is not Codex 0.149.1 or does not implement the accepted protocol
+- **WHEN** the Host requests an assessment
+- **THEN** the SDK returns no completed Turn and starts no Codex Thread

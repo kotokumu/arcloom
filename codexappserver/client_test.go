@@ -39,6 +39,7 @@ func TestNewReadOnlyTurnRequest(t *testing.T) {
 		{name: "blank developer instructions", args: args{model: "gpt-5.6-sol", reasoningEffort: "high", workingDirectory: t.TempDir(), developerInstructions: "\n", input: `{}`, outputSchema: `{}`}, wantErr: true},
 		{name: "blank input", args: args{model: "gpt-5.6-sol", reasoningEffort: "high", workingDirectory: t.TempDir(), developerInstructions: "Assess.", input: " ", outputSchema: `{}`}, wantErr: true},
 		{name: "malformed output schema", args: args{model: "gpt-5.6-sol", reasoningEffort: "high", workingDirectory: t.TempDir(), developerInstructions: "Assess.", input: `{}`, outputSchema: `{"type":`}, wantErr: true},
+		{name: "duplicate output schema field", args: args{model: "gpt-5.6-sol", reasoningEffort: "high", workingDirectory: t.TempDir(), developerInstructions: "Assess.", input: `{}`, outputSchema: `{"type":"object","type":"array"}`}, wantErr: true},
 		{name: "non-object output schema", args: args{model: "gpt-5.6-sol", reasoningEffort: "high", workingDirectory: t.TempDir(), developerInstructions: "Assess.", input: `{}`, outputSchema: `true`}, wantErr: true},
 	}
 	for _, tt := range tests {

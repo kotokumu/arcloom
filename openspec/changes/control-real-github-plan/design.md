@@ -27,8 +27,8 @@
 - A product-wide Observation schema or a common Provider interface.
 - Mutable Issue-as-Plan, GitHub Projects, Linear, or another planning Provider.
 - Stabilizing the experimental \`Change\` concept.
-- Implementing the Codex app-server Go SDK in this Change; this Change defines
-  and consumes only the SDK contract required by Plan Control.
+- A broad Codex SDK for authentication, model discovery, persistent Threads,
+  multi-Turn sessions, streaming, goals, retries, or approval handling.
 
 ## 2. Behavior Design
 
@@ -52,6 +52,7 @@ The capability specs under this Change are normative. The following table assign
 | Race safety | Supported concurrent calls share no per-invocation state. | \`go test -race ./...\` plus concurrent contract tests |
 | Cancellation | Every external boundary returns the caller context error when cancellation occurs before a result is established. | Boundary cancellation tests |
 | Bounded Codex shutdown | A cancelled assessment returns no later than the SDK-configured finite grace period plus test scheduling tolerance. | Codex app-server Go SDK process contract test; the Plan Control adapter verifies cancellation propagation at its Client boundary. |
+| Codex compatibility | A Turn starts only after the app-server identifies itself as Codex 0.149.1 and accepts the required protocol lifecycle. | Compatible and incompatible process contract tests. |
 | Dependency isolation | Provider-independent Packages import no GitHub or Codex Package and no Provider DTO or error crosses their public contracts. | Import review and black-box contract tests |
 | Statelessness | No Product Package persists Plan, progress, Assessment, Authorization, request, acknowledgement, session, or loop history. | Design and code review; live proof starts from fresh external facts |
 
@@ -99,7 +100,7 @@ The disposable proof composition is not a Product Component. Its evidence record
 | Protect one external application attempt | Plan Application Attempt | Revision, current Policy, and Request Receipt Evidence | No request without current Authorization; once receipt is possible, the attempt is never retried. | Actor owns action-time mutation; Authorization owns only permission. |
 | Perform action-time conflict judgment and GitHub mutation | External Actor | Current native state and permissions | Native safety and resulting state stay outside Arcloom. | GitHub Provider is read-only in this Change. |
 | Translate Plan assessment material and output | \`codexplancontrol\` | Exact Plan, caller-owned observation material, and one SDK-completed final output | Provider output cannot weaken Plan Control response semantics. | The SDK does not depend on Plan or Plan Control. |
-| Complete one read-only Codex app-server turn | Codex app-server Go SDK | SDK configuration, app-server protocol, and process authority | Process, transport, protocol, and shutdown failures never become a completed turn. | \`codexplancontrol\` does not launch or stop processes and does not parse JSON-RPC. |
+| Complete one read-only Codex app-server turn | Codex app-server Go SDK | SDK configuration, app-server protocol, and process authority | Process, transport, correlation, safety, and shutdown failures never become a completed turn. | \`codexplancontrol\` does not launch or stop processes and does not parse JSON-RPC. |
 | Select observation vocabulary | Assessor consumer | Facts needed for its control judgment | No universal Observation model is invented. | Codex adapter only encodes supplied material. |
 | Schedule or repeat operations | Host composition | Deployment-specific policy | No Arcloom Package owns a fixed Feedback Loop lifecycle. | No workflow, runtime, or orchestrator Package is introduced. |
 | Preserve proof completeness without becoming authoritative | Verification Evidence Record | Native references and disposable contract results selected by the proof operator | Every CA-1 through CA-6 relation is inspectable without treating the record as external state or causality. | Product Components do not own the record. |
@@ -108,7 +109,7 @@ The disposable proof composition is not a Product Component. Its evidence record
 
 Risk level: High. The change introduces a public Package contract and changes the
 boundary between Plan assessment translation and an external Provider protocol.
-The user approved the interface-only SDK boundary before construction.
+The user approved the SDK boundary and its concrete stdio lifecycle before construction.
 
 | Candidate | Remove or merge test | Decision | Reason |
 |---|---|---|---|
@@ -119,6 +120,8 @@ The user approved the interface-only SDK boundary before construction.
 | Independent scenario / confidence | Primary owner | Expected propagation | Verdict |
 |---|---|---|---|
 | App-server protocol, launch, or completion representation changes / Evidence-backed plausible | Codex app-server Go SDK | SDK implementation and SDK tests; Client changes only if completed read-only Turn semantics change. | Pass |
+| CLI and generated protocol schema versions diverge / Evidence-backed plausible | Codex app-server Go SDK | The SDK rejects a non-0.149.1 app-server before Thread start; a supported-version change updates private protocol values and contract tests together. | Pass |
+| A Turn notification arrives before the corresponding start response / Observed | Codex app-server Go SDK | One ordered receive path retains the early message until its Turn identity is established. | Pass |
 | Process exits, blocks, or changes cooperative shutdown / Evidence-backed plausible | Codex app-server Go SDK | SDK lifecycle implementation and bounded process tests. | Pass |
 | Assessment concurrency increases / Committed | SDK for interaction isolation; \`codexplancontrol\` for material/result isolation | SDK race/process tests and adapter unit tests. | Pass |
 | A second Arcloom consumer needs Codex / Evidence-backed plausible | Its consumer-owned adapter plus the SDK | The SDK is reused without Plan imports; the new consumer owns its judgment translation. | Pass |
@@ -141,7 +144,7 @@ The user approved the interface-only SDK boundary before construction.
 | \`authorization\` | Generic Policy, Rule, subject-bound Evaluation, and aggregate Decision semantics. | Rule, Policy, Evaluation, Decision. | Rule iteration and failure localization. | Standard library only. |
 | \`planapplication\` | Stable target reference and Plan Revision invariants, Authorization gating, Actor request Port, Application Attempt safety, and request-result classification. | Target Reference, Revision, Request, Actor, Receipt Evidence, Result, RequestApplication. | Exact one-attempt classification and defensive value handling. | \`plan\`, \`authorization\`, standard library. |
 | \`plancontrol\` | Existing provider-independent Assessment semantics. | Existing Assessor and Assessment contracts. | Response validation. | \`plan\`, standard library. |
-| \`codexappserver\` | Contract surface of the separately developed Codex app-server Go SDK. | Read-only Turn Request, Completed Turn, Client. | Future SDK implementation details including process lifecycle, transport, JSON-RPC, correlation, and bounded shutdown. | Standard library only in this Change. |
+| \`codexappserver\` | Codex app-server Go SDK for one isolated read-only Turn. | Read-only Turn Request, Completed Turn, Client, Stdio Client construction, supported Codex version. | Process lifecycle, wire DTOs, ordered message handling, correlation, fixed safety inputs, and bounded shutdown. | Standard library only. |
 | \`codexplancontrol\` | Codex-backed implementation of the Assessor Port through the SDK contract. | Validated assessment Configuration, Observation Encoder, Assessor construction. | Plan material encoding, assessment instructions/schema, and final-output translation. | \`codexappserver\`, \`plan\`, \`plancontrol\`, standard library. |
 
 No production Package is added for proof composition. Opt-in verification code composes public contracts as a test/Host concern and owns no domain decision.
@@ -397,14 +400,28 @@ type CompletedTurn struct {
     FinalOutput string
 }
 
-// Client is the contract implemented by the separately developed Go SDK.
-// CompleteReadOnlyTurn owns one isolated app-server interaction, permits no
-// approval, network, tool, or mutation capability, returns only one completed
-// final output, honors cancellation, and completes shutdown within the SDK's
-// accepted finite bound. The same Client accepts concurrent calls and isolates
-// each call's material, session, result, and cancellation; cancelling one call
-// does not affect another. Invalid request, protocol, lifecycle, or shutdown
-// failure returns an error and no CompletedTurn.
+const SupportedCodexVersion = "0.149.1"
+
+// NewStdioClient validates an absolute executable path and a positive finite
+// shutdown bound without starting a process. Each call starts its own app-server
+// process. The executable must identify itself as SupportedCodexVersion before
+// the SDK starts a Thread.
+func NewStdioClient(
+    codexExecutable string,
+    shutdownGrace time.Duration,
+) (Client, error)
+
+// Client is the consumer-oriented Codex app-server boundary.
+// CompleteReadOnlyTurn owns one isolated app-server interaction. It fixes
+// approval policy to never and the sandbox to read-only with agent-initiated
+// network disabled. Read-only local tool activity may occur. The same Client
+// accepts concurrent calls and isolates each call's process, material, result,
+// and cancellation. Cancellation observed before a correlated completed Turn
+// and translatable final output returns a zero CompletedTurn and an error
+// matching the supplied context error after bounded shutdown. Established
+// success is not replaced by later cancellation. Invalid request, unsafe Host
+// configuration, protocol, lifecycle, correlation, or shutdown failure returns
+// an error and no CompletedTurn.
 type Client interface {
     CompleteReadOnlyTurn(
         context.Context,
@@ -412,6 +429,32 @@ type Client interface {
     ) (CompletedTurn, error)
 }
 \`\`\`
+
+The Stdio Client stores only the executable path and shutdown bound. One
+\`CompleteReadOnlyTurn\` call owns one process and one invocation-local protocol
+state. A single stdout reader preserves wire order and sends decoded messages to
+one receive stream. The call coordinator alone advances initialize, configuration
+inspection, Thread start, Turn start, item collection, completion, and shutdown
+state. A separate stderr drainer prevents pipe backpressure. Process exit is
+observed independently. Shutdown closes stdin, waits within the one configured
+bound, forcibly terminates an unresponsive process, and reaps it exactly once.
+These goroutine and channel choices are private implementation details; the
+observable requirements are ordered receipt, lossless early-message handling,
+call isolation, and bounded one-time shutdown.
+
+After initialize and before Thread start, the coordinator verifies the app-server
+user agent and reads effective configuration for the requested working directory.
+It rejects enabled MCP servers, Apps, Hooks, or Web Search. Thread and Turn start
+both send fixed approval and sandbox values so caller or Host defaults cannot
+relax the read-only boundary. The app-server's model-provider and authentication
+traffic is outside the agent sandbox; agent-initiated network access remains
+disabled.
+
+The wire implementation is a semantic port of the official Python SDK's
+transport and lifecycle behavior. Authentication, login, model listing,
+persistent Threads, multi-Turn sessions, streaming, goals, retries, and its
+approval-accepting default handler are not ported. The SDK sends no approval
+response. Any server request fails the call closed.
 
 \`\`\`go
 package codexplancontrol
@@ -517,6 +560,11 @@ func NewAssessor[O any](
 | Codex request meaning | Every Plan element and caller-owned observation value varies independently | Assess through a capturing Client | The Client receives the exact semantic Plan and observation material with existing Plan Control outcome meanings. | Unit boundary | Do not assert exact instruction prose. |
 | Codex protocol or lifecycle failure | Client returns an error | Assess | Failure follows the Codex failure-classification table without exposing the SDK error. | Unit boundary | JSON-RPC and process cases belong to SDK tests. |
 | Codex bounded cancellation | Client blocks until caller cancellation | Cancel one assessment | The adapter propagates cancellation and another concurrent assessment remains unaffected. | Unit boundary | The SDK separately proves its finite process shutdown bound. |
+| Codex stdio lifecycle | A compatible app-server emits responses and Turn notifications in accepted and early-arrival orders | Complete one read-only Turn | One correlated final output is returned and every process is reaped. | Process contract | The stub is SDK-owned and is not a Codex replacement. |
+| Codex compatibility and safety | The app-server version is incompatible or effective Host configuration enables MCP, Apps, Hooks, or Web Search | Request one Turn | No Thread starts and the SDK returns a zero CompletedTurn with an error. | Process contract | Assert the stub observed no Thread start. |
+| Codex strict protocol | The app-server emits malformed JSON, JSON-RPC error, duplicate or mismatched response IDs, wrong Thread/Turn IDs, unknown server requests, failed/interrupted completion, or no final output | Request one Turn | The call fails closed, shuts down once, and returns no CompletedTurn. | Process contract | Include messages larger than 64 KiB and rapid notifications. |
+| Codex completion and cancellation race | Cancellation occurs before or after a correlated completed Turn and final output is established | Complete one Turn | Earlier cancellation matches the context error; established success survives later cancellation; every process stops within the bound. | Process contract | Concurrent shutdown error remains discoverable with the context error. |
+| Codex concurrent calls | One Client receives distinct concurrent requests and one call is cancelled | Complete both calls | Each call owns a distinct process and receive state; the unaffected call succeeds. | Race/process contract | Run with `go test -race`. |
 
 #### Invariant Tests
 
@@ -540,6 +588,8 @@ func NewAssessor[O any](
 | Actor acknowledgement differs from later state | ReceiptAcknowledged, later GitHub facts differ | Re-observe | Later snapshot is authoritative; no causality/application claim. |
 | Encoder failure | Live context and encoder error | Assess | AI boundary failure. |
 | Duplicate Codex final | Two final agent messages | Assess | AI contract failure. |
+| Codex frame exceeds Scanner default | A valid response or final output exceeds 64 KiB | Complete one Turn | The message is decoded without truncation or deadlock. |
+| Codex stderr exceeds pipe capacity | The process writes sustained stderr while serving stdout | Complete or cancel one Turn | stdout progresses and shutdown remains bounded. |
 
 #### Codex failure classification
 
@@ -561,7 +611,10 @@ Testability feedback:
 
 | Implementation unit | Responsibility / contract | Dependencies | Behavior and test | Representation decision |
 |---|---|---|---|---|
-| \`codexappserver\` contracts | Publish one validated immutable read-only Turn request, one completed result, and the concurrent Client lifecycle guarantee. | Standard library. | Constructor and accessor unit tests plus compile-time use through adapter tests; SDK behavior remains pending task 5.5. | One small contract Package; no process implementation or generic abstraction. |
+| \`codexappserver\` contracts | Publish one validated immutable read-only Turn request, one completed result, and the concurrent Client lifecycle guarantee. | Standard library. | Constructor and accessor unit tests plus compile-time use through adapter tests. | Existing small consumer-oriented contract; no broad Provider API. |
+| \`codexappserver\` Stdio Client | Validate Host executable and shutdown inputs and own one process per call. | Existing contracts, `os/exec`, standard I/O, context, time. | Constructor, concurrency, cancellation, and process lifecycle tests. | One private immutable client value; no Configuration, Manager, Controller, Helper, or generic process interface. |
+| \`codexappserver\` protocol state | Encode the accepted 0.149.1 requests, preserve wire order, correlate responses and Turn events, enforce fixed safety inputs, and select one final output. | Private wire DTOs and one invocation-local receive state. | Table-driven protocol and process contract tests. | Private structs and functions inside the SDK Package; no exported JSON-RPC or generated-schema surface. |
+| \`codexappserver\` process contract stub | Emulate only observable app-server wire and lifecycle cases required by SDK tests. | Standard library test binary. | Built and executed by SDK tests. | Explicit SDK-owned test fixture under `codexappserver/testdata`; never imported by production code. |
 | \`codexplancontrol\` Configuration | Validate Model, Reasoning Effort, and Working Directory used in one Turn request. | Standard library. | Existing table-driven validation tests without Shutdown Grace. | Immutable values and one cohesive Configuration value. |
 | \`codexplancontrol\` Assessor | Encode exact material, construct one ReadOnlyTurnRequest, call Client, and translate final output. | \`codexappserver\`, \`plan\`, \`plancontrol\`. | Capturing Client tests for all outcomes, failures, cancellation, repetition, and concurrency. | Function-based Assessor plus the approved external Client interface; no internal service or controller. |
 | Removed process implementation | No longer an Arcloom Plan adapter responsibility. | None. | Existing process contract tests and protocol stub are removed; equivalent evidence is required from task 5.5. | No compatibility shim because the API is unmerged. |
@@ -572,6 +625,11 @@ Testability feedback:
 | Exact material and four outcomes cross only the Client boundary | TDD | Replace process-capturing tests with a failing in-memory Client test. | Construct ReadOnlyTurnRequest and decode CompletedTurn.FinalOutput. | Delete process and JSON-RPC code after equivalent adapter behavior passes. |
 | Client and final-output failures fail closed | TDD | Replace protocol-mode cases with Client-error and completed-output cases. | Map Client error to boundary failure and retain strict output decoding. | Passing failure classification tests with no SDK error exposure. |
 | Cancellation, repetition, and concurrency stay isolated | TDD | Replace child-process cases with controllable Client calls. | Forward context and keep every call stateless. | Race-tested adapter evidence; process shutdown evidence remains task 5.5. |
+| Stdio Client rejects invalid construction without process start | TDD | Add failing constructor cases for relative, missing, non-executable paths and non-positive grace. | Store validated executable and grace in one private client value. | No options/config abstraction. |
+| Compatible ordered and early-message lifecycles return one completed output | TDD | Add an SDK-owned process stub that records requests and varies response/notification order. | Add private 0.149.1 wire DTOs and one call-local receive state. | Keep one stdout reader; do not port Python's generic router. |
+| Unsafe configuration, incompatible version, and protocol deviations fail before completion | TDD | Add table-driven process modes for version, configuration, IDs, server request, malformed message, completion status, and missing output. | Validate every state transition and fixed safety field. | Unknown unsafe behavior remains fail closed. |
+| Cancellation and unresponsive processes stop within the accepted bound | TDD | Add cooperative-exit and ignore-stdin process modes plus completion/cancellation races. | Close stdin, wait within the bound, kill, and reap once. | Preserve context error identity and join shutdown failure when present. |
+| Concurrent calls remain isolated | TDD | Run distinct successful and cancelled calls through one Client under the race detector. | Keep all mutable protocol/process state inside each call. | No shared session or routing registry. |
 
 ### 3.8 Construction Log
 
@@ -581,15 +639,19 @@ Testability feedback:
 | Green | Added the immutable validated SDK request contract, adapted one assessment through \`Client\`, rejected nil Client forms, and mapped only the completed final output into Plan Control meaning. |
 | Refactor | Removed the child-process launcher, JSON-RPC implementation, protocol stub, shutdown configuration, and process-owned tests from \`codexplancontrol\`; lifecycle verification remains task 5.5 under the SDK owner. |
 | Verify | Focused race tests passed 20 repetitions; repository race tests, lint, module tidy diff, strict OpenSpec validation, and three independent boundary reviews passed. |
+| SDK Red | Constructor, ordered/early protocol, safety, correlation, completion, cancellation, shutdown, and concurrent process contract cases failed against the Stdio Client scaffold. |
+| SDK Green | Added the version-pinned Stdio Client, one invocation-local receive path, official `item/completed` final-output collection, effective configuration admission, fixed read-only requests, stderr drain, and bounded close/kill/reap lifecycle. |
+| SDK Refactor | Kept wire DTOs and process state private, coordinated pipe drain before `Wait`, bounded post-kill reap, and retained no generic router, process controller, helper, utility, shared session, or Python public-surface abstraction. |
+| SDK Verify | SDK process tests cover the exact outbound transcript, supported and incompatible identities, unsafe and disabled Host features, messages over 64 KiB, rapid and early notifications, response and notification correlation failures, error/malformed/duplicate messages, failed/interrupted/missing/multiple final output, immediate exit, blocked stdin, cooperative and forced shutdown, context identity with shutdown failure, deadline and late-cancellation precedence, and isolated concurrent processes under the race detector. |
 
 ### 3.9 Design Conformance Review
 
 | Boundary | Result |
 |---|---|
-| \`codexappserver\` | Contains only the SDK-facing Turn contract and its local value validation; no process, transport, JSON-RPC, Plan, or Plan Control responsibility. |
+| \`codexappserver\` | Owns the SDK-facing Turn contract plus Codex-specific process, transport, correlation, fixed safety, and shutdown behavior; it contains no Plan or Plan Control responsibility. |
 | \`codexplancontrol\` | Contains only assessment configuration, exact material encoding, Client invocation, and final-output translation; it owns no Codex process lifecycle. |
-| Dependency and minimality | Dependency remains \`codexplancontrol\` to \`codexappserver\`; no helper, utility, common, shared-session, process-controller, or speculative transport abstraction was introduced. |
-| Verification ownership | Adapter unit and race tests verify Plan Control behavior; SDK lifecycle and protocol tests remain explicitly pending in task 5.5. |
+| Dependency and minimality | Dependency remains \`codexplancontrol\` to \`codexappserver\`; no helper, utility, common, shared-session, process-controller, generic router, or speculative transport abstraction is introduced. |
+| Verification ownership | Adapter unit and race tests verify Plan Control behavior; SDK-owned unit, race, and process contract tests verify the app-server lifecycle and protocol. |
 
 ## 4. Design Decisions
 
@@ -635,13 +697,19 @@ Testability feedback:
 - Rejected: Process and protocol implementation inside \`codexplancontrol\`, and a shared long-lived Codex thread or session pool in Plan Control.
 - Reason: Plan assessment translation changes with Plan Control meaning; app-server communication and lifecycle change with Codex. The boundary keeps both owners cohesive and permits another Codex consumer without importing Plan semantics.
 
-### 4.8 Observation vocabulary remains caller-owned
+### 4.8 The Go SDK ports Python transport semantics, not its public surface
+
+- Adopted: Port the official Python SDK's version coupling, stdio lifecycle, ordered receive, early-message preservation, stderr draining, and bounded termination semantics into Go-native call-local coordination.
+- Rejected: A line-by-line Python port, its persistent router, authentication and discovery APIs, multi-Turn state, streaming, retries, and approval-accepting handler.
+- Reason: Arcloom requires one isolated read-only Turn. Goroutines and channels express that lifecycle without importing unrelated SDK responsibilities or shared session state.
+
+### 4.9 Observation vocabulary remains caller-owned
 
 - Adopted: The caller supplies a typed encoder for its own material.
 - Rejected: A universal \`Observation\` hierarchy in Plan Control or the Codex adapter.
 - Reason: Progress, CI, quality, requirements, and telemetry evolve under different authorities and do not share one proven product taxonomy.
 
-### 4.9 Real proof is composition, not a Product workflow
+### 4.10 Real proof is composition, not a Product workflow
 
 - Adopted: Opt-in verification invokes independent public contracts and records disposable native evidence.
 - Rejected: A workflow, pipeline, controller runtime, or persisted loop execution.
@@ -654,7 +722,8 @@ Testability feedback:
 | External Actor acknowledges receipt but applies a partial or different revision. | Treat acknowledgement only as receipt; compare a later fresh Plan exactly and require another control judgment for deviations. |
 | Authorization facts change after decision. | Recalculate immediately before the one Actor request; the Actor still owns action-time conflict and permission checks. |
 | Codex app-server protocol, launch contract, or transport changes. | Confine the change to the Go SDK and its contract tests; \`codexplancontrol\` continues to consume one completed read-only Turn. |
-| The SDK contract is present before its implementation. | Keep live Codex composition incomplete and explicit until the separately developed SDK supplies passing lifecycle and protocol verification evidence. |
+| Host Codex version differs from the supported protocol. | Require an explicit executable and reject a user agent other than 0.149.1 before Thread start. Upgrade private DTOs and the supported version together. |
+| Host configuration enables external tools or callbacks. | Inspect effective configuration before Thread start and reject MCP servers, Apps, Hooks, and Web Search. Keep approval and sandbox fields fixed in every request. |
 | GitHub API version \`2022-11-28\` is retired. | Keep version and DTO handling inside \`githubplan\`; update its contract tests without changing provider-independent Packages. |
 | A stable target reference can be mapped to the wrong native target by a Host or Actor. | Require non-empty Context and identity values, preserve them exactly through Revision and Request, and leave action-time native-target validation with the Actor. |
 | Live proof depends on real credentials, exact approval, and Actor availability. | Keep it opt-in, require explicit Host inputs, and never infer approval from repository access. |
