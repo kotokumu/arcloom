@@ -122,6 +122,8 @@ The user approved the SDK boundary and its concrete stdio lifecycle before const
 | App-server protocol, launch, or completion representation changes / Evidence-backed plausible | Codex app-server Go SDK | SDK implementation and SDK tests; Client changes only if completed read-only Turn semantics change. | Pass |
 | CLI and generated protocol schema versions diverge / Evidence-backed plausible | Codex app-server Go SDK | The SDK rejects a non-0.149.1 app-server before Thread start; a supported-version change updates private protocol values and contract tests together. | Pass |
 | A Turn notification arrives before the corresponding start response / Observed | Codex app-server Go SDK | One ordered receive path retains the early message until its Turn identity is established. | Pass |
+| Codex 0.149.1 emits `thread/settings/updated` and `account/rateLimits/updated` during a normal Turn / Observed | Codex app-server Go SDK | The version-pinned notification admission and SDK process tests change; Plan Control contracts and translation do not. | Pass |
+| GitHub returns Milestone Issues in reverse creation order or with tied creation timestamps / Observed | GitHub Milestone Snapshot mapping | Milestone Tasks and progress use ascending admitted REST identity as their stable native order; Issue sub-issue order is unchanged. | Pass |
 | Process exits, blocks, or changes cooperative shutdown / Evidence-backed plausible | Codex app-server Go SDK | SDK lifecycle implementation and bounded process tests. | Pass |
 | Assessment concurrency increases / Committed | SDK for interaction isolation; \`codexplancontrol\` for material/result isolation | SDK race/process tests and adapter unit tests. | Pass |
 | A second Arcloom consumer needs Codex / Evidence-backed plausible | Its consumer-owned adapter plus the SDK | The SDK is reused without Plan imports; the new consumer owns its judgment translation. | Pass |
@@ -133,6 +135,10 @@ The user approved the SDK boundary and its concrete stdio lifecycle before const
 |---|---|---|---|---|
 | \`codexappserver.Client\` | \`codexplancontrol\` needs one isolated read-only completed Turn while external protocol and process lifecycle remain hidden. | \`codexplancontrol\` depends on the SDK contract; the SDK never depends on Plan or Plan Control. | A direct function cannot publish the separately verified SDK lifecycle contract. | Accept |
 | Generic process abstraction | No current non-Codex consumer or invariant. | N/A | Keep process details inside the future SDK implementation. | Reject |
+
+| Changed behavior | Existing owner | Information / authority used | State / invariant affected | Public contract / boundary impact | Verdict |
+|---|---|---|---|---|---|
+| Admit compatible non-judgment notifications emitted during a Turn | Codex app-server Go SDK | Codex 0.149.1 notification methods and Thread identity | Accepted protocol messages cannot become Plan Control judgments; unknown methods still fail closed. | None; private protocol admission only. | Pass |
 
 ### 3.3 Package Design
 
@@ -563,6 +569,8 @@ func NewAssessor[O any](
 | Codex stdio lifecycle | A compatible app-server emits responses and Turn notifications in accepted and early-arrival orders | Complete one read-only Turn | One correlated final output is returned and every process is reaped. | Process contract | The stub is SDK-owned and is not a Codex replacement. |
 | Codex compatibility and safety | The app-server version is incompatible or effective Host configuration enables MCP, Apps, Hooks, or Web Search | Request one Turn | No Thread starts and the SDK returns a zero CompletedTurn with an error. | Process contract | Assert the stub observed no Thread start. |
 | Codex strict protocol | The app-server emits malformed JSON, JSON-RPC error, duplicate or mismatched response IDs, wrong Thread/Turn IDs, unknown server requests, failed/interrupted completion, or no final output | Request one Turn | The call fails closed, shuts down once, and returns no CompletedTurn. | Process contract | Include messages larger than 64 KiB and rapid notifications. |
+| Codex compatible non-judgment notifications | Codex 0.149.1 emits `thread/settings/updated` for the active Thread and `account/rateLimits/updated` during a normal Turn | Complete one read-only Turn | The notifications do not become output and do not prevent the correlated Turn from completing. | Process contract | An unknown notification remains a protocol failure. |
+| Milestone native Task order | A complete Milestone Issue response arrives in reverse REST-identity order | Observe Snapshot | Current Plan Tasks and progress are reconstructed in ascending admitted REST-identity order. | Unit | Issue sub-issue order remains Provider-supplied. |
 | Codex completion and cancellation race | Cancellation occurs before or after a correlated completed Turn and final output is established | Complete one Turn | Earlier cancellation matches the context error; established success survives later cancellation; every process stops within the bound. | Process contract | Concurrent shutdown error remains discoverable with the context error. |
 | Codex concurrent calls | One Client receives distinct concurrent requests and one call is cancelled | Complete both calls | Each call owns a distinct process and receive state; the unaffected call succeeds. | Race/process contract | Run with `go test -race`. |
 
@@ -643,6 +651,14 @@ Testability feedback:
 | SDK Green | Added the version-pinned Stdio Client, one invocation-local receive path, official `item/completed` final-output collection, effective configuration admission, fixed read-only requests, stderr drain, and bounded close/kill/reap lifecycle. |
 | SDK Refactor | Kept wire DTOs and process state private, coordinated pipe drain before `Wait`, bounded post-kill reap, and retained no generic router, process controller, helper, utility, shared session, or Python public-surface abstraction. |
 | SDK Verify | SDK process tests cover the exact outbound transcript, supported and incompatible identities, unsafe and disabled Host features, messages over 64 KiB, rapid and early notifications, response and notification correlation failures, error/malformed/duplicate messages, failed/interrupted/missing/multiple final output, immediate exit, blocked stdin, cooperative and forced shutdown, context identity with shutdown failure, deadline and late-cancellation precedence, and isolated concurrent processes under the race detector. |
+| Live SDK Red | A real Codex 0.149.1 Turn emitted `thread/settings/updated` and `account/rateLimits/updated`; the version-pinned SDK rejected both as unknown and returned an AI boundary failure. Focused process cases reproduced both failures. |
+| Live SDK Green | Admitted only those two observed non-judgment notifications, required active Thread correlation for `thread/settings/updated`, and completed the same real read-only assessment as `Revise`. |
+| Live SDK Refactor | Retained the exact private allowlist and existing correlation functions; introduced no notification router, helper, utility, shared state, or public protocol surface. |
+| Live SDK Verify | Focused process tests pass for both compatible notifications while another-Thread settings and an unknown notification remain failures; the SDK race suite and real Codex composition pass. |
+| Live Snapshot Red | A later real GitHub observation returned Milestone Issues in reverse order; the Snapshot reconstructed both current Plan Tasks and progress in that response order, so the result differed from the authorized proposed Plan. A focused unit case reproduced the mismatch. |
+| Live Snapshot Green | Milestone mapping now copies admitted Task facts and orders them by ascending positive REST identity before constructing both current Plan and progress; the same later observation equals the authorized proposed Plan. |
+| Live Snapshot Refactor | Kept the ordering rule inside the existing closed Milestone Scheme; Issue sub-issue ordering and the public Snapshot Port are unchanged, with no generic ordering strategy or utility abstraction. |
+| Live Snapshot Verify | The focused native-order case and full `githubplan` suite pass; a new real GitHub observation independently established the authorized proposed Plan and a real Codex assessment returned `Complete`. |
 
 ### 3.9 Design Conformance Review
 

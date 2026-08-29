@@ -181,6 +181,25 @@ func main() {
 				responseID = json.RawMessage("99")
 			}
 			respond(encoder, responseID, map[string]any{"turn": map[string]any{"id": "turn-stub"}})
+			if mode == "thread_settings_notification" || mode == "mismatched_thread_settings_notification" {
+				threadID := "thread-stub"
+				if mode == "mismatched_thread_settings_notification" {
+					threadID = "thread-other"
+				}
+				_ = encoder.Encode(map[string]any{
+					"method": "thread/settings/updated",
+					"params": map[string]any{
+						"threadId":       threadID,
+						"threadSettings": map[string]any{"model": "test-model"},
+					},
+				})
+			}
+			if mode == "account_rate_limits_notification" {
+				_ = encoder.Encode(map[string]any{
+					"method": "account/rateLimits/updated",
+					"params": map[string]any{"rateLimits": map[string]any{}},
+				})
+			}
 			switch mode {
 			case "mixed":
 				output := finalOutput(mode, incoming.Params)
