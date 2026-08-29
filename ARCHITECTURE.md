@@ -120,6 +120,7 @@ C4Component
     Container_Boundary(arcloom, "Arcloom Runtime") {
         Boundary(core, "Core") {
             Component(reconciliation_core, "Reconciliation Core", "Core Component", "Owns target-independent meaning and invariants common to expected states, observed states, and reconciliation results")
+            Component(reconciliation_controller, "Reconciliation Controller", "Control Component", "Owns one target-independent, caller-scoped request, scheduling, report-delivery, and cancellation lifecycle")
             Component(change, "Change", "Core Component", "Owns the relationship and validity between a single Change and one Change target. Has no parent-child structure or ChangeSet")
             Component(plan, "Plan", "Domain Component", "Owns Goals, acceptance conditions, Tasks, optional target dates, and Plan invariants")
             Component(authorization, "Authorization", "Policy Component", "Owns generic typed Policies, Rules, and recalculable authorization decisions without interpreting target-specific subject meaning")
@@ -129,6 +130,10 @@ C4Component
             Component(plan_controller, "Plan Controller", "Reconciliation Module", "Establishes an external AI assessment that controls one current Plan toward completion")
             Component(plan_representation_controller, "Plan Representation Controller", "Reconciliation Module", "Reconciles the consistency between the meaning of a Plan and its representation in the external Planning Context")
             Component(token_optimization_controller, "Token Optimization Controller", "Reconciliation Module", "Reconciles whether the token-usage Goal is met while maintaining required quality and derives an Improvement Intent")
+        }
+
+        Boundary(control_modules, "Control Modules") {
+            Component(plan_reconciliation_attempt, "Plan Reconciliation Attempt Module", "Control Module", "Resolves a Plan Target Binding and composes a fresh Snapshot, later Delivery Observations, and optional Assessment as a read-only attempt")
         }
 
         Boundary(observation_modules, "Observation Modules") {
@@ -153,6 +158,13 @@ C4Component
     }
 
     Rel(host_integration, planning_context_module, "Requests and consumes a concrete GitHub or other Provider-specific non-mutating preview")
+    Rel(host_integration, reconciliation_controller, "Submits identity-only reconciliation requests and consumes target-bound reports")
+    Rel(host_integration, plan_reconciliation_attempt, "Supplies configured Plan Target bindings without performing attempt branching")
+
+    Rel(reconciliation_controller, plan_reconciliation_attempt, "Invokes the target-specific Reconciler Port")
+    Rel(plan_reconciliation_attempt, reconciliation_controller, "Returns an explicit Control Directive through the Controller contract")
+    Rel(plan_reconciliation_attempt, plan_snapshot_observation, "Obtains one fresh Plan Snapshot")
+    Rel(plan_reconciliation_attempt, plan_controller, "Obtains an Assessment only when the Snapshot has a current Plan")
 
     Rel(plan_controller, plan, "Uses the current Plan and Plan invariants")
     Rel(plan_controller, ai_agent_module, "Obtains a provider-independent AI response through a Port owned by the Controller")
@@ -196,11 +208,12 @@ C4Component
     Rel(external_actor, review_context, "Uses the Review Context's native mutation interface")
 ```
 
-Arcloom Runtime places Reconciliation Modules, Observation Modules, Application Request Modules, and Provider Context Modules around target-independent Components.
+Arcloom Runtime places Control Modules, Reconciliation Modules, Observation Modules, Application Request Modules, and Provider Context Modules around target-independent Components and the target-independent Reconciliation Controller.
 
-- Reconciliation Core, Change, Plan, and Authorization do not depend on target-specific Modules or concrete external Contexts. Authorization Rules obtain the exact external facts they require through consumer-owned boundaries.
+- Reconciliation Core, Reconciliation Controller, Change, Plan, and Authorization do not depend on target-specific Modules or concrete external Contexts. Authorization Rules obtain the exact external facts they require through consumer-owned boundaries.
+- The Reconciliation Controller owns only disposable scheduling, Report delivery, and lifecycle state. A target-specific Control Module implements its Reconciler Port, reacquires current facts, and returns an opaque result plus an explicit Control Directive.
 - A Reconciliation Module depends on Reconciliation Core only when it uses the Core's evidence-derived result semantics. Membership in the Reconciliation Module category does not require that dependency.
-- Reconciliation Modules, Observation Modules, and Application Request Modules are extensible, and the Modules to use are selected in the Composition Root.
+- Control Modules, Reconciliation Modules, Observation Modules, and Application Request Modules are extensible, and the Modules to use are selected in the Composition Root.
 - Standard Modules and Custom Modules developed by users follow the public contracts and common extension and dependency rules for their Module type. This diagram does not distinguish them because differences in provision or maintenance ownership do not change Component boundaries.
 - Provider Context Modules are prepared for each combination of external Context and Provider. They implement Ports owned by consumers and do not expose Provider-specific APIs or data models to the Core.
 - The diagram shows only usage relationships between Components whose responsibilities are defined. Because no standard Modules that observe Source Code, Test, or CI in section 3.1 are defined, corresponding Provider Context Modules are not shown. When a standard or Custom Module using them is added, the consumer Module owns the observation Port and the corresponding Provider Context Module implements it for the external Context and Provider combination.
@@ -219,6 +232,14 @@ Arrows in the diagram show runtime usage relationships. They do not show process
 - Capability provided externally: Provides a contract through which target-specific Reconcilers can construct reconciliation results according to the common meaning.
 - Capabilities required: Requires no capabilities from other Arcloom Components or external Contexts.
 - Responsibilities not held: Does not own target-specific Goals, reconciliation rules, observation, planning, Authorization, or changes to external state.
+
+##### Reconciliation Controller
+
+- Responsibility: Runs exactly one caller-scoped, level-based control lifecycle for target identities while enforcing bounded concurrency and one active reconciliation attempt per target.
+- Owned Concepts and decisions: Owns byte-exact Reconciliation Target Identity validation and equality, synchronous request acceptance, same-target coalescing, active-attempt exclusion, explicit await/immediate/delayed reevaluation, exactly-once normal outcome reporting without cross-target order, one Pending Delivery Report, delivery-before-Directive commitment, bounded global Report backpressure, terminal context outcome, and orderly caller cancellation. Its pending, active, delay, and undelivered Report state is disposable.
+- Capability provided externally: Accepts identity-only request operations, invokes a target-specific Reconciler Port, emits target-bound reports without interpreting target results, and exposes the caller context error after termination.
+- Capabilities required: Requires only the target-specific Reconciler contract implemented by a Control Module and the caller's context, identity-only request operations, Report consumer, and concurrency bound.
+- Responsibilities not held: Does not own target facts, observation semantics, reconciliation decisions, target result meaning, Authorization, application, Provider integration, event acquisition, durable delivery, distributed exclusion, persistence, or retry inference from failures.
 
 ##### Change
 
@@ -244,7 +265,19 @@ Arrows in the diagram show runtime usage relationships. They do not show process
 - Capabilities required: Requires no target-specific Component. Each Rule obtains or interprets the current external facts it needs from their authoritative Context.
 - Responsibilities not held: Does not semantically inspect Change, Plan, GitHub, or another target; grant external permissions; apply a proposal; persist a decision; or own Reconciliation progress.
 
-#### 3.3.2 Reconciliation Modules
+#### 3.3.2 Control Modules
+
+A Control Module implements the target-specific Reconciler Port of the Reconciliation Controller. Each attempt reacquires current target facts and returns a target-owned result plus an explicit Control Directive. A request is only a wake-up for a target identity; event causes and payloads do not become reconciliation input.
+
+##### Plan Reconciliation Attempt Module
+
+- Responsibility: Implements the Reconciliation Controller Port for Plan by resolving the requested identity to one Plan Target Binding, obtaining one fresh Plan Snapshot, and only when it contains a current Plan obtaining later Delivery Observations and one Assessment for that exact Plan.
+- Owned Concepts and decisions: Owns accepted target-kind and setup validation, self-identifying Plan Target Binding validity, exact requested/resolved identity correspondence, runtime resolution failure, Snapshot-before-Delivery-before-Assessment order, stable runtime composition failures, the association between the fresh Snapshot and optional Assessment, the no-current-Plan success branch, and the decision that every successful Plan attempt awaits another explicit request.
+- Capability provided externally: Returns a Plan-specific Reconciler that owns lookup and branching and produces one Plan Reconciliation Result plus Await Another Request, or returns the binding, observation, assessment, or caller-cancellation failure.
+- Capabilities required: Requires the Reconciliation Controller contract, a caller-supplied context-cooperative local Plan Target Resolver returning self-identifying Snapshot and Delivery Observer bindings, one Plan Control Assessor, Plan Snapshot Observation Module, and Plan Controller.
+- Responsibilities not held: Does not interpret event or receipt causes; authorize or apply a Proposed Plan; infer retries; persist loop state; own Provider mapping; or depend on the Plan Application Request Module, Authorization, or concrete Provider implementations.
+
+#### 3.3.3 Reconciliation Modules
 
 A Reconciliation Module owns the provider-independent contract and result invariants for reconciling its target. It owns target-specific observation or judgment semantics only when those semantics are part of its accepted contract. External Contexts retain authority over supplied facts and judgments. If required information cannot be established, a Module preserves that condition according to its target-specific result contract rather than filling it with speculation.
 
@@ -272,7 +305,7 @@ A Reconciliation Module owns the provider-independent contract and result invari
 - Capabilities required: Requires Reconciliation Core, a Plan representing the improvement Goal and acceptance conditions, observation capabilities for the Development Activity Context and Quality Evaluation Context, and proposed AI evaluations when qualitative evaluation is necessary.
 - Responsibilities not held: Does not own generation or collection of telemetry, quality evaluation, changes to the development system, or creation of an improvement Plan.
 
-#### 3.3.3 Observation Modules
+#### 3.3.4 Observation Modules
 
 An Observation Module owns provider-independent observation meaning, result invariants, and the minimum Port required to obtain facts from an external Context. It does not own the external facts or decide how another Module uses its result.
 
@@ -284,7 +317,7 @@ An Observation Module owns provider-independent observation meaning, result inva
 - Capabilities required: Requires Plan and an observation Port implemented by a Planning Provider Module.
 - Responsibilities not held: Does not own Provider mappings, target identity, Planning facts, Plan Control judgment, Authorization, application, persistence, or a repeated lifecycle.
 
-#### 3.3.4 Application Request Modules
+#### 3.3.5 Application Request Modules
 
 An Application Request Module owns the provider-independent meaning, Authorization boundary, and request-interaction result for one proposed external application. Completion of a request is not evidence that external state changed. A later observation of authoritative external facts establishes the resulting state.
 
@@ -312,7 +345,7 @@ An Application Request Module owns the provider-independent meaning, Authorizati
 - Capabilities required: Requires Change, generic Authorization, and an external Actor Port owned by this Module.
 - Responsibilities not held: Does not own validity of the relationship between a Change and its target, Source Code modification work, Provider-specific conversion between a Change targeting Source Code and a Pull Request, Review decisions, Authorization Policies or Rules, or the authoritative source of Pull Requests.
 
-#### 3.3.5 Provider Context Modules
+#### 3.3.6 Provider Context Modules
 
 ##### AI Agent Provider Module
 
@@ -377,16 +410,21 @@ An Application Request Module owns the provider-independent meaning, Authorizati
 ```mermaid
 flowchart BT
     RC[Reconciliation Core]
+    RCTRL[Reconciliation Controller<br/>+ owned Reconciler Port]
     C[Change]
     P[Plan]
     A[Authorization<br/>+ typed Rules]
 
+    CM[Control Modules]
     RM[Reconciliation Modules<br/>+ owned Ports]
     OM[Observation Modules<br/>+ owned Ports]
     ARM[Application Request Modules<br/>+ owned Ports]
     PCM[Provider Context Modules]
     CR[Composition Root]
 
+    CM -->|Implements the target-specific Reconciler Port| RCTRL
+    CM -.->|Only when the target attempt composes its capability| RM
+    CM -.->|Only when the target attempt requires current observation| OM
     RM -.->|Only when the Module uses Core evidence semantics| RC
     RM --> P
     OM --> P
@@ -398,6 +436,8 @@ flowchart BT
     PCM -->|Implements Ports owned by consumers| OM
     PCM -->|Provides facts through typed Rule boundaries| A
 
+    CR --> RCTRL
+    CR --> CM
     CR --> RM
     CR --> OM
     CR --> ARM
@@ -405,16 +445,18 @@ flowchart BT
     CR --> PCM
 ```
 
-Arrows show source-code dependency direction. They do not show the direction of runtime requests and responses. The dotted arrows are permitted rather than required. Each Module depends only on contracts whose semantics it actually uses. The Plan Snapshot Observation Module owns its observation Port and depends on Plan, while its concrete Planning Provider implementation depends inward on that Port. The Plan Application Request Module depends on Plan and Authorization but not Change, Plan Control, or a concrete Provider. A concrete Provider Context Module may additionally depend inward on Plan for reconstruction or a Provider-specific, non-mutating request preview consumed only by an Arcloom Host. Such a preview is not an application Port and cannot request external application.
+Arrows show source-code dependency direction. They do not show the direction of runtime requests and responses. The dotted arrows are permitted rather than required. Each Module depends only on contracts whose semantics it actually uses. A Control Module implements the Reconciliation Controller's consumer-owned Reconciler Port and may compose selected target capabilities without moving their decisions into the Controller. The Plan Snapshot Observation Module owns its observation Port and depends on Plan, while its concrete Planning Provider implementation depends inward on that Port. The Plan Application Request Module depends on Plan and Authorization but not Change, Plan Control, or a concrete Provider. A concrete Provider Context Module may additionally depend inward on Plan for reconstruction or a Provider-specific, non-mutating request preview consumed only by an Arcloom Host. Such a preview is not an application Port and cannot request external application.
 
 #### 3.4.2 Permitted Dependencies
 
 | Dependency source | Permitted dependency target | Constraint |
 |---|---|---|
 | Reconciliation Core | None | Does not reference target-specific Concepts, external Contexts, or Provider-specific contracts |
+| Reconciliation Controller | Standard library and its consumer-owned target-specific Reconciler contract | Owns only target-independent, caller-scoped control; does not inspect target results or depend on target Modules |
 | Change | None | Represents the relationship and validity with one Change target in Provider-independent vocabulary |
 | Plan | None | Does not reference Controllers, Authorization, Application Request Modules, or the external Planning Context |
 | Authorization | Standard library and typed Rules supplied by consumers | Does not depend on Change, Plan, target Modules, Providers, or external subject vocabularies |
+| Plan Reconciliation Attempt Module | Reconciliation Controller contract, caller-supplied context-cooperative Plan Target Resolver and Delivery Observer boundaries, one Plan Control Assessor, Plan Snapshot Observation Module, and Plan Controller | Implements the Reconciler Port and owns setup validation, exact binding correspondence, cancellable runtime resolution, and ordered fresh read-only composition; does not depend on Authorization, Plan Application Request, or a concrete Provider |
 | Plan Controller | Plan and an AI assessment Port owned by Plan Controller | Depends only on contracts required to establish a Plan-specific Assessment; does not depend on Reconciliation Core, Change, or Authorization |
 | Plan Representation Controller | Reconciliation Core, Plan, and an observation Port for the Planning Context owned by Plan Representation Controller | Depends only on contracts required to reconcile consistency between a Plan and its external representation |
 | Token Optimization Controller | Reconciliation Core, Plan, and Ports for Development Activity, Quality Evaluation, and AI evaluation owned by Token Optimization Controller | Depends only on contracts required to reconcile token usage and quality against the improvement Goal |
@@ -424,14 +466,16 @@ Arrows show source-code dependency direction. They do not show the direction of 
 | Source Change Target Module | Change, Authorization, and an external Actor Port owned by Source Change Target Module | Depends only on contracts required to request external application of Changes targeting Source Code |
 | Provider Context Module | Ports owned by consumer Components and Provider-specific contracts of the connected Provider | Depends only on contracts required for its Port and one external Context |
 | Planning Provider reconstruction or request preview | Plan, consumer-owned observation contracts, and Provider-specific read/request contracts | May be consumed through the concrete Provider API by an Arcloom Host, performs no external mutation, and does not expose Provider-specific types through Core or Module Ports |
-| Composition Root | Public contracts of selected Modules and Authorization; concrete Provider implementations and external Actor adapters | Only creates and wires Components; owns no business decisions or repeated lifecycle |
+| Composition Root | Reconciliation Controller and public contracts of selected Modules and Authorization; concrete Provider implementations and external Actor adapters | Only creates and wires Components, supplies request sources, and owns no business decisions or control-loop scheduling policy |
 
-Apply the same extension and dependency rules to Standard Modules and Custom Modules. Do not establish a common Module Interface shared by Reconciliation Modules, Observation Modules, and Application Request Modules. Each Custom Module depends only on the public contract of its Module type, published Core contracts, and its own Ports. The Core and Standard Modules do not depend on concrete implementations of Custom Modules.
+Apply the same extension and dependency rules to Standard Modules and Custom Modules. Do not establish a common Module Interface shared by Control Modules, Reconciliation Modules, Observation Modules, and Application Request Modules. A Control Module implements only the narrow target-specific Reconciler Port of the Reconciliation Controller. A Custom Control Module may additionally depend on the public contracts of Reconciliation or Observation Modules that its accepted target attempt explicitly composes, under the same restrictions as a Standard Control Module. Other Custom Modules depend only on the public contract of their Module type, published Core contracts, and their own Ports. The Core and Standard Modules do not depend on concrete implementations of Custom Modules.
 
 #### 3.4.3 Port Ownership
 
 | Port owner | Contract defined by the Port | Responsibility of implementer |
 |---|---|---|
+| Reconciliation Controller | One identity-only, current-fact Reconciler returning an opaque target result and explicit Control Directive | A target-specific Control Module reacquires current facts, owns result meaning, and does not pass event causes or payloads through the Port |
+| Plan Reconciliation Attempt Module | A local resolver from Target Identity to a self-identifying validated Snapshot and Delivery Observer binding, plus one Plan Control Assessor | The Composition Root supplies configured bindings, observation implementations, and Assessor without performing correspondence checks, lookup-result branching, or Plan attempt ordering |
 | Reconciliation Module | Target-specific observation or judgment input required by the consumer contract | The corresponding Provider Context Module adapts Provider-specific facts or responses without taking ownership of result semantics |
 | Plan Controller | An untrusted provider-independent AI response with caller-owned observation vocabulary | The AI Agent Provider Module translates Provider-native syntax and errors; Plan Controller validates the response and constructs Assessment |
 | Plan Snapshot Observation Module | Current Plan eligibility and provider-independent representation-progress facts for one external target | The Planning Provider Module maps current Provider facts to the Port without owning Snapshot result semantics |
@@ -443,10 +487,11 @@ The consumer Component owns a Port as the minimum contract it requires. Provider
 
 #### 3.4.4 Prohibited Dependencies
 
-- Reconciliation Core, Change, Plan, and Authorization do not depend on Reconciliation Modules, Observation Modules, Application Request Modules, Provider Context Modules, or the Composition Root.
-- Reconciliation Modules do not depend on other Reconciliation Modules, Observation Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules.
-- Observation Modules do not depend on Reconciliation Modules, other Observation Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules.
-- Application Request Modules do not depend on Reconciliation Modules, Observation Modules, other Application Request Modules, or concrete implementations of Provider Context Modules.
+- Reconciliation Core, Reconciliation Controller, Change, Plan, and Authorization do not depend on Control Modules, Reconciliation Modules, Observation Modules, Application Request Modules, Provider Context Modules, or the Composition Root.
+- Control Modules do not depend on other Control Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules. They depend on Reconciliation or Observation Modules only when a target attempt explicitly composes those accepted capabilities.
+- Reconciliation Modules do not depend on Control Modules, other Reconciliation Modules, Observation Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules.
+- Observation Modules do not depend on Control Modules, Reconciliation Modules, other Observation Modules, Application Request Modules, Authorization, or concrete implementations of Provider Context Modules.
+- Application Request Modules do not depend on Control Modules, Reconciliation Modules, Observation Modules, other Application Request Modules, or concrete implementations of Provider Context Modules.
 - Authorization does not depend on Reconciliation Modules, Observation Modules, Application Request Modules, Change, Plan, or concrete implementations of Provider Context Modules.
 - Provider Context Modules do not reimplement Core decisions or connect to external Contexts through other Provider Context Modules.
 - Public contracts of the Core and consumer-owned Module Ports do not include Provider-specific APIs, DTOs, errors, or identifiers. An optional Actor-native request-receipt reference is non-authoritative evidence, not target state. Concrete Host-facing Provider configuration and non-mutating preview APIs remain inaccessible through Core and Module contracts and Ports.
