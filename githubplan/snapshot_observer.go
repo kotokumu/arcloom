@@ -66,7 +66,7 @@ func (s scheme) snapshot(facts githubFactSet) (plansnapshot.Snapshot, error) {
 	state := progressState(facts.root.fact.state)
 	titles, complete := s.taskTitles(facts.tasks)
 	progressTasks := make([]plansnapshot.TaskProgress, 0, len(titles))
-	for _, member := range facts.tasks.members {
+	for _, member := range s.taskMembersInPlanOrder(facts.tasks) {
 		if member.pullRequest {
 			continue
 		}

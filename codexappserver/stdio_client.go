@@ -359,7 +359,7 @@ func (process *appServerProcess) call(ctx context.Context, id int, method string
 
 func notificationNeedsThreadIdentity(method string) bool {
 	switch method {
-	case "thread/started", "thread/status/changed":
+	case "thread/settings/updated", "thread/started", "thread/status/changed":
 		return true
 	default:
 		return notificationNeedsTurnIdentity(method)
@@ -416,6 +416,8 @@ func (process *appServerProcess) acceptNotification(message serverMessage) error
 		"process/exited",
 		"process/outputDelta",
 		"remoteControl/status/changed",
+		"account/rateLimits/updated",
+		"thread/settings/updated",
 		"thread/started",
 		"thread/status/changed",
 		"thread/tokenUsage/updated",

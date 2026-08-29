@@ -52,6 +52,34 @@ func TestMilestoneSnapshotObserverReconstructsCurrentPlanAndProgress(t *testing.
 	}
 }
 
+func TestMilestoneSnapshotObserverUsesAscendingNativeIdentityForTaskOrder(t *testing.T) {
+	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`), closed: new(bool)}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[{"id":30,"title":"Third","state":"closed"},{"id":20,"title":"Second","state":"open"},{"id":10,"title":"First","state":"closed"}]`), closed: new(bool)}},
+	}}
+	target := must(githubplan.NewMilestoneTarget(must(githubplan.NewRepository("owner", "repo")), must(githubplan.NewResourceNumber(42))))
+	observer := must(githubplan.NewMilestoneSnapshotObserver(&http.Client{Transport: transport}, target))
+
+	snapshot, err := plansnapshot.Observe(context.Background(), observer)
+	if diff := cmp.Diff(nil, err); diff != "" {
+		t.Fatalf("Observe() error mismatch (-want +got):\n%s", diff)
+	}
+	current, hasCurrent := snapshot.CurrentPlan()
+	if !hasCurrent {
+		t.Fatal("Observe() did not establish a current Plan")
+	}
+	progress, hasProgress := snapshot.Progress()
+	if !hasProgress {
+		t.Fatal("Observe() did not establish progress")
+	}
+	if diff := cmp.Diff([]string{"First", "Second", "Third"}, []string{current.Tasks()[0].Name(), current.Tasks()[1].Name(), current.Tasks()[2].Name()}); diff != "" {
+		t.Errorf("current Plan Task order mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"First", "Second", "Third"}, []string{progress.Tasks()[0].Name(), progress.Tasks()[1].Name(), progress.Tasks()[2].Name()}); diff != "" {
+		t.Errorf("progress Task order mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestMilestoneSnapshotObserverPreservesUnknownDuplicateAndIncompleteProgress(t *testing.T) {
 	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
 		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"paused","description":"unusable"}`), closed: new(bool)}},

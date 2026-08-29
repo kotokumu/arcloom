@@ -3,6 +3,7 @@ package githubplan
 import (
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -162,7 +163,7 @@ func (s scheme) project(facts githubFactSet) (planrepresentation.Observation, er
 func (s scheme) taskTitles(set taskFactSet) ([]string, bool) {
 	titles := make([]string, 0, len(set.members))
 	complete := set.isComplete()
-	for _, member := range set.members {
+	for _, member := range s.taskMembersInPlanOrder(set) {
 		if member.pullRequest {
 			if s == issueScheme {
 				complete = false
@@ -172,6 +173,16 @@ func (s scheme) taskTitles(set taskFactSet) ([]string, bool) {
 		titles = append(titles, member.title)
 	}
 	return titles, complete
+}
+
+func (s scheme) taskMembersInPlanOrder(set taskFactSet) []taskItemFact {
+	members := append([]taskItemFact(nil), set.members...)
+	if s == milestoneScheme {
+		sort.Slice(members, func(left, right int) bool {
+			return members[left].id < members[right].id
+		})
+	}
+	return members
 }
 
 func payloadObservations(payload payloadOutcome) (planrepresentation.GoalObservation, planrepresentation.AcceptanceConditionsObservation) {
