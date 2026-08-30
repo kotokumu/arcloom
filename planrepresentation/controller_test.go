@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 func TestNewControllerMissingObserver(t *testing.T) {
@@ -71,10 +70,10 @@ func TestReconcileNilContext(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    reconciliation.Determination
+		want    planrepresentation.Determination
 		wantErr bool
 	}{
-		{name: "nil context", args: args{ctx: nil}, want: reconciliation.Determination(0), wantErr: true},
+		{name: "nil context", args: args{ctx: nil}, want: planrepresentation.Determination(0), wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,7 +107,7 @@ func TestReconcileCancelledContext(t *testing.T) {
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("error = %v, want context.Canceled", err)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -126,7 +125,7 @@ func TestReconcileExpiredContext(t *testing.T) {
 			if !errors.Is(err, context.DeadlineExceeded) {
 				t.Fatalf("error = %v, want context.DeadlineExceeded", err)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -140,7 +139,7 @@ func TestReconcileZeroController(t *testing.T) {
 			expected := must(plan.New("Release", must(plan.NewGoal("Ship")), []plan.AcceptanceCondition{must(plan.NewAcceptanceCondition("A"))}, nil, nil))
 			var controller planrepresentation.Controller
 			result, err := controller.Reconcile(context.Background(), expected)
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 			var failure *planrepresentation.FailureError
@@ -164,7 +163,7 @@ func TestReconcileInvalidExpectedPlan(t *testing.T) {
 				return planrepresentation.UnavailableObservation(), nil
 			}))
 			result, err := controller.Reconcile(context.Background(), plan.Plan{})
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 			if observerCalled {
@@ -200,7 +199,7 @@ func TestReconcileInvalidObservationContract(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.want.Determination(), result.Determination()); diff != "" {
@@ -237,7 +236,7 @@ func TestReconcileObserverNonContextError(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.want.Determination(), result.Determination()); diff != "" {
@@ -276,7 +275,7 @@ func TestReconcileObserverUnrelatedContextError(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.want.Determination(), result.Determination()); diff != "" {
@@ -313,7 +312,7 @@ func TestReconcileObserverObservationPlusError(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.want.Determination(), result.Determination()); diff != "" {
@@ -347,7 +346,7 @@ func TestReconcileMatchingObserverContextError(t *testing.T) {
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("error = %v, want context.Canceled", err)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -385,7 +384,7 @@ func TestReconcileCancellationBeforeSuccessfulReturn(t *testing.T) {
 			if !errors.Is(returned.err, context.Canceled) {
 				t.Fatalf("error = %v, want context.Canceled", returned.err)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), returned.result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), returned.result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -427,7 +426,7 @@ func TestReconcileCancellationBeforeObserverFailureReturn(t *testing.T) {
 			if errors.Is(returned.err, providerSentinel) {
 				t.Fatalf("error exposes Provider sentinel: %v", returned.err)
 			}
-			if diff := cmp.Diff(reconciliation.Determination(0), returned.result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), returned.result.Determination()); diff != "" {
 				t.Errorf("zero result determination mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -447,7 +446,7 @@ func TestReconcileCancellationAfterResultReturn(t *testing.T) {
 				t.Fatalf("Reconcile() error = %v, want nil", err)
 			}
 			cancel()
-			if diff := cmp.Diff(reconciliation.Satisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Satisfied, result.Determination()); diff != "" {
 				t.Errorf("determination after cancellation mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -476,10 +475,10 @@ func TestReconcileCurrentObservationReconstruction(t *testing.T) {
 			}))
 			firstResult := must(controller.Reconcile(context.Background(), validPlan))
 			secondResult := must(controller.Reconcile(context.Background(), validPlan))
-			if diff := cmp.Diff(reconciliation.Satisfied, firstResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Satisfied, firstResult.Determination()); diff != "" {
 				t.Errorf("first determination mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, secondResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, secondResult.Determination()); diff != "" {
 				t.Errorf("second determination mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -559,7 +558,7 @@ func TestReconcileConcurrentCorrelationIsolation(t *testing.T) {
 					t.Fatalf("unexpected correlation %q", returned.correlation)
 				}
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, releaseResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, releaseResult.Determination()); diff != "" {
 				t.Errorf("Release determination mismatch (-want +got):\n%s", diff)
 			}
 			releaseDifferences := releaseResult.Differences()
@@ -598,7 +597,7 @@ func TestReconcileConcurrentCorrelationIsolation(t *testing.T) {
 				t.Errorf("Release unavailable location mismatch (-want +got):\n%s", diff)
 			}
 
-			if diff := cmp.Diff(reconciliation.Undecidable, otherResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, otherResult.Determination()); diff != "" {
 				t.Errorf("Other determination mismatch (-want +got):\n%s", diff)
 			}
 			otherDifferences := otherResult.Differences()

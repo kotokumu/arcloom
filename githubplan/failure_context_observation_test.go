@@ -13,7 +13,6 @@ import (
 	"github.com/kotokumu/arcloom/githubplan"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 type failureObservationRoundTripper struct {
@@ -90,7 +89,7 @@ func TestGitHubHTTPFailuresAtRootLocalizeOnlyPlanRoot(t *testing.T) {
 				if len(unavailable) != 1 || unavailable[0].Location().Kind() != planrepresentation.PlanRootLocation || len(result.Differences()) != 0 {
 					t.Errorf("Result evidence = (%v, %v), want Plan root unavailable only", result.Differences(), unavailable)
 				}
-				if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+				if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 					t.Errorf("determination mismatch (-want +got):\n%s", diff)
 				}
 				if diff := cmp.Diff(1, len(transport.requests)); diff != "" {
@@ -148,7 +147,7 @@ func TestGitHubHTTPFailuresAtCollectionLocalizeTaskCollection(t *testing.T) {
 					t.Fatalf("Reconcile() error = %v, want nil", err)
 				}
 				unavailable := result.UnavailableInformation()
-				if len(unavailable) != 1 || unavailable[0].Location().Kind() != planrepresentation.TaskCollectionLocation || len(result.Differences()) != 0 || result.Determination() != reconciliation.Undecidable {
+				if len(unavailable) != 1 || unavailable[0].Location().Kind() != planrepresentation.TaskCollectionLocation || len(result.Differences()) != 0 || result.Determination() != planrepresentation.Undecidable {
 					t.Errorf("Result = (%v, %v, %v), want Task collection unavailable only", result.Determination(), result.Differences(), unavailable)
 				}
 				if diff := cmp.Diff(2, len(transport.requests)); diff != "" {
@@ -361,7 +360,7 @@ func TestGitHubContextCancellationAndDeadlineBeforeRoot(t *testing.T) {
 				if err != wanted {
 					t.Fatalf("error = %v, want exact %v", err, wanted)
 				}
-				if result.Determination() != reconciliation.Determination(0) || result.Differences() != nil || result.UnavailableInformation() != nil {
+				if result.Determination() != planrepresentation.Determination(0) || result.Differences() != nil || result.UnavailableInformation() != nil {
 					t.Fatalf("context result = (%v, %v, %v), want complete zero Result", result.Determination(), result.Differences(), result.UnavailableInformation())
 				}
 				if diff := cmp.Diff(0, len(transport.requests)); diff != "" {
@@ -404,7 +403,7 @@ func TestGitHubContextCancellationAndDeadlineDuringRoot(t *testing.T) {
 				if outcome.err != wanted {
 					t.Fatalf("error = %v, want exact %v", outcome.err, wanted)
 				}
-				if outcome.result.Determination() != reconciliation.Determination(0) || outcome.result.Differences() != nil || outcome.result.UnavailableInformation() != nil {
+				if outcome.result.Determination() != planrepresentation.Determination(0) || outcome.result.Differences() != nil || outcome.result.UnavailableInformation() != nil {
 					t.Fatalf("context result = (%v, %v, %v), want complete zero Result", outcome.result.Determination(), outcome.result.Differences(), outcome.result.UnavailableInformation())
 				}
 			})
@@ -435,7 +434,7 @@ func TestGitHubContextCancellationAfterRootSuccessStopsBeforeCollection(t *testi
 				if err != wanted {
 					t.Fatalf("error = %v, want exact %v", err, wanted)
 				}
-				if result.Determination() != reconciliation.Determination(0) || result.Differences() != nil || result.UnavailableInformation() != nil {
+				if result.Determination() != planrepresentation.Determination(0) || result.Differences() != nil || result.UnavailableInformation() != nil {
 					t.Fatalf("context result = (%v, %v, %v), want complete zero Result", result.Determination(), result.Differences(), result.UnavailableInformation())
 				}
 				if diff := cmp.Diff(1, transport.requests); diff != "" {
@@ -482,7 +481,7 @@ func TestGitHubContextCancellationAndDeadlineDuringLaterPage(t *testing.T) {
 				if outcome.err != wanted {
 					t.Fatalf("error = %v, want exact %v", outcome.err, wanted)
 				}
-				if outcome.result.Determination() != reconciliation.Determination(0) || outcome.result.Differences() != nil || outcome.result.UnavailableInformation() != nil {
+				if outcome.result.Determination() != planrepresentation.Determination(0) || outcome.result.Differences() != nil || outcome.result.UnavailableInformation() != nil {
 					t.Fatalf("context result = (%v, %v, %v), want complete zero Result", outcome.result.Determination(), outcome.result.Differences(), outcome.result.UnavailableInformation())
 				}
 				if diff := cmp.Diff(3, transport.page); diff != "" {
@@ -524,7 +523,7 @@ func TestGitHubContextCancellationAtFinalCompletionCheckIgnoresObservation(t *te
 				if err != wanted {
 					t.Fatalf("error = %v, want exact %v", err, wanted)
 				}
-				if result.Determination() != reconciliation.Determination(0) || result.Differences() != nil || result.UnavailableInformation() != nil {
+				if result.Determination() != planrepresentation.Determination(0) || result.Differences() != nil || result.UnavailableInformation() != nil {
 					t.Fatalf("context result = (%v, %v, %v), want complete zero Result", result.Determination(), result.Differences(), result.UnavailableInformation())
 				}
 			})

@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 func TestAbsentObservation(t *testing.T) {
@@ -28,7 +27,7 @@ func TestAbsentObservation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -70,7 +69,7 @@ func TestUnavailableObservation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -123,7 +122,7 @@ func TestNewPresentObservationInvalid(t *testing.T) {
 				return tt.want, nil
 			})))
 			wantResult, wantErrValue := wantController.Reconcile(context.Background(), expected)
-			if diff := cmp.Diff(reconciliation.Determination(0), wantResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), wantResult.Determination()); diff != "" {
 				t.Errorf("zero want determination mismatch (-want +got):\n%s", diff)
 			}
 			var wantFailure *planrepresentation.FailureError
@@ -138,7 +137,7 @@ func TestNewPresentObservationInvalid(t *testing.T) {
 				return got, nil
 			})))
 			gotResult, gotErr := gotController.Reconcile(context.Background(), expected)
-			if diff := cmp.Diff(reconciliation.Determination(0), gotResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Determination(0), gotResult.Determination()); diff != "" {
 				t.Errorf("returned observation determination mismatch (-want +got):\n%s", diff)
 			}
 			var gotFailure *planrepresentation.FailureError
