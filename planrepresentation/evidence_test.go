@@ -7,7 +7,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 func TestReconcileCorrespondence(t *testing.T) {
@@ -18,7 +17,7 @@ func TestReconcileCorrespondence(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
 		{name: "equal collections in different order", args: args{
 			expected: must(plan.New(
@@ -35,7 +34,7 @@ func TestReconcileCorrespondence(t *testing.T) {
 				planrepresentation.CompleteTasks([]string{"Test", "Build"}),
 				planrepresentation.AbsentTargetDate(),
 			)),
-		}, want: reconciliation.Satisfied},
+		}, want: planrepresentation.Satisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -75,7 +74,7 @@ func TestReconcileScalarDifferenceEvidence(t *testing.T) {
 				return observed, nil
 			})))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -115,11 +114,11 @@ func TestReconcileNameExactPayloadBoundaries(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
-		{name: "case", args: args{expected: "Release", observed: "release"}, want: reconciliation.NotSatisfied},
-		{name: "whitespace", args: args{expected: " Release ", observed: "Release"}, want: reconciliation.NotSatisfied},
-		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: reconciliation.NotSatisfied},
+		{name: "case", args: args{expected: "Release", observed: "release"}, want: planrepresentation.NotSatisfied},
+		{name: "whitespace", args: args{expected: " Release ", observed: "Release"}, want: planrepresentation.NotSatisfied},
+		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: planrepresentation.NotSatisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -167,12 +166,12 @@ func TestReconcileGoalExactPayloadBoundaries(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
-		{name: "case", args: args{expected: "Ship", observed: "ship"}, want: reconciliation.NotSatisfied},
-		{name: "whitespace", args: args{expected: " Ship ", observed: "Ship"}, want: reconciliation.NotSatisfied},
-		{name: "line ending", args: args{expected: "Ship\r\nGoal", observed: "Ship\nGoal"}, want: reconciliation.NotSatisfied},
-		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: reconciliation.NotSatisfied},
+		{name: "case", args: args{expected: "Ship", observed: "ship"}, want: planrepresentation.NotSatisfied},
+		{name: "whitespace", args: args{expected: " Ship ", observed: "Ship"}, want: planrepresentation.NotSatisfied},
+		{name: "line ending", args: args{expected: "Ship\r\nGoal", observed: "Ship\nGoal"}, want: planrepresentation.NotSatisfied},
+		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: planrepresentation.NotSatisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -291,12 +290,12 @@ func TestReconcileAcceptanceExactPayloadBoundaries(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
-		{name: "case", args: args{expected: "A", observed: "a"}, want: reconciliation.NotSatisfied},
-		{name: "whitespace", args: args{expected: "A", observed: " A "}, want: reconciliation.NotSatisfied},
-		{name: "line ending", args: args{expected: "A\r\nB", observed: "A\nB"}, want: reconciliation.NotSatisfied},
-		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: reconciliation.NotSatisfied},
+		{name: "case", args: args{expected: "A", observed: "a"}, want: planrepresentation.NotSatisfied},
+		{name: "whitespace", args: args{expected: "A", observed: " A "}, want: planrepresentation.NotSatisfied},
+		{name: "line ending", args: args{expected: "A\r\nB", observed: "A\nB"}, want: planrepresentation.NotSatisfied},
+		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: planrepresentation.NotSatisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -381,11 +380,11 @@ func TestReconcileTaskExactPayloadBoundaries(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
-		{name: "case", args: args{expected: "Build", observed: "build"}, want: reconciliation.NotSatisfied},
-		{name: "whitespace", args: args{expected: "Build", observed: " Build "}, want: reconciliation.NotSatisfied},
-		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: reconciliation.NotSatisfied},
+		{name: "case", args: args{expected: "Build", observed: "build"}, want: planrepresentation.NotSatisfied},
+		{name: "whitespace", args: args{expected: "Build", observed: " Build "}, want: planrepresentation.NotSatisfied},
+		{name: "Unicode code points", args: args{expected: "é", observed: "e\u0301"}, want: planrepresentation.NotSatisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -475,7 +474,7 @@ func TestReconcileEqualTargetDate(t *testing.T) {
 			))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.Satisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Satisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -498,7 +497,7 @@ func TestReconcileExpectedTargetDateAbsent(t *testing.T) {
 			))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -535,7 +534,7 @@ func TestReconcileUnexpectedTargetDatePresent(t *testing.T) {
 			))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -573,7 +572,7 @@ func TestReconcileDifferentTargetDate(t *testing.T) {
 			))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -633,7 +632,7 @@ func TestReconcileInvalidPlanName(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -679,7 +678,7 @@ func TestReconcileInvalidPlanNameText(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -725,7 +724,7 @@ func TestReconcileInvalidGoal(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -758,7 +757,7 @@ func TestReconcileInvalidAcceptanceCondition(t *testing.T) {
 			))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -791,7 +790,7 @@ func TestReconcileInvalidTargetDate(t *testing.T) {
 			))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -819,13 +818,13 @@ func TestReconcileValidGoalBoundaries(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
-		{name: "surrounding whitespace and Unicode", args: args{value: "  出荷\t"}, want: reconciliation.Satisfied},
-		{name: "carriage return and line feed", args: args{value: "Ship\r\nGoal"}, want: reconciliation.Satisfied},
-		{name: "NEL", args: args{value: "Ship\u0085Goal"}, want: reconciliation.Satisfied},
-		{name: "line separator", args: args{value: "Ship\u2028Goal"}, want: reconciliation.Satisfied},
-		{name: "paragraph separator", args: args{value: "Ship\u2029Goal"}, want: reconciliation.Satisfied},
+		{name: "surrounding whitespace and Unicode", args: args{value: "  出荷\t"}, want: planrepresentation.Satisfied},
+		{name: "carriage return and line feed", args: args{value: "Ship\r\nGoal"}, want: planrepresentation.Satisfied},
+		{name: "NEL", args: args{value: "Ship\u0085Goal"}, want: planrepresentation.Satisfied},
+		{name: "line separator", args: args{value: "Ship\u2028Goal"}, want: planrepresentation.Satisfied},
+		{name: "paragraph separator", args: args{value: "Ship\u2029Goal"}, want: planrepresentation.Satisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -850,11 +849,11 @@ func TestReconcileValidTargetDateBoundaries(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want reconciliation.Determination
+		want planrepresentation.Determination
 	}{
-		{name: "year one lower bound", args: args{value: "0001-01-01"}, want: reconciliation.Satisfied},
-		{name: "year 9999 upper bound", args: args{value: "9999-12-31"}, want: reconciliation.Satisfied},
-		{name: "leap day", args: args{value: "2028-02-29"}, want: reconciliation.Satisfied},
+		{name: "year one lower bound", args: args{value: "0001-01-01"}, want: planrepresentation.Satisfied},
+		{name: "year 9999 upper bound", args: args{value: "9999-12-31"}, want: planrepresentation.Satisfied},
+		{name: "leap day", args: args{value: "2028-02-29"}, want: planrepresentation.Satisfied},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -897,7 +896,7 @@ func TestReconcileInvalidTargetDateBoundaries(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -989,7 +988,7 @@ func TestReconcileUnavailableEvidenceOrderAndPartialPreservation(t *testing.T) {
 				return observation, nil
 			})))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -1109,7 +1108,7 @@ func TestReconcileCompleteEmptyCollections(t *testing.T) {
 			observation := must(planrepresentation.NewPresentObservation(planrepresentation.ClassifyPlanName("Release"), planrepresentation.ClassifyGoal("Ship"), planrepresentation.CompleteAcceptanceConditions(nil), planrepresentation.CompleteTasks(nil), planrepresentation.AbsentTargetDate()))
 			controller := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return observation, nil })))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -1163,7 +1162,7 @@ func TestReconcileRootAbsence(t *testing.T) {
 				return planrepresentation.AbsentObservation(), nil
 			})))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			differences := result.Differences()
@@ -1203,7 +1202,7 @@ func TestReconcileRootUnavailable(t *testing.T) {
 				return planrepresentation.UnavailableObservation(), nil
 			})))
 			result := must(controller.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -1269,7 +1268,7 @@ func TestReconcileResultSnapshots(t *testing.T) {
 			if diff := cmp.Diff(" release ", rereadObserved.Text()); diff != "" {
 				t.Errorf("difference output snapshot observed payload mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(reconciliation.NotSatisfied, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.NotSatisfied, result.Determination()); diff != "" {
 				t.Errorf("difference determination after mutation mismatch (-want +got):\n%s", diff)
 			}
 			rootDate := must(plan.ParseTargetDate("2026-09-01"))
@@ -1340,7 +1339,7 @@ func TestReconcileResultSnapshots(t *testing.T) {
 			if diff := cmp.Diff(planrepresentation.PlanRootLocation, rereadUnavailable[0].Location().Kind()); diff != "" {
 				t.Errorf("unavailable output snapshot location mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, unavailableResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, unavailableResult.Determination()); diff != "" {
 				t.Errorf("unavailable determination after mutation mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -1367,13 +1366,13 @@ func TestObservationCollectionInputSnapshots(t *testing.T) {
 			completeObservation := must(planrepresentation.NewPresentObservation(planrepresentation.ClassifyPlanName("Release"), planrepresentation.ClassifyGoal("Ship"), completeConditionObservation, completeTaskObservation, planrepresentation.AbsentTargetDate()))
 			completeController := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return completeObservation, nil })))
 			completeResult := must(completeController.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.Satisfied, completeResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Satisfied, completeResult.Determination()); diff != "" {
 				t.Errorf("complete snapshot determination mismatch (-want +got):\n%s", diff)
 			}
 			incompleteObservation := must(planrepresentation.NewPresentObservation(planrepresentation.ClassifyPlanName("Release"), planrepresentation.ClassifyGoal("Ship"), incompleteConditionObservation, incompleteTaskObservation, planrepresentation.AbsentTargetDate()))
 			incompleteController := must(planrepresentation.NewController(planrepresentation.Observer(func(context.Context) (planrepresentation.Observation, error) { return incompleteObservation, nil })))
 			incompleteResult := must(incompleteController.Reconcile(context.Background(), expected))
-			if diff := cmp.Diff(reconciliation.Undecidable, incompleteResult.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, incompleteResult.Determination()); diff != "" {
 				t.Errorf("incomplete snapshot determination mismatch (-want +got):\n%s", diff)
 			}
 			incompleteDifferences := incompleteResult.Differences()

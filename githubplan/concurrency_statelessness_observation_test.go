@@ -16,7 +16,6 @@ import (
 	"github.com/kotokumu/arcloom/githubplan"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 type correlationContextKey struct{}
@@ -74,7 +73,7 @@ func TestObserverConcurrentCallsKeepFactsAndProviderFailuresIsolated(t *testing.
 			if len(unavailable) != 1 || unavailable[0].Location().Kind() != planrepresentation.TaskCollectionLocation {
 				t.Errorf("error call unavailable information = %v, want Task collection only", unavailable)
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, outcome.result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, outcome.result.Determination()); diff != "" {
 				t.Errorf("error call determination mismatch (-want +got):\n%s", diff)
 			}
 			continue
@@ -82,7 +81,7 @@ func TestObserverConcurrentCallsKeepFactsAndProviderFailuresIsolated(t *testing.
 		if outcome.err != nil {
 			t.Errorf("%s call returned error = %v", outcome.label, outcome.err)
 		}
-		if diff := cmp.Diff(reconciliation.Satisfied, outcome.result.Determination()); diff != "" {
+		if diff := cmp.Diff(planrepresentation.Satisfied, outcome.result.Determination()); diff != "" {
 			t.Errorf("%s determination mismatch (-want +got):\n%s", outcome.label, diff)
 		}
 		if diff := cmp.Diff(0, len(outcome.result.Differences())); diff != "" {
@@ -126,7 +125,7 @@ func TestObserverRepeatedCallsReconstructChangedCurrentFactsWithoutCache(t *test
 		if err != nil {
 			t.Fatalf("generation %d Reconcile() error = %v", generation, err)
 		}
-		if diff := cmp.Diff(reconciliation.Satisfied, result.Determination()); diff != "" {
+		if diff := cmp.Diff(planrepresentation.Satisfied, result.Determination()); diff != "" {
 			t.Errorf("generation %d determination mismatch (-want +got):\n%s", generation, diff)
 		}
 		if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -153,7 +152,7 @@ func TestObserverCanReconstructAfterRuntimeStateIsDiscarded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first Reconcile() error = %v", err)
 	}
-	if diff := cmp.Diff(reconciliation.Satisfied, firstResult.Determination()); diff != "" {
+	if diff := cmp.Diff(planrepresentation.Satisfied, firstResult.Determination()); diff != "" {
 		t.Fatalf("first determination mismatch (-want +got):\n%s", diff)
 	}
 
@@ -165,7 +164,7 @@ func TestObserverCanReconstructAfterRuntimeStateIsDiscarded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second Reconcile() error = %v", err)
 	}
-	if diff := cmp.Diff(reconciliation.Satisfied, secondResult.Determination()); diff != "" {
+	if diff := cmp.Diff(planrepresentation.Satisfied, secondResult.Determination()); diff != "" {
 		t.Errorf("second determination mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(0, len(secondResult.Differences())); diff != "" {

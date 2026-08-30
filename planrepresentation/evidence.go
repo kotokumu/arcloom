@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/kotokumu/arcloom/plan"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 // DifferenceCategory identifies one known semantic difference.
@@ -154,18 +153,33 @@ type unavailableInformation struct{ location Location }
 func (unavailableInformation) isUnavailableInformation() {}
 func (u unavailableInformation) Location() Location      { return u.location }
 
+// Determination is the evidence-derived state of a Plan Representation Result.
+type Determination uint8
+
+const (
+	Satisfied Determination = iota + 1
+	NotSatisfied
+	Undecidable
+)
+
 // Result is an immutable Plan-specific reconciliation result. Its evidence is
 // canonically ordered, unique, aggregated by Plan violation and location, and
 // defensively snapshotted. The zero Result is invalid: Determination returns
 // the zero determination and both evidence accessors return nil. Results
 // returned by Controller are valid; a valid empty result is Satisfied.
 type Result struct {
-	core reconciliation.Result[Difference, UnavailableInformation]
+	differences []Difference
+	unavailable []UnavailableInformation
+	valid       bool
 }
 
 func newResult(differences []Difference, unavailable []UnavailableInformation) Result {
 	differences, unavailable = canonicalEvidence(differences, unavailable)
-	return Result{core: reconciliation.NewResult(differences, unavailable)}
+	return Result{
+		differences: append([]Difference(nil), differences...),
+		unavailable: append([]UnavailableInformation(nil), unavailable...),
+		valid:       true,
+	}
 }
 
 // canonicalEvidence is the Result boundary for Plan-specific evidence. The
@@ -261,16 +275,35 @@ func uniqueUnavailable(values []UnavailableInformation) []UnavailableInformation
 	return result
 }
 
-// Determination returns the evidence-derived reconciliation determination.
-func (r Result) Determination() reconciliation.Determination { return r.core.Determination() }
+// Determination returns the state derived from the complete evidence snapshot.
+func (r Result) Determination() Determination {
+	if !r.valid {
+		return 0
+	}
+	if len(r.unavailable) > 0 {
+		return Undecidable
+	}
+	if len(r.differences) > 0 {
+		return NotSatisfied
+	}
+	return Satisfied
+}
 
 // Differences returns an independent snapshot of known differences.
-func (r Result) Differences() []Difference { return r.core.Differences() }
+func (r Result) Differences() []Difference {
+	if !r.valid {
+		return nil
+	}
+	return append([]Difference{}, r.differences...)
+}
 
 // UnavailableInformation returns an independent snapshot of unavailable
 // evidence.
 func (r Result) UnavailableInformation() []UnavailableInformation {
-	return r.core.UnavailableInformation()
+	if !r.valid {
+		return nil
+	}
+	return append([]UnavailableInformation{}, r.unavailable...)
 }
 
 func reconcileObservation(expected plan.Plan, observation Observation) Result {

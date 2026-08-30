@@ -1,12 +1,12 @@
 ## Purpose
 
-Provides a target-independent, level-based control lifecycle that serializes reconciliation per target, preserves target-owned results, follows only explicit reevaluation directives, and retains no authoritative target or durable scheduling state.
+Provides a target-independent, level-based Controller lifecycle that serializes target Attempts, preserves target-owned successful values without deciding whether they are Reconciliation Results, follows only explicit reevaluation Directives, and retains no authoritative target or durable scheduling state.
 
 ## ADDED Requirements
 
 ### Requirement: exact-target-request
 
-The control loop MUST accept reconciliation requests only for one valid caller-established Target Identity and keep every resulting attempt, completion, and failure bound to that exact identity.
+The Controller MUST accept evaluation Requests only for one valid caller-established Target Identity and keep every resulting Attempt, Completion, and Failure bound to that exact identity.
 
 - **入力と受理**: A request contains one valid stable Target Identity and no required event payload. Its kind and key are non-empty and contain neither only Unicode whitespace nor leading or trailing Unicode whitespace; embedded whitespace is allowed.
 - **振る舞いの規則**: Accepted kind and key bytes are preserved exactly. Scheduling equality is byte-exact, case-sensitive equality of both fields with no Unicode normalization.
@@ -32,11 +32,11 @@ The control loop MUST accept reconciliation requests only for one valid caller-e
 
 ### Requirement: level-based-attempt
 
-Each Reconciliation Attempt MUST evaluate one target from facts acquired for that attempt rather than from the request occurrence or a previous outcome.
+Each Attempt MUST evaluate one target from facts acquired for that Attempt rather than from the Request occurrence or a previous outcome.
 
 - **入力と受理**: The attempt receives the Target Identity and caller lifecycle required to acquire its target-specific current facts.
 - **振る舞いの規則**: Request cause, count, metadata, payload, prior result, prior failure, and prior Control Directive are not supplied as authoritative decision inputs.
-- **副作用**: The generic control loop does not acquire, interpret, or store target-specific observations.
+- **副作用**: The generic Controller does not acquire, interpret, or store target-specific Observations and does not decide whether the Attempt invokes semantic Reconciliation.
 
 #### Scenario: RCL-LBA-1 Provider event wakes a target [happy]
 
@@ -90,7 +90,7 @@ The control loop MUST schedule internal reevaluation after a successful Attempt 
 - **入力と受理**: A successful completion contains exactly Await Another Request, Reevaluate Immediately, or Reevaluate After Delay with one positive finite delay.
 - **振る舞いの規則**: Await creates no internal eligibility; Immediate creates eligibility without waiting for another request; Delay creates eligibility after its duration. A new request may make a delayed target eligible earlier.
 - **排他・冪等**: Request eligibility and Directive eligibility coalesce without creating same-target overlap or duplicate obligations.
-- **失敗の扱い**: The delayed-Directive constructor rejects a non-positive delay. If a Reconciler returns the unconstructed zero Directive with nil error, the Controller produces Control Directive Rejected, distinguishable from Target Attempt Failed, and schedules no Directive-based reevaluation.
+- **失敗の扱い**: The delayed-Directive constructor rejects a non-positive delay. If the target-specific Attempt boundary returns the unconstructed zero Directive with nil error, the Controller produces Control Directive Rejected, distinguishable from Target Attempt Failed, and schedules no Directive-based reevaluation.
 
 #### Scenario: RCL-ECD-1 Attempt awaits another request [happy]
 
@@ -124,7 +124,7 @@ The control loop MUST schedule internal reevaluation after a successful Attempt 
 
 #### Scenario: RCL-ECD-6 Unconstructed directive is rejected by control [error]
 
-- **GIVEN** a Reconciler returns a result, the zero Directive, and nil error
+- **GIVEN** a target-specific Attempt boundary returns a successful value, the zero Directive, and nil error
 - **WHEN** the control loop processes the return
 - **THEN** it reports one target-bound Control Directive Rejected failure, exposes no Completion, and schedules no Directive-based Attempt
 
@@ -136,16 +136,22 @@ The control loop MUST schedule internal reevaluation after a successful Attempt 
 
 ### Requirement: target-result-isolation
 
-A successful completion MUST preserve its target-owned result without requiring or applying a shared result classification.
+A successful Completion MUST preserve its target-owned value without requiring a shared result classification or claiming that semantic Reconciliation occurred.
 
-- **振る舞いの規則**: The generic control loop associates the result with its Target Identity and Control Directive but does not inspect the result to determine scheduling.
-- **副作用**: The control loop does not convert target-specific evidence, proposals, conditions, or effects into a universal result taxonomy.
+- **振る舞いの規則**: The generic Controller associates the successful value with its Target Identity and Control Directive but does not inspect the value to determine scheduling or semantic status. The value may be a Reconciliation Result or another target-specific success, including a successful Observation for which no semantic Reconciliation was possible.
+- **副作用**: The Controller does not convert target-specific evidence, proposals, conditions, effects, or non-Reconciliation successes into a universal result taxonomy and defines no universal Reconciliation input, Observation, Result, Failure, or outcome interface.
 
 #### Scenario: RCL-TRI-1 Unrelated result types use control [compatibility]
 
-- **GIVEN** two control-loop instances use target-specific Reconcilers with unrelated result meanings
+- **GIVEN** two Controller instances use target-specific Attempt boundaries with unrelated successful-value meanings
 - **WHEN** each successfully completes through its typed control loop
 - **THEN** each Host consumer receives its target-specific result unchanged and scheduling follows only its Control Directive
+
+#### Scenario: RCL-TRI-2 Successful Attempt performs no Reconciliation [boundary]
+
+- **GIVEN** a target-specific Attempt establishes a successful Observation but cannot establish the inputs required for semantic Reconciliation
+- **WHEN** the Controller publishes its Completion
+- **THEN** it preserves the target-specific successful value and Directive without reporting that a Reconciliation Result exists
 
 ### Requirement: failure-does-not-retry
 
@@ -175,13 +181,13 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
 #### Scenario: RCL-FNR-4 Invalid directive is distinguishable [error]
 
-- **GIVEN** a Reconciler returns a successful result with an invalid Directive
+- **GIVEN** a target-specific Attempt boundary returns a successful value with an invalid Directive
 - **WHEN** the control loop reports the Attempt Failure
 - **THEN** the Host can distinguish Control Directive Rejected from Target Attempt Failed
 
 #### Scenario: RCL-FNR-5 Target Attempt error outranks returned values [error]
 
-- **GIVEN** a Reconciler returns a non-nil error together with any result and any valid or invalid Directive value
+- **GIVEN** a target-specific Attempt boundary returns a non-nil error together with any successful value and any valid or invalid Directive value
 - **WHEN** the control loop processes that return
 - **THEN** it reports one Target Attempt Failed outcome preserving the exact target and error cause, exposes no Completion or Directive, and schedules no Directive-based Attempt
 
@@ -189,10 +195,10 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
 The control loop MUST stop through the supplied caller lifecycle without establishing successful completion for unfinished work.
 
-- **前提条件**: Each target-specific Attempt observes the supplied cancellation and returns within its documented bound.
+- **前提条件**: Each target-specific Attempt boundary observes the supplied cancellation and returns within its documented bound.
 - **振る舞いの規則**: Cancellation stops request acceptance and new scheduling, discards Pending and Delayed eligibility, cancels Active Attempts, waits for them to return, closes the one stable Report stream, and makes the supplied caller context error available as the lifecycle outcome. After Active Attempts return, neither Report consumption nor Pending or Delayed work may add another wait condition.
 - **Request context**: A request operation's context bounds only that submission. Once the operation returns success, later cancellation of its submission context does not cancel or become evidence for its Attempt. If both submission and Controller contexts have ended before acceptance, the Controller lifecycle outcome takes precedence.
-- **出力配送**: While a prospective Report is awaiting delivery, the Controller starts no new Attempt but continues accepting and coalescing requests, permits already Active Attempts to return, and observes cancellation. While the lifecycle continues and the consumer receives Reports, every returned Attempt outcome is published exactly once without loss or duplication. Delivery atomically publishes the Completion or Failure and only then applies a successful Directive. Cancellation may discard the pending Report and unapplied Directive without publishing either outcome so that a stopped consumer cannot prevent lifecycle termination. No completion order is guaranteed across distinct concurrently Active targets.
+- **出力配送**: While a prospective Report is awaiting publication, the Controller starts no new Attempt but continues accepting and coalescing Requests, permits already Active Attempts to return, and observes cancellation. While the lifecycle continues and the consumer receives Reports, every returned Attempt outcome is published exactly once without loss or duplication. Publication atomically commits the Completion or Failure and only then applies a successful Directive. This in-process publication is not delivery of a semantic Reconciliation Result to its Result Destination. Cancellation may discard the pending Report and unapplied Directive without publishing either outcome so that a stopped consumer cannot prevent lifecycle termination. No completion order is guaranteed across distinct concurrently Active targets.
 - **失敗の扱い**: An Attempt that has not successfully completed before cancellation establishes no successful completion.
 
 #### Scenario: RCL-CL-1 Caller cancels with active and pending work [concurrency]
@@ -213,11 +219,11 @@ The control loop MUST stop through the supplied caller lifecycle without establi
 - **WHEN** the caller cancels
 - **THEN** the control loop may discard the undelivered Report without publishing its outcome, waits for every Active Attempt, closes the Report stream, and exposes the caller context error without waiting for Report consumption
 
-#### Scenario: RCL-CL-4 Reconciler returns nominal success after cancellation [concurrency]
+#### Scenario: RCL-CL-4 Attempt boundary returns nominal success after cancellation [concurrency]
 
-- **GIVEN** one Active Reconciler observes caller cancellation and then returns a nominal result and Directive
+- **GIVEN** one Active target-specific Attempt boundary observes caller cancellation and then returns a nominal successful value and Directive
 - **WHEN** the control loop receives that return after stopping began
-- **THEN** it establishes no Completion Report or Directive-based eligibility, waits for the Reconciler return, closes Reports, and exposes the caller context error
+- **THEN** it establishes no Completion Report or Directive-based eligibility, waits for the Attempt boundary return, closes Reports, and exposes the caller context error
 
 #### Scenario: RCL-CL-5 Submission context ends after acceptance [boundary]
 
@@ -241,7 +247,7 @@ The control loop MUST stop through the supplied caller lifecycle without establi
 
 - **GIVEN** one Report is pending delivery while requests arrive and other Active Attempts return
 - **WHEN** the Report consumer remains blocked
-- **THEN** no new Attempt starts, new requests are accepted and may coalesce, already Active Reconcilers can return, and cancellation still closes Reports and completes Wait without consumer progress
+- **THEN** no new Attempt starts, new Requests are accepted and may coalesce, already Active Attempt boundaries can return, and cancellation still closes Reports and completes Wait without consumer progress
 
 #### Scenario: RCL-CL-9 Cancellation commits before Report delivery [concurrency]
 

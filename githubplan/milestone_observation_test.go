@@ -14,7 +14,6 @@ import (
 	"github.com/kotokumu/arcloom/githubplan"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 type milestoneObservationRoundTripper struct {
@@ -74,7 +73,7 @@ func TestMilestoneNativeObservationMapsTitleTasksAndPullRequests(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
-	if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+	if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 		t.Errorf("determination mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -120,7 +119,7 @@ func TestMilestoneDueOnObservationStates(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			dateFound := false
@@ -189,7 +188,7 @@ func TestMilestoneFirstPageTaskBoundaries(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(0, len(result.Differences())); diff != "" {
@@ -231,7 +230,7 @@ func TestMilestoneResponseShapeFailuresLocalizeKnowledge(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
-			if diff := cmp.Diff(reconciliation.Undecidable, result.Determination()); diff != "" {
+			if diff := cmp.Diff(planrepresentation.Undecidable, result.Determination()); diff != "" {
 				t.Errorf("determination mismatch (-want +got):\n%s", diff)
 			}
 			if tt.wantRoot {

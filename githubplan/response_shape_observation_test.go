@@ -11,7 +11,6 @@ import (
 	"github.com/kotokumu/arcloom/githubplan"
 	"github.com/kotokumu/arcloom/plan"
 	"github.com/kotokumu/arcloom/planrepresentation"
-	"github.com/kotokumu/arcloom/reconciliation"
 )
 
 type responseShapeRoundTripper struct {
@@ -56,7 +55,7 @@ func TestResponseShapePublicResultMatrix(t *testing.T) {
 		collection        string
 		expectedTasks     []string
 		expectedDate      string
-		wantDetermination reconciliation.Determination
+		wantDetermination planrepresentation.Determination
 		wantCategories    []planrepresentation.DifferenceCategory
 		wantLocations     []planrepresentation.LocationKind
 		wantViolations    []plan.ViolationCode
@@ -70,7 +69,7 @@ func TestResponseShapePublicResultMatrix(t *testing.T) {
 			{name: "root malformed", body: `{"number":42`},
 			{name: "root trailing", body: `{"number":42,"title":"Plan"} true`},
 		} {
-			tests = append(tests, responseCase{name: string(representation) + "/" + root.name, representation: representation, root: root.body, collection: "[]", wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.PlanRootLocation}})
+			tests = append(tests, responseCase{name: string(representation) + "/" + root.name, representation: representation, root: root.body, collection: "[]", wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.PlanRootLocation}})
 		}
 		for _, number := range []struct{ name, value string }{
 			{name: "number missing", value: ""},
@@ -89,7 +88,7 @@ func TestResponseShapePublicResultMatrix(t *testing.T) {
 			if representation == githubplan.IssueRepresentation {
 				field = `"body":""`
 			}
-			tests = append(tests, responseCase{name: string(representation) + "/" + number.name, representation: representation, root: `{` + prefix + `"title":"Plan",` + field + `}`, collection: "[]", wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.PlanRootLocation}})
+			tests = append(tests, responseCase{name: string(representation) + "/" + number.name, representation: representation, root: `{` + prefix + `"title":"Plan",` + field + `}`, collection: "[]", wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.PlanRootLocation}})
 		}
 
 		validRoot := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
@@ -102,7 +101,7 @@ func TestResponseShapePublicResultMatrix(t *testing.T) {
 			{name: "collection malformed", body: `[{"id":1}`},
 			{name: "collection trailing", body: `[] false`},
 		} {
-			tests = append(tests, responseCase{name: string(representation) + "/" + collection.name, representation: representation, root: validRoot, collection: collection.body, wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}})
+			tests = append(tests, responseCase{name: string(representation) + "/" + collection.name, representation: representation, root: validRoot, collection: collection.body, wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}})
 		}
 		for _, item := range []struct{ name, body string }{
 			{name: "item id missing", body: `[{"number":7,"node_id":"N","title":"Task"}]`},
@@ -115,22 +114,22 @@ func TestResponseShapePublicResultMatrix(t *testing.T) {
 			{name: "item title null", body: `[{"id":1,"title":null}]`},
 			{name: "item title wrong type", body: `[{"id":1,"title":123}]`},
 		} {
-			tests = append(tests, responseCase{name: string(representation) + "/" + item.name, representation: representation, root: validRoot, collection: item.body, wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}})
+			tests = append(tests, responseCase{name: string(representation) + "/" + item.name, representation: representation, root: validRoot, collection: item.body, wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}})
 		}
 		tests = append(tests,
-			responseCase{name: string(representation) + "/REST id alone determines identity", representation: representation, root: validRoot, collection: `[{"id":9001,"number":0,"node_id":"not-the-resource","title":"Task"}]`, expectedTasks: []string{"Task"}, wantDetermination: reconciliation.Satisfied},
-			responseCase{name: string(representation) + "/same id same title incomplete", representation: representation, root: validRoot, collection: `[{"id":7,"number":1,"node_id":"A","title":"Task"},{"id":7,"number":2,"node_id":"B","title":"Task"}]`, expectedTasks: []string{"Task"}, wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}},
-			responseCase{name: string(representation) + "/same id conflicting title incomplete", representation: representation, root: validRoot, collection: `[{"id":7,"title":"First"},{"id":7,"title":"Second"}]`, wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}},
-			responseCase{name: string(representation) + "/distinct ids duplicate title", representation: representation, root: validRoot, collection: `[{"id":7,"title":"Task"},{"id":8,"title":"Task"}]`, expectedTasks: []string{"Task"}, wantDetermination: reconciliation.NotSatisfied, wantCategories: []planrepresentation.DifferenceCategory{planrepresentation.InvalidObservedCategory}, wantLocations: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}, wantViolations: []plan.ViolationCode{plan.DuplicateTask}},
+			responseCase{name: string(representation) + "/REST id alone determines identity", representation: representation, root: validRoot, collection: `[{"id":9001,"number":0,"node_id":"not-the-resource","title":"Task"}]`, expectedTasks: []string{"Task"}, wantDetermination: planrepresentation.Satisfied},
+			responseCase{name: string(representation) + "/same id same title incomplete", representation: representation, root: validRoot, collection: `[{"id":7,"number":1,"node_id":"A","title":"Task"},{"id":7,"number":2,"node_id":"B","title":"Task"}]`, expectedTasks: []string{"Task"}, wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}},
+			responseCase{name: string(representation) + "/same id conflicting title incomplete", representation: representation, root: validRoot, collection: `[{"id":7,"title":"First"},{"id":7,"title":"Second"}]`, wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}},
+			responseCase{name: string(representation) + "/distinct ids duplicate title", representation: representation, root: validRoot, collection: `[{"id":7,"title":"Task"},{"id":8,"title":"Task"}]`, expectedTasks: []string{"Task"}, wantDetermination: planrepresentation.NotSatisfied, wantCategories: []planrepresentation.DifferenceCategory{planrepresentation.InvalidObservedCategory}, wantLocations: []planrepresentation.LocationKind{planrepresentation.TaskCollectionLocation}, wantViolations: []plan.ViolationCode{plan.DuplicateTask}},
 		)
 	}
 
 	milestonePayload := `<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->`
 	tests = append(tests,
-		responseCase{name: "milestone due absent", representation: githubplan.MilestoneRepresentation, root: `{"number":42,"title":"Plan","description":"` + milestonePayload + `"}`, collection: "[]", wantDetermination: reconciliation.Satisfied},
-		responseCase{name: "milestone due null", representation: githubplan.MilestoneRepresentation, root: `{"number":42,"title":"Plan","description":"` + milestonePayload + `","due_on":null}`, collection: "[]", wantDetermination: reconciliation.Satisfied},
-		responseCase{name: "milestone due wrong type", representation: githubplan.MilestoneRepresentation, root: `{"number":42,"title":"Plan","description":"` + milestonePayload + `","due_on":123}`, collection: "[]", wantDetermination: reconciliation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TargetDateLocation}},
-		responseCase{name: "issue simultaneous payload and item faults", representation: githubplan.IssueRepresentation, root: `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJhY2NlcHRhbmNlX2NvbmRpdGlvbnMiOlsiQSIsMV0sInRhcmdldF9kYXRlIjoiMjAyOC0wMi0zMCJ9\n-->"}`, collection: `[{"id":0,"title":"Task"}]`, expectedTasks: []string{"Task"}, expectedDate: "2028-02-29", wantDetermination: reconciliation.Undecidable, wantCategories: []planrepresentation.DifferenceCategory{planrepresentation.InvalidObservedCategory}, wantLocations: []planrepresentation.LocationKind{planrepresentation.TargetDateLocation}, wantViolations: []plan.ViolationCode{plan.InvalidTargetDate}, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.GoalLocation, planrepresentation.AcceptanceConditionCollectionLocation, planrepresentation.TaskCollectionLocation}},
+		responseCase{name: "milestone due absent", representation: githubplan.MilestoneRepresentation, root: `{"number":42,"title":"Plan","description":"` + milestonePayload + `"}`, collection: "[]", wantDetermination: planrepresentation.Satisfied},
+		responseCase{name: "milestone due null", representation: githubplan.MilestoneRepresentation, root: `{"number":42,"title":"Plan","description":"` + milestonePayload + `","due_on":null}`, collection: "[]", wantDetermination: planrepresentation.Satisfied},
+		responseCase{name: "milestone due wrong type", representation: githubplan.MilestoneRepresentation, root: `{"number":42,"title":"Plan","description":"` + milestonePayload + `","due_on":123}`, collection: "[]", wantDetermination: planrepresentation.Undecidable, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.TargetDateLocation}},
+		responseCase{name: "issue simultaneous payload and item faults", representation: githubplan.IssueRepresentation, root: `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJhY2NlcHRhbmNlX2NvbmRpdGlvbnMiOlsiQSIsMV0sInRhcmdldF9kYXRlIjoiMjAyOC0wMi0zMCJ9\n-->"}`, collection: `[{"id":0,"title":"Task"}]`, expectedTasks: []string{"Task"}, expectedDate: "2028-02-29", wantDetermination: planrepresentation.Undecidable, wantCategories: []planrepresentation.DifferenceCategory{planrepresentation.InvalidObservedCategory}, wantLocations: []planrepresentation.LocationKind{planrepresentation.TargetDateLocation}, wantViolations: []plan.ViolationCode{plan.InvalidTargetDate}, wantUnavailable: []planrepresentation.LocationKind{planrepresentation.GoalLocation, planrepresentation.AcceptanceConditionCollectionLocation, planrepresentation.TaskCollectionLocation}},
 	)
 
 	for _, tt := range tests {
