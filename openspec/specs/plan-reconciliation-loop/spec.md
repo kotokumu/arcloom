@@ -76,7 +76,7 @@ Each Plan Attempt MUST begin with one fresh snapshot observation of its bound ex
 
 - **GIVEN** caller cancellation is observed before, during, or immediately after Target resolution, Snapshot observation, Delivery observation, or Plan Control assessment and each boundary honors its cancellation contract
 - **WHEN** the Plan Attempt returns
-- **THEN** it returns the exact caller context error with zero Plan Attempt Result and zero Directive instead of a Plan-owned or composed boundary failure
+- **THEN** it returns the caller lifecycle outcome, establishes neither a Plan Attempt Result nor a Directive, and does not replace that outcome with a Plan-owned or composed boundary failure
 
 ### Requirement: current-plan-assessment
 

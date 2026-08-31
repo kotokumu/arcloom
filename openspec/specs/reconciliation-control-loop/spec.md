@@ -19,7 +19,7 @@ A Control Directive is exactly Await Another Request, Reevaluate Immediately, or
 
 ### Controller
 
-A Controller is one caller-scoped lifecycle that owns disposable request eligibility, same-target exclusion, a finite concurrency bound across targets, delayed eligibility, bounded in-process Report publication, and orderly cancellation. At most one Attempt for a Target Identity is Active. Duplicate Pending Requests may coalesce, while a Request received during an Active Attempt preserves at least one later Attempt. The Controller starts no new Attempt while a Report is awaiting publication. Report publication commits its Completion or Attempt Failure and then applies a successful Control Directive. Cancellation may discard an unpublished Report and unapplied Directive, closes Reports after Active Attempts return, and exposes the caller context error as the lifecycle outcome. The Controller owns no authoritative target, Observation, Reconciliation, Result, semantic Result Destination, or durable scheduling state.
+A Controller is one caller-scoped lifecycle that owns disposable request eligibility, same-target exclusion, a finite concurrency bound across targets, delayed eligibility, bounded in-process Report publication, and orderly cancellation. At most one Attempt for a Target Identity is Active. Duplicate Pending Requests may coalesce, while a Request received during an Active Attempt preserves at least one later Attempt. The Controller starts no new Attempt while a Report is awaiting publication. Report publication commits its Completion or Attempt Failure and then applies a successful Control Directive. Cancellation may discard an unpublished Report and unapplied Directive, closes Reports after Active Attempts return, and exposes the caller lifecycle outcome. The Controller owns no authoritative target, Observation, Reconciliation, Result, semantic Result Destination, or durable scheduling state.
 
 ## Requirements
 
@@ -215,10 +215,11 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 The control loop MUST stop through the supplied caller lifecycle without establishing successful completion for unfinished work.
 
 - **前提条件**: Each target-specific Attempt boundary observes the supplied cancellation and returns within its documented bound.
-- **振る舞いの規則**: Cancellation stops request acceptance and new scheduling, discards Pending and Delayed eligibility, cancels Active Attempts, waits for them to return, closes the one stable Report stream, and makes the supplied caller context error available as the lifecycle outcome. After Active Attempts return, neither Report consumption nor Pending or Delayed work may add another wait condition.
-- **Request context**: A request operation's context bounds only that submission. Once the operation returns success, later cancellation of its submission context does not cancel or become evidence for its Attempt. If both submission and Controller contexts have ended before acceptance, the Controller lifecycle outcome takes precedence.
-- **出力配送**: While a prospective Report is awaiting publication, the Controller starts no new Attempt but continues accepting and coalescing Requests, permits already Active Attempts to return, and observes cancellation. While the lifecycle continues and the consumer receives Reports, every returned Attempt outcome is published exactly once without loss or duplication. Publication atomically commits the Completion or Failure and only then applies a successful Directive. This in-process publication is not delivery of a semantic Reconciliation Result to its Result Destination. Cancellation may discard the pending Report and unapplied Directive without publishing either outcome so that a stopped consumer cannot prevent lifecycle termination. No completion order is guaranteed across distinct concurrently Active targets.
-- **失敗の扱い**: An Attempt that has not successfully completed before cancellation establishes no successful completion.
+- **入力と受理**: A request submission lifecycle bounds only that submission. Once the operation returns success, later cancellation of the submission lifecycle does not cancel or become evidence for its Attempt. If both submission and Controller lifecycles have ended before acceptance, the Controller lifecycle outcome takes precedence.
+- **振る舞いの規則**: Cancellation stops request acceptance and new scheduling, discards Pending and Delayed eligibility, cancels Active Attempts, waits for them to return, closes the one stable Report stream, and exposes the caller lifecycle outcome. After Active Attempts return, neither Report consumption nor Pending or Delayed work may add another wait condition.
+- **副作用**: In-process Report publication does not deliver a semantic Reconciliation Result to its Result Destination.
+- **排他・冪等**: While a prospective Report is awaiting publication, the Controller starts no new Attempt but continues accepting and coalescing Requests, permits already Active Attempts to return, and observes cancellation. While the lifecycle continues and the consumer receives Reports, every returned Attempt outcome is published exactly once without loss or duplication. Publication atomically commits the Completion or Failure and only then applies a successful Directive. No completion order is guaranteed across distinct concurrently Active targets.
+- **失敗の扱い**: An Attempt that has not successfully completed before cancellation establishes no successful completion. Cancellation may discard the pending Report and unapplied Directive without publishing either outcome so that a stopped consumer cannot prevent lifecycle termination.
 
 #### Scenario: RCL-CL-1 Caller cancels with active and pending work [concurrency]
 
@@ -230,31 +231,31 @@ The control loop MUST stop through the supplied caller lifecycle without establi
 
 - **GIVEN** every Active Attempt has returned after observing caller cancellation
 - **WHEN** the control loop finishes stopping
-- **THEN** it closes Reports and exposes the caller context error without waiting for Report consumption, Pending work, Delayed work, or another timer
+- **THEN** it closes Reports and exposes the caller lifecycle outcome without waiting for Report consumption, Pending work, Delayed work, or another timer
 
 #### Scenario: RCL-CL-3 Report consumer stops before cancellation [boundary]
 
 - **GIVEN** a prospective Report is pending for a stopped consumer
 - **WHEN** the caller cancels
-- **THEN** the control loop may discard the undelivered Report without publishing its outcome, waits for every Active Attempt, closes the Report stream, and exposes the caller context error without waiting for Report consumption
+- **THEN** the control loop may discard the undelivered Report without publishing its outcome, waits for every Active Attempt, closes the Report stream, and exposes the caller lifecycle outcome without waiting for Report consumption
 
 #### Scenario: RCL-CL-4 Attempt boundary returns nominal success after cancellation [concurrency]
 
 - **GIVEN** one Active target-specific Attempt boundary observes caller cancellation and then returns a nominal successful value and Directive
 - **WHEN** the control loop receives that return after stopping began
-- **THEN** it establishes no Completion Report or Directive-based eligibility, waits for the Attempt boundary return, closes Reports, and exposes the caller context error
+- **THEN** it establishes no Completion Report or Directive-based eligibility, waits for the Attempt boundary return, closes Reports, and exposes the caller lifecycle outcome
 
-#### Scenario: RCL-CL-5 Submission context ends after acceptance [boundary]
+#### Scenario: RCL-CL-5 Submission lifecycle ends after acceptance [boundary]
 
 - **GIVEN** a request operation has returned success for one target
-- **WHEN** only that operation's submission context is later cancelled
-- **THEN** the accepted Attempt remains governed by the Controller lifecycle and receives neither cancellation nor evidence from the submission context
+- **WHEN** only that operation's submission lifecycle is later cancelled
+- **THEN** the accepted Attempt remains governed by the Controller lifecycle and receives neither cancellation nor evidence from the submission lifecycle
 
-#### Scenario: RCL-CL-6 Submission and Controller contexts have ended [error]
+#### Scenario: RCL-CL-6 Submission and Controller lifecycles have ended [error]
 
-- **GIVEN** both a request submission context and the Controller lifecycle context have ended before the request is accepted
+- **GIVEN** both the request submission lifecycle and the Controller lifecycle have ended before the request is accepted
 - **WHEN** the Host submits the request
-- **THEN** the operation returns the Controller lifecycle context error and starts no Attempt
+- **THEN** the operation returns the Controller lifecycle outcome and starts no Attempt
 
 #### Scenario: RCL-CL-7 Report delivery commits before cancellation [happy]
 
@@ -278,7 +279,7 @@ The control loop MUST stop through the supplied caller lifecycle without establi
 
 - **GIVEN** a prospective successful Report, a ready Report consumer, and caller cancellation become ready concurrently
 - **WHEN** the public lifecycle resolves the race
-- **THEN** exactly one outcome holds: the Report is published once and its Directive commits before stopping, or no Report is published and no Directive-based Attempt starts; Reports closes and Wait returns the caller context error in either case
+- **THEN** exactly one outcome holds: the Report is published once and its Directive commits before stopping, or no Report is published and no Directive-based Attempt starts; Reports closes and Wait returns the caller lifecycle outcome in either case
 
 #### Scenario: RCL-CL-11 Normal operation reports every returned outcome once [happy]
 
