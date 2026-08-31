@@ -1,19 +1,4 @@
-# authorization Specification
-
-## Purpose
-Provides a generic, recalculable authorization decision for the exact subject supplied by a consumer without retaining authoritative authorization state.
-
-## Conceptual Model
-
-### Authorization Subject and Policy
-
-An Authorization Subject is the exact consumer-established value whose authorization is requested. Authorization neither defines nor substitutes its domain meaning. An Authorization Policy is a non-empty set of applicable rules evaluated against that same subject. Each rule yields Permit, Deny, or Unknown; missing, invalid, unavailable, or failed evidence cannot yield Permit.
-
-### Authorization Evaluation
-
-An Authorization Evaluation associates one exact Authorization Subject with one aggregate Authorization Decision. Any Deny produces Denied; all Permit produces Authorized; every other combination produces Undecidable. The association is disposable and recalculated from the current subject, policy, and evidence. Neither the subject nor reachable semantic state changes during the Evaluation's lifetime.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: exact-authorization-subject
 
@@ -58,6 +43,12 @@ Authorization MUST aggregate current Rule Conclusions using deny-overrides, all-
 - **GIVEN** a valid Policy whose every applicable Rule yields Permit
 - **WHEN** the Policy is evaluated for an exact Authorization Subject
 - **THEN** the Decision is Authorized
+
+#### Scenario: No definitive result exists [boundary]
+
+- **GIVEN** a valid Policy with no Deny and at least one applicable Rule that cannot yield Permit
+- **WHEN** the Policy is evaluated for an exact Authorization Subject
+- **THEN** the Decision is Undecidable
 
 ### Requirement: missing-authorization-evidence
 

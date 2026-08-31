@@ -1,0 +1,835 @@
+{
+  "version": 1,
+  "retirements": [
+    {
+      "capability": "authorization",
+      "requirement": "authorization-decision-semantics",
+      "scenario": "No definitive result exists [boundary]"
+    },
+    {
+      "capability": "codex-plan-control-assessment",
+      "requirement": "valid-plan-control-judgment",
+      "scenario": "Plan should not be revised [happy]"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "dry-run-boundary-and-github-compatibility",
+      "scenario": "External operation would fail"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "dry-run-boundary-and-github-compatibility",
+      "scenario": "Host inspects compatibility"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "dry-run-boundary-and-github-compatibility",
+      "scenario": "Request plan is produced"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "explicit-github-target-and-representation",
+      "scenario": "Issue representation selected"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "explicit-github-target-and-representation",
+      "scenario": "Milestone representation selected"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "explicit-github-target-and-representation",
+      "scenario": "Representation is absent"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "issue-creation-request-plan",
+      "scenario": "Issue representation exceeds its Task limit"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "issue-creation-request-plan",
+      "scenario": "Issue representation reaches its Task limit"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "issue-creation-request-plan",
+      "scenario": "Issue representation with Tasks"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "issue-creation-request-plan",
+      "scenario": "Issue representation without Tasks"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "milestone-creation-request-plan",
+      "scenario": "Milestone representation with Tasks"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "milestone-creation-request-plan",
+      "scenario": "Milestone representation without Tasks"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "request-plan-integrity",
+      "scenario": "Caller mutates returned collections"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "request-plan-integrity",
+      "scenario": "Number and ID remain distinct"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "request-plan-integrity",
+      "scenario": "Same input is planned twice"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "validation-result",
+      "scenario": "Invalid Plan input"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "validation-result",
+      "scenario": "Invalid Repository input"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "versioned-plan-narrative",
+      "scenario": "Issue payload is reversible"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "versioned-plan-narrative",
+      "scenario": "Milestone payload is reversible"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "versioned-plan-narrative",
+      "scenario": "Narrative text is preserved"
+    },
+    {
+      "capability": "github-plan-creation-dry-run",
+      "requirement": "versioned-plan-narrative",
+      "scenario": "Same Plan is represented twice"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "collection-integrity",
+      "scenario": "Complete collection spans multiple Provider responses"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "collection-integrity",
+      "scenario": "Distinct resources share a title"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "collection-integrity",
+      "scenario": "External resource repeats"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "collection-integrity",
+      "scenario": "Later collection evidence is unavailable"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "conservative-failure-observation",
+      "scenario": "Caller cancels observation"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "conservative-failure-observation",
+      "scenario": "GitHub does not establish authoritative absence"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "conservative-failure-observation",
+      "scenario": "Root facts are inaccessible"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "conservative-failure-observation",
+      "scenario": "Task membership is only partly established"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "explicit-target-binding",
+      "scenario": "Local binding is invalid"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "explicit-target-binding",
+      "scenario": "Valid target is bound"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "issue-representation-meaning",
+      "scenario": "Complete Issue representation is observed"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "issue-representation-meaning",
+      "scenario": "Issue has no Sub-issues"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "issue-representation-meaning",
+      "scenario": "Parent is a Pull Request"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "milestone-representation-meaning",
+      "scenario": "Closed Issue and Pull Request are assigned"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "milestone-representation-meaning",
+      "scenario": "Complete Milestone representation is observed"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "milestone-representation-meaning",
+      "scenario": "Milestone target date is absent or invalid"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "read-only-stateless-observation",
+      "scenario": "GitHub facts change between observations"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "read-only-stateless-observation",
+      "scenario": "Observations run concurrently"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "read-only-stateless-observation",
+      "scenario": "Prior runtime state is lost"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "supported-github-context",
+      "scenario": "Required external behavior is unsupported"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "supported-github-context",
+      "scenario": "Supported representation is observed"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "versioned-payload-meaning",
+      "scenario": "Decoded value violates Plan meaning"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "versioned-payload-meaning",
+      "scenario": "Human-readable narrative changes"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "versioned-payload-meaning",
+      "scenario": "One required member is unusable"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "versioned-payload-meaning",
+      "scenario": "Payload block is unusable"
+    },
+    {
+      "capability": "github-plan-representation-observation",
+      "requirement": "versioned-payload-meaning",
+      "scenario": "Version-one payload is valid"
+    },
+    {
+      "capability": "github-plan-snapshot",
+      "requirement": "current-plan-eligibility",
+      "scenario": "Known Plan values violate Plan invariants [error]"
+    },
+    {
+      "capability": "github-plan-snapshot",
+      "requirement": "current-plan-eligibility",
+      "scenario": "Payload cannot establish Plan meaning [error]"
+    },
+    {
+      "capability": "github-plan-snapshot",
+      "requirement": "current-plan-eligibility",
+      "scenario": "Plan facts are not trustworthy [error]"
+    },
+    {
+      "capability": "github-plan-snapshot",
+      "requirement": "observation-failure",
+      "scenario": "GitHub cannot be observed [error]"
+    },
+    {
+      "capability": "github-plan-snapshot",
+      "requirement": "provider-independent-progress",
+      "scenario": "Distinct members have the same name [boundary]"
+    },
+    {
+      "capability": "plan",
+      "requirement": "collection-invariants",
+      "scenario": "Duplicate acceptance condition"
+    },
+    {
+      "capability": "plan",
+      "requirement": "collection-invariants",
+      "scenario": "Duplicate Task name"
+    },
+    {
+      "capability": "plan",
+      "requirement": "collection-invariants",
+      "scenario": "Similar Unicode text"
+    },
+    {
+      "capability": "plan",
+      "requirement": "collection-invariants",
+      "scenario": "Standalone collection contains a zero element"
+    },
+    {
+      "capability": "plan",
+      "requirement": "collection-invariants",
+      "scenario": "Standalone collection uniqueness validation"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-text",
+      "scenario": "Blank text"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-text",
+      "scenario": "Invalid UTF-8"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-text",
+      "scenario": "Multi-line title"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-text",
+      "scenario": "Preserved surrounding whitespace"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-text",
+      "scenario": "Unicode Plan"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-vocabulary",
+      "scenario": "Milestone is not a Plan element"
+    },
+    {
+      "capability": "plan",
+      "requirement": "plan-vocabulary",
+      "scenario": "Minimum Plan"
+    },
+    {
+      "capability": "plan",
+      "requirement": "target-date",
+      "scenario": "Invalid calendar date"
+    },
+    {
+      "capability": "plan",
+      "requirement": "target-date",
+      "scenario": "Invalid lexical form"
+    },
+    {
+      "capability": "plan",
+      "requirement": "target-date",
+      "scenario": "Leap-day target"
+    },
+    {
+      "capability": "plan",
+      "requirement": "validation-result-and-plan-validity",
+      "scenario": "Constructed Plan validity"
+    },
+    {
+      "capability": "plan",
+      "requirement": "validation-result-and-plan-validity",
+      "scenario": "Invalid Task in a collection"
+    },
+    {
+      "capability": "plan",
+      "requirement": "validation-result-and-plan-validity",
+      "scenario": "Multiple independent violations"
+    },
+    {
+      "capability": "plan",
+      "requirement": "validation-result-and-plan-validity",
+      "scenario": "Standalone Plan-name validation"
+    },
+    {
+      "capability": "plan",
+      "requirement": "validation-result-and-plan-validity",
+      "scenario": "Zero Plan validity"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "cancellation-preserves-uncertainty",
+      "scenario": "Actor observes cancellation before transmission [boundary]"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "cancellation-preserves-uncertainty",
+      "scenario": "Cancelled before transmission [error]"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "current-authorization-required",
+      "scenario": "A prior authorization exists [permission]"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "current-authorization-required",
+      "scenario": "Revision is Denied [permission]"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "invalid-application-input",
+      "scenario": "Revision or Actor is invalid [error]"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "request-interaction-result",
+      "scenario": "Actor explicitly refuses [happy]"
+    },
+    {
+      "capability": "plan-application-request",
+      "requirement": "request-interaction-result",
+      "scenario": "Request was definitely not received [happy]"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-boundary-failure",
+      "scenario": "AI is unavailable"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-boundary-failure",
+      "scenario": "AI reports insufficient information"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-boundary-failure",
+      "scenario": "Control request is cancelled"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-control-assessment",
+      "scenario": "AI cannot decide"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-control-assessment",
+      "scenario": "Another Reconciliation Module returns another result"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-control-assessment",
+      "scenario": "Plan adjustment is required"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-control-assessment",
+      "scenario": "Plan remains suitable"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-result-contract",
+      "scenario": "AI returns a formally valid complete assessment"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-result-contract",
+      "scenario": "AI returns contradictory outcomes"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-result-contract",
+      "scenario": "Proposed Plan equals the snapshot"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "ai-result-contract",
+      "scenario": "Proposed Plan is invalid"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "control-boundary",
+      "scenario": "Valid adjustment is proposed"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "plan-completion-meaning",
+      "scenario": "All Tasks are complete without outcome evidence"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "plan-completion-meaning",
+      "scenario": "Goal and acceptance conditions are achieved"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "plan-completion-meaning",
+      "scenario": "Obsolete Task remains incomplete"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "plan-control-subject",
+      "scenario": "Existing Plan is controlled"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "plan-control-subject",
+      "scenario": "Plan does not exist"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "progress-sensitive-adjustment",
+      "scenario": "Plan is delayed"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "progress-sensitive-adjustment",
+      "scenario": "Plan scope is insufficient"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "progress-sensitive-adjustment",
+      "scenario": "Task amount is unsuitable"
+    },
+    {
+      "capability": "plan-control",
+      "requirement": "stateless-control",
+      "scenario": "Runtime state is discarded"
+    },
+    {
+      "capability": "plan-reconciliation-loop",
+      "requirement": "current-plan-assessment",
+      "scenario": "PRL-CPA-2 Plan Control cannot establish an Assessment [error]"
+    },
+    {
+      "capability": "plan-reconciliation-loop",
+      "requirement": "fresh-plan-observation",
+      "scenario": "PRL-FPO-0 Invalid Plan reconciliation configuration is rejected [error]"
+    },
+    {
+      "capability": "plan-reconciliation-loop",
+      "requirement": "fresh-plan-observation",
+      "scenario": "PRL-FPO-3 Snapshot observation fails [error]"
+    },
+    {
+      "capability": "plan-reconciliation-loop",
+      "requirement": "fresh-plan-observation",
+      "scenario": "PRL-FPO-5 Exact target binding is used [isolation]"
+    },
+    {
+      "capability": "plan-reconciliation-loop",
+      "requirement": "fresh-plan-observation",
+      "scenario": "PRL-FPO-6 Wrong target kind is rejected [error]"
+    },
+    {
+      "capability": "plan-reconciliation-loop",
+      "requirement": "read-only-plan-attempt",
+      "scenario": "PRL-RPA-2 Assessment is complete [happy]"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Complete observed collection is empty"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Expected member is absent"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Expected target date is absent externally"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "External Plan is authoritatively absent"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Known target-date values differ"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Multiple observed violations share one location"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Observed collection violates a Plan invariant"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Observed scalar violates a Plan invariant"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Scalar value differs"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "difference-evidence",
+      "scenario": "Unexpected target date is present externally"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "evidence-derived-immutable-result",
+      "scenario": "Caller mutates returned evidence collection"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "evidence-derived-immutable-result",
+      "scenario": "Difference and unavailable information coexist"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "evidence-derived-immutable-result",
+      "scenario": "Different complete representation"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "evidence-derived-immutable-result",
+      "scenario": "Equal complete representation"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Caller cancels before return"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Caller context is nil"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Cancellation coincides with an invalid expected Plan"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Cancellation coincides with observer failure"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Nil context and invalid expected Plan coexist"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Observer returns an unrelated context error"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Observer violates its contract"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "observation-outcomes-and-failures",
+      "scenario": "Provider cannot establish current facts"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "provider-independent-observation-contract",
+      "scenario": "Collection contains a duplicate member"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "provider-independent-observation-contract",
+      "scenario": "External value violates Plan meaning"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "provider-independent-observation-contract",
+      "scenario": "Invalid external member is repeated"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "provider-independent-observation-contract",
+      "scenario": "Invalid observation crosses the boundary"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "provider-independent-observation-contract",
+      "scenario": "Paged collection changes during observation"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "provider-independent-observation-contract",
+      "scenario": "Provider-native representation is observed"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "read-only-stateless-behavior",
+      "scenario": "Difference is found"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "read-only-stateless-behavior",
+      "scenario": "External facts change"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "read-only-stateless-behavior",
+      "scenario": "Reconciliations run concurrently"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "read-only-stateless-behavior",
+      "scenario": "Runtime state is discarded"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "reconciliation-subject-and-target-binding",
+      "scenario": "Expected Plan is invalid"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "reconciliation-subject-and-target-binding",
+      "scenario": "Observation boundary is missing"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "reconciliation-subject-and-target-binding",
+      "scenario": "Target-bound reconciliation"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "reconciliation-subject-and-target-binding",
+      "scenario": "Zero Controller is called"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "semantic-correspondence",
+      "scenario": "Equal meaning in a different order"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "semantic-correspondence",
+      "scenario": "Task name changes"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "semantic-correspondence",
+      "scenario": "Text differs only by normalization"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "unavailable-information",
+      "scenario": "Expected member is omitted from an incomplete collection"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "unavailable-information",
+      "scenario": "Known unexpected member is present in an incomplete collection"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "unavailable-information",
+      "scenario": "Plan existence is unavailable"
+    },
+    {
+      "capability": "plan-representation-reconciliation",
+      "requirement": "unavailable-information",
+      "scenario": "Target-date existence is unavailable"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-2 Controller adds no shutdown wait after Attempts return [boundary]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-4 Attempt boundary returns nominal success after cancellation [concurrency]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-5 Submission context ends after acceptance [boundary]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-6 Submission and Controller contexts have ended [error]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-7 Report delivery commits before cancellation [happy]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-8 Pending Report applies bounded backpressure [boundary]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "caller-lifecycle",
+      "scenario": "RCL-CL-9 Cancellation commits before Report delivery [concurrency]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "explicit-control-directive",
+      "scenario": "RCL-ECD-2 Attempt requests immediate reevaluation [happy]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "explicit-control-directive",
+      "scenario": "RCL-ECD-3 Attempt requests delayed reevaluation [happy]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "explicit-control-directive",
+      "scenario": "RCL-ECD-5 Non-positive delayed directive is rejected at construction [error]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "explicit-control-directive",
+      "scenario": "RCL-ECD-7 Directive is committed after Completion delivery [boundary]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "failure-does-not-retry",
+      "scenario": "RCL-FNR-3 Another target continues [error]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "failure-does-not-retry",
+      "scenario": "RCL-FNR-5 Target Attempt error outranks returned values [error]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "level-based-attempt",
+      "scenario": "RCL-LBA-2 Prior result exists [compatibility]"
+    },
+    {
+      "capability": "reconciliation-control-loop",
+      "requirement": "per-target-exclusion-and-coalescing",
+      "scenario": "RCL-PEC-4 Request and completion coincide [concurrency]"
+    }
+  ]
+}

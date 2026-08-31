@@ -49,18 +49,31 @@
 
 ---
 
-## 5. Scenario
+## 5. 仕様表現
+
+- 連続または順序を持つdomainで結果が異なる場合、境界とgap・overlapが明確なPartition Tableがあるか。
+- 条件の組み合わせにより結果が異なる場合、到達可能な異なる結果を網羅するDecision Tableがあるか。
+- lifecycle ruleがある場合、current state、trigger、guard、next state、resultを持つState Transition Tableがあるか。
+- 常時成立条件がInvariantとして書かれ、概念妥当性と操作保証に応じた場所へ置かれているか。
+- 状態の意味と値域がConceptual Model、transitionと操作結果がRequirementに置かれているか。
+- 規範表とInvariantが`model.md`またはScenarioだけでなく、公開されるmain specに存在するか。
+- 実在する規則構造に対応しない表現を追加していないか。
+
+---
+
+## 6. Scenario
 
 - 各Requirementに主要正常系があるか。
 - 保証に関係するerror、boundary、permission、concurrency、idempotency、compatibilityを扱うか。
 - GIVENがconsumerと事前状態、WHENがinteractionまたはevent、THENが観察可能な結果になっているか。
 - Scenarioから入力と期待結果を一意に組み立てられるか。
 - ScenarioがRequirementにない規範や未定義語を導入していないか。
+- Scenarioが規範表またはInvariantを不必要に繰り返さず、具体例として機能しているか。
 - プロジェクトに存在しない観点をテンプレートに合わせて追加していないか。
 
 ---
 
-## 6. SSOTとinterface
+## 7. SSOTとinterface
 
 - API、data、UI、message、external contractの既存SSOTを重複していないか。
 - Requirementの`参照`から関連Requirementと別SSOTを追跡できるか。
@@ -70,7 +83,7 @@
 
 ---
 
-## 7. Workflowと公開
+## 8. Workflowと公開
 
 - proposalのcapabilityとRequirement影響がdelta specsへ反映されているか。
 - modelのRequirement Candidatesと実際のRequirementsに説明できない差がないか。
@@ -83,7 +96,7 @@
 
 ---
 
-## 8. 最終確認
+## 9. 最終確認
 
 - [ ] P0/P1指摘が0件である。
 - [ ] `openspec validate <change-name> --strict`が成功する。

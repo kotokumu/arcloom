@@ -1,71 +1,4 @@
-# reconciliation-control-loop Specification
-
-## Purpose
-Provides a target-independent, level-based Controller lifecycle that serializes target Attempts, preserves target-owned successful values without deciding whether they are Reconciliation Results, follows only explicit reevaluation Directives, and retains no authoritative target or durable scheduling state.
-
-## Conceptual Model
-
-### Concepts
-
-| Concept | Meaning | Identity or values |
-|---|---|---|
-| Target Identity | Stable caller-established control identity for one subject to evaluate. It contains no observed target state and does not define the semantic target of Reconciliation. | Exact pair of kind and key bytes. |
-| Request | Passive wake-up that makes one Target Identity eligible. Its occurrence, cause, payload, and count are not Attempt facts. | One Target Identity. |
-| Attempt | One target-specific occurrence that acquires current facts and may perform zero or one semantic Reconciliation. | One Target Identity and Controller lifecycle. |
-| Target Attempt Result | Opaque target-owned successful value. Generic control does not classify or interpret it. | Target-specific. |
-| Control Directive | The only scheduling meaning accepted from a successful Attempt. | Await Another Request, Reevaluate Immediately, or Reevaluate After Delay with a positive finite delay. |
-| Completion | Successful association of exact Target Identity, Target Attempt Result, and Control Directive. | One returned Attempt. |
-| Attempt Failure | Failed association containing the exact Target Identity, one failure kind, and its error, with no result or Directive. | Target Attempt Failed or Control Directive Rejected. |
-| Report | In-process publication of exactly one Completion or Attempt Failure. It is not semantic Result Destination delivery. | One returned Attempt outcome. |
-| Controller | Caller-scoped owner of disposable request eligibility, exclusion, finite concurrency, delayed eligibility, Report publication, and cancellation. | One started lifecycle. |
-
-### Control Relationship
-
-```mermaid
-flowchart LR
-    H[Host] -->|Request: Target Identity| C[Controller]
-    C -->|Target Identity + lifecycle| A[Target-specific Attempt]
-    A -->|Result + Directive| C
-    A -->|Error| C
-    C -->|Completion or Attempt Failure| R[Report consumer]
-    C -. "valid Directive after publication" .-> C
-```
-
-The Host owns wake-up causes. The target-specific Attempt owns current-fact acquisition and semantic judgment. The Controller owns only control scheduling and Report publication.
-
-### Target Eligibility States
-
-| State | Meaning |
-|---|---|
-| Inactive | The target has no current request or Directive eligibility. |
-| Pending | The target is eligible to start when capacity and publication state permit. |
-| Active | Exactly one target-specific Attempt is running for the target. |
-| Active with Pending Reentry | Exactly one Attempt is running and at least one Request received during it preserves one later Attempt. Further Requests may coalesce. |
-| Delayed | A published successful Directive may make the target eligible after a positive finite delay; an external Request may make it eligible earlier. |
-
-### Controller Lifecycle States
-
-| State | Meaning |
-|---|---|
-| Running | Requests may be accepted and eligible targets may start when capacity and publication state permit. |
-| Stopping | Caller cancellation has committed; no Request is accepted and no new Attempt starts while existing Active Attempts are cancelled and awaited. |
-| Stopped | Every Active Attempt has returned, the Report stream is closed, and Wait exposes the caller lifecycle result. |
-
-### Report Publication States
-
-| State | Meaning |
-|---|---|
-| Clear | No returned outcome is waiting for publication. |
-| Report Pending | One returned outcome awaits publication. No new Attempt starts while this Controller-wide state exists. |
-
-### Structural Invariants
-
-- Every accepted Request, Attempt, Completion, and Attempt Failure preserves its exact Target Identity.
-- At most one Attempt for a Target Identity is Active, and the total Active count never exceeds the configured positive bound.
-- Generic control never derives scheduling from target result content, failure, cancellation, request cause, or prior outcome.
-- Controller state is disposable and is never authoritative target, Observation, Reconciliation, Result, or durable scheduling state.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: exact-target-request
 
@@ -117,6 +50,12 @@ Each Attempt MUST evaluate one target from facts acquired for that Attempt rathe
 - **WHEN** the target-specific Attempt evaluates it
 - **THEN** the decision uses current target-specific facts acquired for that Attempt and not the Provider event payload or a prior outcome
 
+#### Scenario: RCL-LBA-2 Prior result exists [compatibility]
+
+- **GIVEN** a target has a prior successful result and a later Request
+- **WHEN** the later Attempt evaluates the target
+- **THEN** the prior result is not an authoritative input to that Attempt
+
 ### Requirement: per-target-exclusion-and-coalescing
 
 One caller-scoped Controller MUST serialize Attempts for each Target Identity, preserve later eligibility for a Request received during active work, and allow distinct targets to progress independently within one positive finite concurrency bound.
@@ -159,6 +98,12 @@ One caller-scoped Controller MUST serialize Attempts for each Target Identity, p
 - **WHEN** the Host requests them
 - **THEN** their Attempts may run concurrently without exceeding the bound or exchanging target or result state
 
+#### Scenario: RCL-PEC-4 Request and completion coincide [concurrency]
+
+- **GIVEN** a target Request arrives while its Active Attempt is returning
+- **WHEN** the Controller resolves both occurrences
+- **THEN** it preserves at least one later eligible Attempt and never runs two Attempts for that target concurrently
+
 ### Requirement: explicit-control-directive
 
 The Controller MUST create internal reevaluation eligibility after a successful Attempt only according to that Attempt's one valid Control Directive and only after its Completion is published.
@@ -192,17 +137,41 @@ The Controller MUST create internal reevaluation eligibility after a successful 
 - **WHEN** its Completion is published
 - **THEN** no later Attempt is internally scheduled for that target
 
+#### Scenario: RCL-ECD-2 Attempt requests immediate reevaluation [happy]
+
+- **GIVEN** a successful Attempt selects Reevaluate Immediately
+- **WHEN** its Completion is published
+- **THEN** the target becomes Pending for another serialized Attempt without an external Request
+
+#### Scenario: RCL-ECD-3 Attempt requests delayed reevaluation [happy]
+
+- **GIVEN** a successful Attempt selects Reevaluate After Delay with a positive finite duration
+- **WHEN** its Completion is published and that duration expires without an earlier Request
+- **THEN** the target becomes Pending for another serialized Attempt
+
 #### Scenario: RCL-ECD-4 Request precedes delayed eligibility [boundary]
 
 - **GIVEN** one target is Delayed after a published positive Directive
 - **WHEN** the Host requests it before the delay expires
 - **THEN** it becomes eligible earlier and the stale delay creates no second obligation
 
+#### Scenario: RCL-ECD-5 Non-positive delayed directive is rejected [error]
+
+- **GIVEN** a caller supplies zero or negative duration for Reevaluate After Delay
+- **WHEN** it submits the delayed Directive for use
+- **THEN** the Directive is rejected and cannot direct an Attempt reevaluation
+
 #### Scenario: RCL-ECD-6 Missing directive is rejected by control [error]
 
 - **GIVEN** a target-specific Attempt reports success without a valid Directive
 - **WHEN** the Controller processes the outcome
 - **THEN** it reports Control Directive Rejected, exposes no Completion, and creates no Directive-based eligibility
+
+#### Scenario: RCL-ECD-7 Directive is committed after Completion delivery [boundary]
+
+- **GIVEN** a successful Attempt returns Reevaluate Immediately and its Completion Report is waiting for the consumer
+- **WHEN** the consumer has not received that Report
+- **THEN** the Directive creates no eligible Attempt until Report delivery commits
 
 ### Requirement: target-result-isolation
 
@@ -253,11 +222,23 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 - **WHEN** that Attempt fails
 - **THEN** a later Attempt may run because of the preserved Request rather than because the Failure was retried
 
+#### Scenario: RCL-FNR-3 Another target continues [error]
+
+- **GIVEN** distinct targets are being controlled
+- **WHEN** one target's Attempt fails
+- **THEN** the other target can continue and receives no state from that Failure
+
 #### Scenario: RCL-FNR-4 Invalid directive is distinguishable [error]
 
 - **GIVEN** a target-specific Attempt reports success with an invalid Directive
 - **WHEN** the Controller reports the Attempt Failure
 - **THEN** the Host observes Control Directive Rejected rather than Target Attempt Failed
+
+#### Scenario: RCL-FNR-5 Target Attempt error outranks returned values [error]
+
+- **GIVEN** a target-specific Attempt reports failure together with any nominal successful value and any valid or invalid Directive
+- **WHEN** the Controller processes that outcome
+- **THEN** it publishes Target Attempt Failed with the exact target and error cause, exposes no Completion or Directive, and creates no Directive-based eligibility
 
 ### Requirement: caller-lifecycle
 
@@ -312,11 +293,53 @@ The Controller MUST publish returned outcomes and stop through the supplied call
 - **WHEN** the caller cancels its lifecycle
 - **THEN** no new Attempt starts, Active Attempts are cancelled and awaited, pending eligibility is discarded, Reports closes after Active returns, and unfinished Attempts establish no Completion
 
+#### Scenario: RCL-CL-2 Controller adds no shutdown wait after Attempts return [boundary]
+
+- **GIVEN** every Active Attempt has returned after observing caller cancellation
+- **WHEN** the Controller finishes stopping
+- **THEN** it closes Reports and exposes the caller context error without waiting for Report consumption, Pending work, Delayed work, or another timer
+
 #### Scenario: RCL-CL-3 Report consumer stops before cancellation [boundary]
 
 - **GIVEN** a prospective Report is pending for a stopped consumer
 - **WHEN** the caller cancels
 - **THEN** the Controller may discard the unpublished Report, waits only for Active Attempts, closes Reports, and returns without consumer progress
+
+#### Scenario: RCL-CL-4 Attempt boundary returns nominal success after cancellation [concurrency]
+
+- **GIVEN** one Active Attempt observes caller cancellation and then returns a nominal successful value and Directive
+- **WHEN** the Controller receives that return after stopping began
+- **THEN** it establishes no Completion or Directive-based eligibility, closes Reports after all Active returns, and exposes the caller context error
+
+#### Scenario: RCL-CL-5 Submission context ends after acceptance [boundary]
+
+- **GIVEN** a Request operation has returned success for one target
+- **WHEN** only that operation's submission context is later cancelled
+- **THEN** the accepted work remains governed by the Controller lifecycle and receives neither cancellation nor evidence from the submission context
+
+#### Scenario: RCL-CL-6 Submission and Controller contexts have ended [error]
+
+- **GIVEN** both the submission context and Controller lifecycle context ended before Request acceptance
+- **WHEN** the Host submits the Request
+- **THEN** the operation returns the Controller lifecycle error and starts no Attempt
+
+#### Scenario: RCL-CL-7 Report delivery commits before cancellation [happy]
+
+- **GIVEN** one prospective successful Report and caller cancellation have not committed
+- **WHEN** Report delivery commits before cancellation
+- **THEN** Reports publishes that Completion exactly once, its Directive applies afterward, and the lifecycle then stops
+
+#### Scenario: RCL-CL-8 Pending Report applies bounded backpressure [boundary]
+
+- **GIVEN** one Report is pending while Requests arrive and other Active Attempts return
+- **WHEN** the Report consumer remains blocked
+- **THEN** no new Attempt starts, Requests can coalesce, Active Attempts can return, and cancellation still completes without consumer progress
+
+#### Scenario: RCL-CL-9 Cancellation commits before Report delivery [concurrency]
+
+- **GIVEN** one prospective Report has not been delivered
+- **WHEN** caller cancellation commits first
+- **THEN** the Controller discards that outcome, publishes no Completion or Attempt Failure, and applies no Directive
 
 #### Scenario: RCL-CL-10 Simultaneous delivery and cancellation have one winner [concurrency]
 

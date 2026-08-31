@@ -1,28 +1,4 @@
-## Purpose
-
-Defines how Arcloom produces an inspectable, dependency-aware plan of GitHub creation requests for a provider-independent Plan without sending requests or claiming that external state changed.
-
-## Conceptual Model
-
-### GitHub Repository Target
-
-A GitHub Repository Target identifies a GitHub.com repository locally without asserting that it exists or is accessible. It consists of exact owner and repository-name segments. Each segment is valid UTF-8, contains at least one code point outside Unicode `White_Space`, excludes `/` and the line-break code points prohibited for a Plan name, and is otherwise preserved exactly. GitHub remote naming rules are not local validity rules.
-
-### GitHub Plan Representation
-
-A GitHub Plan Representation is exactly Milestone or Issue. It is selected explicitly and is never inferred from Plan content.
-
-### Versioned Plan Narrative
-
-A Versioned Plan Narrative begins with a machine-readable `arcloom-plan:v1` block and is followed by a human-readable narrative. The block losslessly preserves the exact Plan values assigned to it. For Milestone representation these are Goal and ordered Acceptance Conditions. For Issue representation they are Goal, ordered Acceptance Conditions, and present or absent Target Date. Plan name and Tasks are represented natively in both representations, and a Milestone Target Date is also native. The human narrative presents Plan meaning but is never a reconstruction source.
-
-### Creation Request Plan
-
-A Creation Request Plan is a passive, deterministic, immutable description of GitHub creation operations. It contains one GitHub Repository Target, one GitHub Plan Representation, the declared GitHub.com compatibility version, ordered Planned Requests, and their dependencies. It neither contains Provider-assigned identifiers nor asserts that an operation can or will succeed.
-
-A Planned Request is one create-Milestone, create-Issue, or add-Sub-issue operation with its exact Plan-derived inputs. A Symbolic Result Reference identifies a required result kind from an earlier Planned Request in the same Creation Request Plan. It cannot be dangling, forward, cross-plan, or result-kind incompatible.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: explicit-github-target-and-representation
 
@@ -41,11 +17,29 @@ A GitHub creation planner MUST accept a dry-run only for one valid Plan, one val
 - **失敗の扱い**: An absent or invalid target or representation produces a stable validation result and no Creation Request Plan. Local validation makes no claim about remote Repository naming, existence, access, or permissions.
 - **参照**: [related] `plan` Conceptual Model for Plan validity and Plan-name line breaks.
 
+#### Scenario: Milestone representation selected
+
+- **GIVEN** a valid Plan and GitHub Repository Target with Milestone explicitly selected
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns a Milestone Creation Request Plan
+
 #### Scenario: Milestone representation selected [happy]
 
 - **GIVEN** a valid Plan and GitHub Repository Target with Milestone explicitly selected
 - **WHEN** the planner requests a creation dry-run
 - **THEN** it returns a Milestone Creation Request Plan
+
+#### Scenario: Issue representation selected
+
+- **GIVEN** a valid Plan and GitHub Repository Target with Issue explicitly selected
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns an Issue Creation Request Plan
+
+#### Scenario: Representation is absent
+
+- **GIVEN** a valid Plan and GitHub Repository Target but no supported representation
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns no Creation Request Plan and identifies the representation input as invalid
 
 #### Scenario: Representation is absent [error]
 
@@ -61,17 +55,41 @@ A GitHub creation planner MUST represent the applicable exact Plan meaning in a 
 - **振る舞いの規則**: The block losslessly preserves exact values. The narrative presents the exact Goal and ordered Acceptance Conditions and, for Issue representation, the present Target Date, but remains non-authoritative for reconstruction. Equal Plan and representation inputs produce equal machine-readable blocks.
 - **参照**: [related] `plan` Conceptual Model for Plan element identity.
 
+#### Scenario: Milestone payload is reversible
+
+- **GIVEN** a Plan and Milestone representation
+- **WHEN** the planner produces the Versioned Plan Narrative
+- **THEN** its leading version-one block recovers the exact Goal and ordered Acceptance Conditions without duplicating native Plan values
+
+#### Scenario: Issue payload is reversible
+
+- **GIVEN** a Plan and Issue representation
+- **WHEN** the planner produces the Versioned Plan Narrative
+- **THEN** its leading version-one block recovers the exact Goal, ordered Acceptance Conditions, and present or absent Target Date without duplicating native Plan values
+
 #### Scenario: Issue payload is reversible [happy]
 
 - **GIVEN** a Plan and Issue representation
 - **WHEN** the planner produces the Versioned Plan Narrative
 - **THEN** its leading version-one block recovers the exact Goal, ordered Acceptance Conditions, and present or absent Target Date without duplicating native Plan values
 
+#### Scenario: Narrative text is preserved
+
+- **GIVEN** Plan Text contains multiple lines or Markdown-sensitive content
+- **WHEN** the planner produces the Versioned Plan Narrative
+- **THEN** the machine-readable block recovers the exact input and the human narrative presents the unchanged values in declared order
+
 #### Scenario: Narrative text is preserved [happy]
 
 - **GIVEN** Plan Text contains multiple lines or Markdown-sensitive content
 - **WHEN** the planner produces the Versioned Plan Narrative
 - **THEN** the machine-readable block recovers the exact input and the human narrative presents the unchanged values in declared order
+
+#### Scenario: Same Plan is represented twice
+
+- **GIVEN** the same Plan and GitHub Plan Representation are supplied twice
+- **WHEN** the planner produces both Creation Request Plans
+- **THEN** both contain the same machine-readable block
 
 #### Scenario: Same Plan is represented twice [idempotency]
 
@@ -86,11 +104,23 @@ A GitHub creation planner MUST describe Milestone representation with the ordere
 - **入力と受理**: The Plan and Milestone representation satisfy [[github-plan-creation-dry-run/explicit-github-target-and-representation]].
 - **振る舞いの規則**: The Creation Request Plan starts with one create-Milestone request whose title is the Plan name, narrative is the Versioned Plan Narrative, and optional target date is the Plan Target Date. It then contains one create-Issue request per Task in declared order; each Task Issue title is the Task name, its body is absent, and its Milestone input references the planned Milestone result.
 
+#### Scenario: Milestone representation without Tasks
+
+- **GIVEN** a valid Plan with no Tasks and Milestone representation
+- **WHEN** the planner produces a Creation Request Plan
+- **THEN** the plan contains only the create-Milestone request
+
 #### Scenario: Milestone representation without Tasks [boundary]
 
 - **GIVEN** a valid Plan with no Tasks and Milestone representation
 - **WHEN** the planner produces a Creation Request Plan
 - **THEN** the plan contains only the create-Milestone request
+
+#### Scenario: Milestone representation with Tasks
+
+- **GIVEN** a valid Plan with two ordered Tasks and Milestone representation
+- **WHEN** the planner produces a Creation Request Plan
+- **THEN** the plan contains one create-Milestone request followed by two create-Issue requests in declared Task order, and each Issue request references the Milestone request result
 
 #### Scenario: Milestone representation with Tasks [happy]
 
@@ -111,17 +141,41 @@ A GitHub creation planner MUST describe Issue representation with the ordered Pl
 - **振る舞いの規則**: The Creation Request Plan starts with one create-Issue request whose title is the Plan name and whose body is the Versioned Plan Narrative. For each Task in declared order it then contains one Task create-Issue request followed by one add-Sub-issue request. A Task Issue has the Task name as title and no body or Milestone input. Each relationship references the parent Issue number and corresponding Task Issue identity as distinct result kinds.
 - **失敗の扱い**: More than 100 Tasks produces a stable unsupported-representation result and no Creation Request Plan.
 
+#### Scenario: Issue representation without Tasks
+
+- **GIVEN** a valid Plan with no Tasks and Issue representation
+- **WHEN** the planner produces a Creation Request Plan
+- **THEN** the plan contains only the parent create-Issue request
+
+#### Scenario: Issue representation with Tasks
+
+- **GIVEN** a valid Plan with two ordered Tasks and Issue representation
+- **WHEN** the planner produces a Creation Request Plan
+- **THEN** the plan contains the parent create-Issue request and two adjacent Task-Issue and add-Sub-issue request pairs in declared Task order, and each relationship request distinguishes the parent Issue number from the corresponding Task Issue identity
+
 #### Scenario: Issue representation with Tasks [happy]
 
 - **GIVEN** a valid Plan with two ordered Tasks and Issue representation
 - **WHEN** the planner produces a Creation Request Plan
 - **THEN** the plan contains the parent create-Issue request and two adjacent Task-Issue and add-Sub-issue request pairs in declared Task order, and each relationship request distinguishes the parent Issue number from the corresponding Task Issue identity
 
+#### Scenario: Issue representation reaches its Task limit
+
+- **GIVEN** a valid Plan with 100 Tasks and Issue representation
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns a valid Creation Request Plan containing all 100 Task Issues and relationships
+
 #### Scenario: Issue representation reaches its Task limit [boundary]
 
 - **GIVEN** a valid Plan with 100 Tasks and Issue representation
 - **WHEN** the planner requests a creation dry-run
 - **THEN** it returns a valid Creation Request Plan containing all 100 Task Issues and relationships
+
+#### Scenario: Issue representation exceeds its Task limit
+
+- **GIVEN** a valid Plan with 101 Tasks and Issue representation
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns no Creation Request Plan and identifies the representation as unsupported
 
 #### Scenario: Issue representation exceeds its Task limit [boundary]
 
@@ -137,17 +191,35 @@ A Creation Request Plan consumer MUST receive a deterministic, dependency-ordere
 - **排他・冪等**: Changing a consumer-owned copy of returned plan data does not affect later reads.
 - **失敗の扱い**: The public contract does not admit a Creation Request Plan containing a dangling, forward, cross-plan, or result-kind-incompatible reference.
 
+#### Scenario: Same input is planned twice
+
+- **GIVEN** the same valid Plan, GitHub Repository Target, and representation
+- **WHEN** a planner produces two Creation Request Plans
+- **THEN** both plans contain equal requests, values, ordering, and Symbolic Result References
+
 #### Scenario: Same input is planned twice [idempotency]
 
 - **GIVEN** the same valid Plan, GitHub Repository Target, and representation
 - **WHEN** a planner produces two Creation Request Plans
 - **THEN** both plans contain equal requests, values, ordering, and Symbolic Result References
 
+#### Scenario: Number and ID remain distinct
+
+- **GIVEN** an Issue Creation Request Plan contains a Task
+- **WHEN** a consumer inspects its relationship request
+- **THEN** the parent Issue number reference and child Issue identity reference remain distinct result kinds
+
 #### Scenario: Number and ID remain distinct [happy]
 
 - **GIVEN** an Issue Creation Request Plan contains a Task
 - **WHEN** a consumer inspects its relationship request
 - **THEN** the parent Issue number reference and child Issue identity reference remain distinct result kinds
+
+#### Scenario: Caller mutates returned collections
+
+- **GIVEN** a consumer has read a collection from a Creation Request Plan
+- **WHEN** the consumer changes its local collection value
+- **THEN** a subsequent read exposes the original plan unchanged
 
 #### Scenario: Caller mutates returned collections [idempotency]
 
@@ -163,11 +235,29 @@ A GitHub creation planner MUST produce only a passive Creation Request Plan with
 - **副作用**: Planning performs no network access, external mutation, authorization decision, observation, persistence, or Provider-assigned identifier generation.
 - **失敗の扱い**: The plan makes no claim about Repository existence, access, permissions, conflicts, Provider acceptance, or operation success.
 
+#### Scenario: Request plan is produced
+
+- **GIVEN** valid dry-run inputs
+- **WHEN** the planner successfully produces a Creation Request Plan
+- **THEN** no GitHub resource or other external fact has been accessed, created, or changed
+
 #### Scenario: Request plan is produced [happy]
 
 - **GIVEN** valid dry-run inputs
 - **WHEN** the planner successfully produces a Creation Request Plan
 - **THEN** no GitHub resource or other external fact has been accessed, created, or changed
+
+#### Scenario: External operation would fail
+
+- **GIVEN** a passive Creation Request Plan describes operations GitHub would reject
+- **WHEN** a consumer inspects the plan
+- **THEN** the plan makes no claim that those operations can or will succeed
+
+#### Scenario: Host inspects compatibility
+
+- **GIVEN** a Host has a Creation Request Plan
+- **WHEN** it inspects the plan contract
+- **THEN** it can identify the declared GitHub compatibility version, required operation inputs, and result dependencies
 
 #### Scenario: Host inspects compatibility [compatibility]
 
@@ -182,8 +272,37 @@ A GitHub creation planner MUST return no Creation Request Plan and identify the 
 - **入力と受理**: Plan, GitHub Repository Target, and GitHub Plan Representation are validated under their owning rules.
 - **失敗の扱い**: The stable validation result distinguishes an invalid Plan, invalid Repository target, and unsupported representation. No partial Creation Request Plan is returned.
 
+#### Scenario: Invalid Plan input
+
+- **GIVEN** an invalid Plan is supplied
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns no Creation Request Plan and identifies the Plan input as invalid
+
 #### Scenario: Invalid Plan input [error]
 
 - **GIVEN** an invalid Plan is supplied
 - **WHEN** the planner requests a creation dry-run
 - **THEN** it returns no Creation Request Plan and identifies the Plan input as invalid
+
+#### Scenario: Invalid Repository input
+
+- **GIVEN** an invalid GitHub Repository Target is supplied
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns no Creation Request Plan and identifies the Repository input as invalid
+
+## RENAMED Requirements
+
+- FROM: `### Requirement: GPCD-1 Explicit GitHub target and representation`
+- TO: `### Requirement: explicit-github-target-and-representation`
+- FROM: `### Requirement: GPCD-2 Versioned Plan narrative`
+- TO: `### Requirement: versioned-plan-narrative`
+- FROM: `### Requirement: GPCD-3 Milestone creation request plan`
+- TO: `### Requirement: milestone-creation-request-plan`
+- FROM: `### Requirement: GPCD-4 Issue creation request plan`
+- TO: `### Requirement: issue-creation-request-plan`
+- FROM: `### Requirement: GPCD-5 Request-plan integrity`
+- TO: `### Requirement: request-plan-integrity`
+- FROM: `### Requirement: GPCD-6 Dry-run boundary and GitHub compatibility`
+- TO: `### Requirement: dry-run-boundary-and-github-compatibility`
+- FROM: `### Requirement: GPCD-7 Validation result`
+- TO: `### Requirement: validation-result`

@@ -1,23 +1,4 @@
-# github-plan-snapshot Specification
-
-## Purpose
-Establishes a current Plan and provider-independent progress from one authoritative GitHub Milestone observation without making Arcloom authoritative for either.
-
-## Conceptual Model
-
-### GitHub Milestone Target
-
-A GitHub Milestone Target identifies one exact repository and positive Milestone number for observation. It identifies the external subject but does not establish its state.
-
-### GitHub Plan Snapshot
-
-A GitHub Plan Snapshot is one disposable coherent result from one fresh observation of a GitHub Milestone Target. It exposes a current Plan only when every required Plan fact and the complete current membership are known, coherent, and valid. When a coherent current root and progress are established but Plan eligibility is not, the GitHub Plan Snapshot preserves that progress without a current Plan. When no coherent current root and progress can be established, no successful GitHub Plan Snapshot exists. A current Plan exposed by this capability can serve as the Plan Snapshot defined by `plan-control`; the enclosing GitHub Plan Snapshot is not that concept.
-
-### Representation Progress
-
-Representation Progress contains the overall representation state, ordered observed member names and states, and whether membership is Complete or Incomplete. Overall and member state are Open, Closed, or Unknown. Repeated names from distinct members remain distinct. Representation Progress is observation material and never establishes that the Plan is Complete.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: exact-milestone-target
 
@@ -69,11 +50,29 @@ A GitHub Plan Snapshot MUST expose a current Plan only when all required current
 - **WHEN** the caller obtains a successful GitHub Plan Snapshot
 - **THEN** the GitHub Plan Snapshot contains that current Plan
 
+#### Scenario: Plan facts are not trustworthy [error]
+
+- **GIVEN** required Plan facts are missing, conflicting, invalid, or incomplete
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot from a coherent current root and progress
+- **THEN** it contains no current Plan, preserves coherent Representation Progress, and does not claim authoritative Plan absence
+
+#### Scenario: Payload cannot establish Plan meaning [error]
+
+- **GIVEN** the current root and membership progress are coherent but required Plan narrative meaning is missing, unsupported, or unusable
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** it contains that progress without a current Plan
+
 #### Scenario: Membership cannot be completed [boundary]
 
 - **GIVEN** the current root and some coherent member progress are established but complete membership cannot be established
 - **WHEN** the caller obtains a successful GitHub Plan Snapshot
 - **THEN** it contains Incomplete Representation Progress without a current Plan
+
+#### Scenario: Known Plan values violate Plan invariants [error]
+
+- **GIVEN** the current root and membership progress are coherent but known Plan values violate Plan invariants
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** it contains the coherent progress without a current Plan
 
 ### Requirement: provider-independent-progress
 
@@ -101,12 +100,24 @@ A GitHub Plan Snapshot MUST express Representation Progress without GitHub-speci
 - **WHEN** the caller obtains a successful GitHub Plan Snapshot
 - **THEN** its Representation Progress has Incomplete membership
 
+#### Scenario: Distinct members have the same name [boundary]
+
+- **GIVEN** distinct observed members have the same name
+- **WHEN** the caller obtains a successful GitHub Plan Snapshot
+- **THEN** progress preserves every observed member and the GitHub Plan Snapshot contains no current Plan when those names violate Plan invariants
+
 ### Requirement: observation-failure
 
 An unavailable or unsuccessful GitHub observation MUST NOT become a successful current GitHub Plan Snapshot or authoritative absence.
 
 - **振る舞いの規則**: A coherent current root with partial member progress produces a successful GitHub Plan Snapshot with Incomplete progress and no current Plan.
 - **失敗の扱い**: When no coherent current root and Representation Progress can be established, observation returns no successful GitHub Plan Snapshot and makes no absence claim.
+
+#### Scenario: GitHub cannot be observed [error]
+
+- **GIVEN** no coherent current root and Representation Progress can be obtained or interpreted safely
+- **WHEN** the caller requests a GitHub Plan Snapshot
+- **THEN** no successful current GitHub Plan Snapshot is returned
 
 #### Scenario: Root cannot be established [error]
 

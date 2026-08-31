@@ -1,19 +1,4 @@
-# codex-plan-control-assessment Specification
-
-## Purpose
-Obtains a read-only Codex-backed Plan Control judgment with provider-independent meaning and without retaining authoritative AI session state.
-
-## Conceptual Model
-
-### Codex Assessment Interaction
-
-A Codex Assessment Interaction is one disposable read-only assessment of an exact Plan Snapshot and caller-owned observation material. It yields the Plan Control Assessment meaning defined by `plan-control` or no successful assessment. It retains no authoritative session state and shares no assessment material or judgment with another interaction.
-
-### Safe Host Configuration
-
-Safe Host Configuration consists of a Host-selected Codex 0.149.1 executable, a positive finite shutdown bound, and fixed execution constraints. Every Turn uses approval policy `never` and a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox. Effective MCP servers, Apps, Hooks, and Web Search inherited from Host configuration are rejected before a Turn begins. A consumer cannot relax these constraints. Plan-assessment inputs are validated independently of these Host conditions. Incompatible or unsafe Host configuration prevents any external-AI Turn from beginning.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: valid-plan-control-judgment
 
@@ -34,6 +19,12 @@ A successful Codex-backed assessment MUST yield exactly one valid provider-indep
 - **GIVEN** Codex establishes a valid Revise judgment for the assessed material
 - **WHEN** the assessment succeeds
 - **THEN** it contains exactly one valid Proposed Plan
+
+#### Scenario: Plan should not be revised [happy]
+
+- **GIVEN** Codex establishes Complete, Retain, or Insufficient Information
+- **WHEN** the assessment succeeds
+- **THEN** it contains no Proposed Plan
 
 ### Requirement: exact-current-assessment-material
 

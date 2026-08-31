@@ -13,7 +13,7 @@ flowchart TD
     D --> E[既存概念の検索と所有の決定]
     E --> F[曖昧さの解消と出力対象の選別]
     F --> G[Requirement候補と保証の分割]
-    G --> H[Scenarioによる具体化]
+    G --> H[規範表現とScenarioの選択]
     H -. 未定義語・不足状態 .-> D
     G -. 共有概念・過剰分割 .-> D
 ```
@@ -121,16 +121,29 @@ Requirementは、独立して変更・検証する保証が異なる場合に分
 - 同一行為の分類値ごとの差を決定表で表現できる。
 - 実装componentが分かれているだけである。
 
-各候補を「consumerとevent / 保証 / 利用概念 / 重要なScenario class」へ対応付ける。読者が
+各候補を「consumerとevent / 保証 / 利用概念 / 必要な規範表現 / 重要なScenario class」へ対応付ける。読者が
 Requirement群から共通概念を逆算する必要がある場合、Conceptual Modelが不足している。
 
 ---
 
-## 8. Scenarioによる具体化
+## 8. 規範表現とScenarioの選択
 
-主要正常系から書き、保証を変えるerror、boundary、permission、concurrency、idempotency、compatibilityを
-追加する。プロジェクトに関係しない分類を埋めない。Scenarioで未定義語、状態、値を発見した場合は
-概念抽出へ戻る。
+各規則の構造から`README.md`の標準表現を選ぶ。
+
+| 分析で見つかった構造 | specで使う表現 |
+|---|---|
+| 連続または順序domainで範囲により結果が異なる | Partition Table |
+| 条件の組み合わせにより結果が異なる | Decision Table |
+| triggerとguardによりlifecycleが変化する | State Transition Table |
+| 常に維持する条件がある | Invariant |
+| 具体的な利用例または検証例 | Scenario |
+
+状態名、値の意味、単位、構造的不変条件はConceptual Modelへ置く。受理partition、条件の組み合わせ、
+transition rule、操作上のInvariant、出力、副作用はRequirementへ置く。規範表現を`model.md`だけに残さない。
+
+Requirementを完成させた後、主要正常系を書き、検証上有益なerror、boundary、permission、concurrency、
+idempotency、compatibilityだけを追加する。規範表の各行をScenarioとして繰り返さない。Scenarioで未定義語、
+状態、値を発見した場合は概念抽出へ戻る。
 
 Scenarioは新しい規範を発明しない。THENの結果をRequirement本文から導けない場合はRequirementを修正する。
 
@@ -146,5 +159,6 @@ Scenarioは新しい規範を発明しない。THENの結果をRequirement本文
 - [ ] 仕様を変える未決事項がない。
 - [ ] Conceptual Model変更は完全な置換後本文として記録されている。
 - [ ] Requirementの分割が独立した保証に対応する。
+- [ ] 各partition、条件の組み合わせ、lifecycle、常時成立条件に対応する規範表現がConceptual ModelまたはRequirementにある。
 - [ ] 各Requirementを具体的なScenarioで検証できる。
-- [ ] Scenarioが未定義語や新しい規範を導入していない。
+- [ ] Scenarioが未定義語や新しい規範を導入せず、規範表現の代わりになっていない。

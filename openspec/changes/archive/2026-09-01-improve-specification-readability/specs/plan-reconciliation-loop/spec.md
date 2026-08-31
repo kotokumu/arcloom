@@ -1,51 +1,4 @@
-# plan-reconciliation-loop Specification
-
-## Purpose
-Provides a standard read-only Plan attempt that distinguishes successful observation without a current Plan from actual Plan Reconciliation of one current Plan, while leaving Authorization, application, receipt handling, and later wake-up causes outside the attempt.
-
-## Conceptual Model
-
-### Concepts
-
-| Concept | Meaning | Identity or values |
-|---|---|---|
-| Plan Target Binding | Self-identifying association of one exact Target Identity with its Plan Snapshot Observer and Delivery Observer. | Exact requested Target Identity. |
-| Plan Attempt | One read-only target-specific Attempt that resolves the binding and begins with one fresh Plan Snapshot. | One resolved Plan Target Binding and caller lifecycle. |
-| Current Plan Not Established | Successful result preserving a coherent Snapshot without a valid current Plan. It is not Failure, Insufficient Information, authoritative absence, or semantic Reconciliation. | One successful Snapshot. |
-| Current Plan Assessed | Successful result preserving the successful Snapshot, exact current Plan, and exact Plan Control Assessment. | One current Plan and Assessment. |
-| Plan Attempt Failure | Failure before either successful result branch exists. | Stable Plan-owned boundary failure, existing Snapshot or Plan Control failure, or caller lifecycle outcome. |
-
-### Plan Attempt Relationship
-
-```mermaid
-flowchart LR
-    I[Target Identity] --> B[Resolve exact Plan Target Binding]
-    B --> S[Fresh Plan Snapshot]
-    S -->|No valid current Plan| N[Current Plan Not Established]
-    S -->|Valid current Plan| D[Current Delivery Observations]
-    D --> P[Plan Control Assessment]
-    P --> A[Current Plan Assessed]
-    N --> W[Await Another Request]
-    A --> W
-```
-
-Plan Control remains the target-specific Reconciliation authority. The Plan Attempt owns binding resolution and ordered composition but performs no Authorization, external application, Task execution, Delivery Acceptance, or target mutation.
-
-### Successful Result Classification
-
-| Result branch | Snapshot | Current Plan | Delivery Observations | Assessment | Semantic Reconciliation |
-|---|---|---|---|---|---|
-| Current Plan Not Established | Preserved | None | None | None | No |
-| Current Plan Assessed | Preserved | Exact current Plan | Acquired after Snapshot | Exact Plan Control Assessment | Exactly one |
-
-### Structural Invariants
-
-- The resolved Plan Target Binding identifies the exact requested Target Identity and supplies both observation boundaries.
-- A Plan Attempt establishes exactly one fresh Snapshot before any Delivery Observation or Assessment.
-- A successful Plan Attempt establishes exactly one of the two result branches and selects Await Another Request.
-- Event type, Authorization Decision, Plan Application Result, receipt, prior result, and request cause never become Plan Attempt facts or scheduling instructions.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: fresh-plan-observation
 
@@ -78,17 +31,41 @@ Each Plan Attempt MUST resolve one exact Plan Target Binding, begin with exactly
 - **WHEN** a Plan Attempt begins
 - **THEN** it preserves that fresh Snapshot and proceeds to assessment of that exact current Plan through the same binding
 
+#### Scenario: PRL-FPO-0 Invalid Plan reconciliation configuration is rejected [error]
+
+- **GIVEN** Plan Target or Plan Attempt construction receives invalid required configuration
+- **WHEN** the caller constructs it
+- **THEN** construction returns the corresponding stable setup error before an Attempt or Controller lifecycle exists
+
 #### Scenario: PRL-FPO-2 Snapshot has no current Plan [boundary]
 
 - **GIVEN** one fresh observation establishes a successful Snapshot without a valid current Plan
 - **WHEN** the Plan Attempt completes
 - **THEN** it establishes Current Plan Not Established, preserves that Snapshot, performs no semantic Reconciliation, and selects Await Another Request
 
+#### Scenario: PRL-FPO-3 Snapshot observation fails [error]
+
+- **GIVEN** no successful coherent Snapshot can be established
+- **WHEN** a Plan Attempt begins
+- **THEN** it fails without a Plan Attempt Result or Plan Control Assessment
+
 #### Scenario: PRL-FPO-4 Target binding is unavailable [error]
 
 - **GIVEN** the Plan Target Resolver cannot establish an exact valid binding for the requested Target Identity
 - **WHEN** a Plan Attempt begins
 - **THEN** it returns the stable Plan-owned binding failure without Snapshot observation or Plan Control Assessment
+
+#### Scenario: PRL-FPO-5 Exact target binding is used [isolation]
+
+- **GIVEN** two Plan Target Identities resolve to distinct self-identifying Snapshot and Delivery Observation bindings
+- **WHEN** each Plan Attempt runs
+- **THEN** each resolver receives the exact requested identity and each Attempt invokes only that binding's observation boundaries before the configured Assessor
+
+#### Scenario: PRL-FPO-6 Wrong target kind is rejected [error]
+
+- **GIVEN** a requested Target Identity has a kind different from the Plan Attempt boundary's exact configured kind
+- **WHEN** a Plan Attempt begins
+- **THEN** it returns Target Binding Unavailable without invoking the Resolver or any observation or assessment boundary
 
 #### Scenario: PRL-FPO-7 Caller cancels at a boundary [error]
 
@@ -123,6 +100,12 @@ A Plan Attempt with a valid current Plan MUST acquire current caller-selected De
 - **WHEN** Plan Control returns one valid Assessment
 - **THEN** Current Plan Assessed preserves that exact Snapshot, current Plan, and Assessment and records one semantic Plan Reconciliation
 
+#### Scenario: PRL-CPA-2 Plan Control cannot establish an Assessment [error]
+
+- **GIVEN** a fresh Snapshot contains a valid current Plan and Delivery Observations are available
+- **WHEN** Plan Control fails before a valid Assessment exists
+- **THEN** no successful Plan Attempt Result or semantic Reconciliation Result is established
+
 #### Scenario: PRL-CPA-3 Delivery observation fails [error]
 
 - **GIVEN** a fresh Snapshot contains a valid current Plan
@@ -152,6 +135,12 @@ Every successful Plan Attempt Result branch MUST remain read-only, select Await 
 - **GIVEN** Plan Control returns Revise with one exact valid Proposed Plan
 - **WHEN** the Plan Attempt returns Current Plan Assessed
 - **THEN** it preserves the Assessment, selects Await Another Request, and performs no Authorization or application interaction
+
+#### Scenario: PRL-RPA-2 Assessment is complete [happy]
+
+- **GIVEN** Plan Control returns Complete
+- **WHEN** the Plan Attempt returns Current Plan Assessed
+- **THEN** it selects Await Another Request without deciding Delivery Acceptance or mutating the Plan
 
 ### Requirement: ordinary-plan-reentry
 

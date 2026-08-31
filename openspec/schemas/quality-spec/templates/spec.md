@@ -11,10 +11,20 @@
 - **前提条件**: <!-- 操作を適用できる事前状態・権限・存在条件 -->
 - **入力と受理**: <!-- 入力、許容範囲、拒否条件 -->
 - **振る舞いの規則**: <!-- 判定、計算、状態遷移、出力 -->
+- **不変条件**: <!-- 各許容結果の前後で維持する条件 -->
 - **副作用**: <!-- 関連状態・履歴・通知への変化と、変化させないもの -->
 - **排他・冪等**: <!-- 同時実行、再送、原子性 -->
 - **失敗の扱い**: <!-- 利用者またはconsumerが観察できる失敗結果 -->
 - **参照**: <!-- optional: [interface]/[api]/[data]/[policy]/[external] SSOT path -->
+
+<!--
+規則の構造に応じて、該当block内で次の表現を使う。
+- 連続または順序domain: Partition Table（Partition | Condition or range | Acceptance or result）
+- 条件の組み合わせ: Decision Table（Rule | Preconditions or state | Input or event condition | Output or response | Side Effects）
+- lifecycle: State Transition Table（Current state | Trigger or event | Guard | Next state | Output or Side Effects）
+- 常時成立する操作保証: `不変条件`内の規範的Invariant
+該当する表現だけを使う。規範表またはInvariantをmodel.mdやScenarioだけに残さない。
+-->
 
 #### Scenario: <!-- concrete behavior --> [happy]
 

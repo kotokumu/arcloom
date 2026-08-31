@@ -45,7 +45,10 @@ artifacts:
 
       Carry every Decisions Required item from proposal.md into the analysis. Resolve it
       or keep it in model.md's Unresolved Decisions; model.md is the current-state SSOT.
-      Map each requirement candidate to its actor, trigger, guarantee, and concepts.
+      Map each requirement candidate to its actor, trigger, guarantee, concepts, required
+      normative representations, and important Scenario classes. Select a compact
+      reader-facing overview for each affected main spec; readers must not reconstruct
+      vocabulary or state space from Scenarios.
       If an unresolved decision changes a requirement's meaning, scope, or observable
       result, stop before specs and obtain a decision. An empty Unresolved Decisions
       section means that no blocking ambiguity remains; it does not mean assumptions
@@ -83,10 +86,18 @@ artifacts:
       - REMOVED Requirements with Reason and Migration
       - RENAMED Requirements with FROM and TO
 
+      Select representations from rule structure: Partition Tables for continuous or
+      ordered domains, Decision Tables for condition combinations, State Transition
+      Tables for lifecycles, and Invariants for always-true conditions. Publish state
+      meanings and structural invariants in the Conceptual Model; publish acceptance
+      partitions, decisions, transitions, operational invariants, outputs, and Side
+      Effects in Requirements. Do not leave a normative representation only in model.md.
+
       Every Requirement must have at least one Scenario. Each Scenario must identify
       the actor, precondition, action, and observable outcome. Add error, boundary,
       permission, concurrency, or idempotency scenarios when the contract depends on
-      them. A Scenario must not introduce a rule absent from its Requirement.
+      them. A Scenario must not introduce a rule absent from its Requirement or replace
+      the normative table or Invariant from which it is derived.
 
       New capabilities include a concrete Purpose of at least 50 characters so the
       archived main spec passes strict validation. Existing capability deltas omit Purpose.
