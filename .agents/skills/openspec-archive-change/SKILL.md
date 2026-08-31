@@ -1,13 +1,13 @@
 ---
 name: openspec-archive-change
 description: Archive a completed change in the experimental workflow. Use when the user wants to finalize and archive a change after implementation is complete.
-allowed-tools: Bash(openspec:*), Bash(node tools/archive-change.mjs:*), Bash(mkdir:*), Bash(rmdir:*)
+allowed-tools: Bash(openspec:*)
 license: MIT
 compatibility: Requires openspec CLI.
 metadata:
   author: openspec
   version: "1.0"
-  generatedBy: "1.10.0"
+  generatedBy: "1.11.0"
 ---
 
 Archive a completed change in the experimental workflow.
@@ -31,30 +31,6 @@ Archive a completed change in the experimental workflow.
    Include the schema used for each change if available.
 
    Always announce: "Using change: <name>" and how to override (e.g., `$openspec-archive-change (Codex) or /openspec-archive-change (other agents) <other>`).
-
-   Run `openspec status --change "<name>" --json` immediately after selection.
-   If `schemaName` is `quality-spec`, use the repository publisher instead of
-   the generic sync-and-move workflow below:
-
-   1. Run `openspec instructions archive --change "<name>" --json` and apply its
-      context and operation guidance.
-   2. Run `node tools/archive-change.mjs "<name>"` from `planningHome.root`.
-   3. Report the archive path and validation result returned by the command,
-      then stop. Do not run the generic spec sync or move steps.
-
-   The publisher checks artifact and task completion, publishes the Conceptual
-   Model and Requirements together, rejects unsupported delta sections,
-   validates the resulting main specs, and restores them on failure. For a
-   `quality-spec` change, do not replace it with direct `openspec archive`, the
-   standalone sync skill, or a manual move.
-
-   For every other schema, acquire the shared publication lock immediately
-   before the first main-spec write or archive move by running `mkdir
-   "<planningHome.root>/openspec/.archive-change.lock"`. If it already exists,
-   stop without writing or moving anything. Hold the lock through inline sync,
-   validation, and the archive move; tell an inline sync that this archive owns
-   the lock. On every success or error path, release the unchanged empty lock
-   directory with `rmdir`. Never remove a non-empty lock directory.
 
    **Load current archive inputs before the existing archive checks:**
 

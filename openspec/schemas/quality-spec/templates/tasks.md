@@ -5,4 +5,4 @@
 ## 2. Verification
 
 - [ ] 2.1 `[[<capability-path>/<requirement-slug>]]` Execute the specified happy, error, and boundary scenarios and record the result
-- [ ] 2.2 `[change]` Run `openspec validate <change-name> --strict` and resolve all errors
+- [ ] 2.2 `[change]` Run `openspec validate <change-name> --strict --no-interactive` and resolve all errors

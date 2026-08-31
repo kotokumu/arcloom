@@ -48,22 +48,7 @@ Do not diagram physical tables, DTOs, API payloads, or Classes.
 
 ---
 
-## 4. Main Spec Conceptual Model Replacements
-
-<!--
-Write `None.` when there is no change.
-For each changed capability, add a level-three heading containing its path as code. Immediately after it,
-write the complete replacement text without the `## Conceptual Model` heading in a Markdown fence.
-Do not write a diff or ellipsis. Each capability also requires a Requirement delta at the same path.
-To delete the entire Conceptual Model section, write `REMOVE` instead of a Markdown fence.
-`tools/archive-change.mjs` applies this content to the main spec and archives it with the Requirement delta.
--->
-
-None.
-
----
-
-## 5. Requirement Candidates
+## 4. Requirement Candidates
 
 | Requirement slug | Actor and event | Guarantee | Concepts used | Normative representations | Important scenario classes |
 |---|---|---|---|---|---|
@@ -71,7 +56,7 @@ None.
 
 ---
 
-## 6. Unresolved Decisions
+## 5. Unresolved Decisions
 
 <!--
 This is the SSOT for the current unresolved state. Resolve every item from the proposal's Decisions Required section or carry it here.
@@ -82,6 +67,6 @@ None.
 
 ---
 
-## 7. Sources
+## 6. Sources
 
 - <!-- authoritative source used for the model -->

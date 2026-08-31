@@ -89,17 +89,16 @@ This checklist verifies the semantic quality of a specification. `openspec valid
 - Can every difference between the model's Requirement Candidates and the actual Requirements be explained?
 - Was design created after all delta specs, without redefining WHAT?
 - Are the delta spec's level-two sections limited to Purpose and standard Requirement operations?
-- Does each capability with a Conceptual Model replacement have a Requirement delta at the same path?
-- During apply, was the main spec's Conceptual Model left unchanged until publication?
+- Is each approved reader-facing Conceptual Model change already present in its owning main spec?
 - Does every task identify a Requirement ID and verification method?
-- Will publication use `node tools/archive-change.mjs <change-name>`?
+- Will publication use `openspec archive <change-name> --yes` followed by `npm run lint:openspec`?
 
 ---
 
 ## 9. Final Check
 
 - [ ] There are no P0 or P1 findings.
-- [ ] `openspec validate <change-name> --strict` succeeds.
+- [ ] `openspec validate <change-name> --strict --no-interactive` succeeds.
 - [ ] Concepts, terminology, and Requirement IDs are consistent between main and delta specs.
 - [ ] Implementers and verifiers can begin without making additional specification decisions.
-- [ ] `openspec validate --specs --strict` succeeds after publication.
+- [ ] `npm run lint:openspec` succeeds after publication.

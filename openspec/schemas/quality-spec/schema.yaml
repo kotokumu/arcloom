@@ -19,9 +19,12 @@ artifacts:
       Record decisions required to begin modeling when they can change scope, behavior,
       or acceptance. Do not guess.
 
-      If the change is a pure refactor, tooling, or documentation change with no
-      product behavior change, declare no capabilities and set skip_specs: true in
-      .openspec.yaml. Do not invent a requirement to satisfy the workflow.
+      Do not create an OpenSpec Change for repository administration, development
+      tooling, CI, formatting, wording-only maintenance, or an implementation refactor
+      that changes no product behavior or structure. When a product Change alters a
+      Concept, responsibility, state owner, Component boundary, or public contract but
+      leaves detailed observable behavior unchanged, declare no capabilities and set
+      skip_specs: true in .openspec.yaml.
 
       Keep technical implementation choices out of this artifact.
     requires: []
@@ -52,8 +55,8 @@ artifacts:
       If an unresolved decision changes a requirement's meaning, scope, or observable
       result, stop before specs and obtain a decision. An empty Unresolved Decisions
       section means that no blocking ambiguity remains; it does not mean assumptions
-      may be hidden. For skip_specs changes, record why the work is pure implementation
-      and why no observable contract changes.
+      may be hidden. For skip_specs changes, identify the changed product structure and
+      explain why no accepted detailed observable behavior changes.
     requires:
       - proposal
 
@@ -74,11 +77,10 @@ artifacts:
       them as requirements or as the conceptual model.
 
       The permanent conceptual model belongs in the owning main spec's Conceptual Model.
-      model.md records complete replacement content under Main Spec Conceptual Model
-      Replacements for deterministic publication.
-      Delta specs contain only OpenSpec-standard Requirement operations; do not add a
-      custom concept-change section. Do not duplicate a concept owned by another
-      capability; reference it.
+      model.md defines the approved meaning, and apply updates the reader-facing main
+      spec when that meaning changes. Delta specs contain only OpenSpec-standard
+      Requirement operations; do not add a custom concept-change section. Do not
+      duplicate a concept owned by another capability; reference it.
 
       Use OpenSpec delta sections exactly:
       - ADDED Requirements for new behavior
@@ -101,8 +103,8 @@ artifacts:
 
       New capabilities include a concrete Purpose of at least 50 characters so the
       archived main spec passes strict validation. Existing capability deltas omit Purpose.
-      Do not add any other level-two section: OpenSpec 1.10.0 ignores it during
-      archive. Put requirement-specific links in the References block inside that
+      Do not add any other level-two section because the official archive command does
+      not publish it. Put requirement-specific links in the References block inside that
       Requirement. Put conceptual-model sources inside the published model content.
     requires:
       - model
@@ -136,9 +138,10 @@ artifacts:
       syntax and include the Requirement slug it implements or state that it is a
       design-only task. Include the observable test or check that proves completion.
 
-      Do not add a task that updates a main spec's Conceptual Model during apply.
-      Conceptual Model publication belongs to the archive command documented by the
-      specification methodology. Do not create tasks from unresolved decisions.
+      When the approved model changes a reader-facing Conceptual Model, add an explicit
+      task that updates the owning main spec and validates all main specs. Requirement
+      publication remains owned by the official OpenSpec archive command. Do not create
+      tasks from unresolved decisions.
     requires:
       - specs
       - design
@@ -150,6 +153,6 @@ apply:
     Read proposal.md, model.md, delta specs, design.md, and tasks.md. Implement pending
     tasks in dependency order. Keep requirement references and verification results
     current. Pause when implementation reveals a specification ambiguity or contradicts
-    the approved analysis or specification. Do not update main specs from model.md during
-    apply. Conceptual Model and Requirement changes are published together later by the
-    template's archive command.
+    the approved analysis or specification. Update affected main-spec Conceptual Models
+    from the approved model during apply, and leave Requirement delta publication to the
+    official OpenSpec archive command.

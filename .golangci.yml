@@ -2,3 +2,42 @@ version: "2"
 
 linters:
   default: standard
+  enable:
+    - depguard
+  settings:
+    depguard:
+      rules:
+        reconciliation-control-boundary:
+          list-mode: strict
+          files:
+            - "**/reconciliationcontrol/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "fmt$"
+            - "strings$"
+            - "time$"
+        plan-reconciliation-boundary:
+          list-mode: strict
+          files:
+            - "**/planreconciliation/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "fmt$"
+            - "github.com/kotokumu/arcloom/plancontrol$"
+            - "github.com/kotokumu/arcloom/plansnapshot$"
+            - "github.com/kotokumu/arcloom/reconciliationcontrol$"
+        plan-representation-boundary:
+          list-mode: strict
+          files:
+            - "**/planrepresentation/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "fmt$"
+            - "sort$"
+            - "github.com/kotokumu/arcloom/plan$"
