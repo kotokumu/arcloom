@@ -3,9 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint:markdown": "remark . --quiet --frail"
+    "lint": "npm run lint:markdown && npm run lint:openspec",
+    "lint:markdown": "remark . --quiet --frail",
+    "lint:openspec": "openspec schema validate quality-spec && openspec validate --specs --strict --no-interactive && openspec validate --changes --strict --no-interactive && openspec validate --archived --strict --no-interactive"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "1.11.0",
     "remark-cli": "12.0.1",
     "remark-gfm": "4.0.1",
     "remark-lint-no-undefined-references": "5.0.2",

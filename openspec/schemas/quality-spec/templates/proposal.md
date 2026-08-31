@@ -34,7 +34,8 @@
 
 <!--
 Write "None" when there are none. State the existing path and each changed Requirement ID.
-Set `skip_specs: true` in `.openspec.yaml` only when there are no New or Modified Capabilities and the product specification does not change.
+When both lists are empty, identify the Concept, responsibility, state owner, Component boundary, or public contract changed by the product Change and set `skip_specs: true` in `.openspec.yaml`.
+Do not create an OpenSpec Change for repository administration, development tooling, CI, formatting, or wording-only maintenance.
 -->
 
 - `<existing-capability-path>`: `[[<capability-path>/<requirement-slug>]]` — <!-- changed guarantee -->

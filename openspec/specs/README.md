@@ -92,7 +92,7 @@ The subject MUST <core normative guarantee>.
 - **THEN** <observable result>
 ```
 
-The code above is an original example that demonstrates the writing format. Use only the blocks that are necessary and preserve the order defined in `_schema/requirement-structure.json`. Items in the same block use the same classification axis.
+The code above is an original example that demonstrates the writing format. Use only the necessary blocks and preserve the order shown in the example. Items in the same block use the same classification axis.
 
 Separate Requirements when their guarantees change or can be verified independently. Do not separate them when only the entry point or technical path differs and the consumer observes the same guarantee.
 
@@ -176,15 +176,16 @@ A delta spec may use only the following level-two sections:
 - `## REMOVED Requirements`
 - `## RENAMED Requirements`
 
-`MODIFIED` contains the complete Requirement after the update. Custom sections are not applied to the main spec by the OpenSpec 1.10.0 archive process. Do not add an `## References` section or a Conceptual Model delta.
+`MODIFIED` contains the complete Requirement after the update. The official archive command does not publish custom sections. Do not add an `## References` section or a Conceptual Model delta.
 
-Write a Conceptual Model change as the complete replacement text in `Main Spec Conceptual Model Replacements` in `model.md`. Publish with:
+When the approved model changes a reader-facing Conceptual Model, update the owning main spec during apply and validate the complete main-spec corpus. Leave Requirement merging and Change archival to the official OpenSpec CLI:
 
 ```bash
-node tools/archive-change.mjs <change-name>
+openspec archive <change-name> --yes
+npm run lint:openspec
 ```
 
-The publication command rejects unknown delta sections, stages Conceptual Model replacements before archiving Requirement deltas, and strictly validates every published main spec. A direct `openspec archive` does not apply Conceptual Model replacements.
+Git commits and PR review keep the Conceptual Model update, implementation, and archived Requirement deltas in one repository change. Do not create a repository-owned publication script around the official CLI.
 
 ---
 
@@ -199,6 +200,6 @@ The publication command rejects unknown delta sections, stages Conceptual Model 
 - No Scenario adds a norm absent from its Requirement or substitutes for a normative representation.
 - Norms contain no implementation detail, incidental detail of the current implementation, defect, or unresolved matter.
 - Related Requirements and other SSOTs are traceable from each Requirement's `References` block.
-- `openspec validate <change-name> --strict` succeeds.
+- `openspec validate <change-name> --strict --no-interactive` succeeds before archive.
 - All P0 and P1 findings from `REVIEW.md` are resolved.
-- In the Quality Workflow, strict validation succeeds after publication through `archive-change.mjs`.
+- `npm run lint:openspec` succeeds after the official archive command.

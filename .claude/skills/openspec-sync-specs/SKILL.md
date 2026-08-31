@@ -1,13 +1,13 @@
 ---
 name: openspec-sync-specs
 description: Sync delta specs from a change to main specs. Use when the user wants to update main specs with changes from a delta spec, without archiving the change.
-allowed-tools: Bash(openspec:*), Bash(mkdir:*), Bash(rmdir:*)
+allowed-tools: Bash(openspec:*)
 license: MIT
 compatibility: Requires openspec CLI.
 metadata:
   author: openspec
   version: "1.0"
-  generatedBy: "1.10.0"
+  generatedBy: "1.11.0"
 ---
 
 Sync delta specs from a change to main specs.
@@ -41,20 +41,6 @@ This is an **agent-driven** operation - you will read delta specs and directly e
    ```
 
    The JSON includes `planningHome.root`. Main specs live under `<planningHome.root>/openspec/specs/` — use that (store-aware) root for every main-spec path below, not a hardcoded repo path. When a store is selected it points at the store, not the current repository.
-
-   If `schemaName` is `quality-spec`, stop without writing main specs. A
-   standalone Requirement sync would publish only half of that schema's
-   specification. Tell the user to publish its Conceptual Model and Requirements
-   together through the archive workflow (`node tools/archive-change.mjs
-   "<name>"`). The remaining steps apply only to other schemas.
-
-   Before the first main-spec write for another schema, acquire the shared lock
-   with `mkdir "<planningHome.root>/openspec/.archive-change.lock"`. If it
-   already exists, stop without writing. Reuse it only when the current inline
-   archive explicitly states that it owns the lock. Hold it through strict
-   main-spec validation. A standalone sync must release the unchanged empty
-   lock directory with `rmdir` on every success or error path; an inline sync
-   leaves release to its owning archive. Never remove a non-empty lock directory.
 
 3. **Find delta specs**
 

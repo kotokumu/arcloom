@@ -71,7 +71,7 @@ Preserve in the main spec only concepts that stabilize the interpretation of Req
 
 When a concept already exists, reuse its authoritative term and definition. The capability that most strongly determines its meaning, invariants, and lifecycle owns it. Ownership does not follow solely from owning its creation process.
 
-When changing the Conceptual Model of a main spec, record the complete replacement text in `Main Spec Conceptual Model Replacements` in `model.md`. Do not use a diff, summary, or ellipsis. Write `None.` when there is no change. Write `REMOVE` to delete the entire section. The publication process deterministically applies only complete text or an explicit removal.
+When the approved model changes the vocabulary, states, relationships, or structural invariants needed to read a capability, update that main spec's Conceptual Model during apply. `model.md` records the analysis and approved meaning; it is not publication input. Validate all main specs before archiving Requirement deltas.
 
 ---
 

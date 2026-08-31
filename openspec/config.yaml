@@ -14,7 +14,6 @@ context: |
   - Specification rules and publication protocol: openspec/specs/README.md
   - Conceptual modeling method and completion checks: openspec/specs/MODELING.md
   - Specification review criteria and severity: openspec/specs/REVIEW.md
-  - Requirement block structure: openspec/specs/_schema/requirement-structure.json
   - Main spec and interface contract examples: openspec/templates/
 
 # context identifies authoritative documents; it does not require an agent to read or obey them.
@@ -24,6 +23,8 @@ rules:
   proposal:
     - >-
       Before writing, read `openspec/specs/README.md` and `openspec/specs/MODELING.md` completely and follow their capability-boundary, concept-ownership, SSOT, and decision-deferral rules.
+    - >-
+      Create an OpenSpec Change only for product behavior, a Concept, responsibility, state owner, Component boundary, or public contract. Repository administration, development tooling, CI, formatting, and wording-only maintenance stay outside OpenSpec.
     - >-
       Read affected existing main specs and prefer their capabilities and terminology. Do not add a capability without explaining why no existing capability owns the changed guarantee.
     - >-
@@ -41,7 +42,7 @@ rules:
       Before completion, perform the self-check in `openspec/specs/MODELING.md`. Do not proceed to specs while an unresolved decision can change a Requirement's meaning, scope, or observable result.
   specs:
     - >-
-      Before writing, read `model.md` when the selected schema defines it, then read `openspec/specs/README.md`, `openspec/specs/REVIEW.md`, `openspec/specs/_schema/requirement-structure.json`, and affected existing main specs completely and follow their specification rules and structure.
+      Before writing, read `model.md` when the selected schema defines it, then read `openspec/specs/README.md`, `openspec/specs/REVIEW.md`, and affected existing main specs completely and follow their specification rules and structure.
     - >-
       When the selected schema defines model.md, do not create delta specs while it contains an unresolved decision that can change a Requirement's meaning, scope, or observable result.
     - >-
@@ -63,7 +64,7 @@ rules:
     - >-
       Do not turn unresolved decisions into implementation tasks. Stop and request a specification decision when tasks cannot be determined without one.
     - >-
-      For quality-spec changes, do not include main-spec Conceptual Model updates in apply tasks. Publish Conceptual Model and Requirement changes together with `node tools/archive-change.mjs <change-name>`.
+      When the approved model changes a reader-facing Conceptual Model, include the corresponding main-spec update as an apply task. Requirement deltas remain owned by the official OpenSpec archive command.
 
 operations:
   apply:
@@ -71,10 +72,10 @@ operations:
       - Before apply, read proposal.md, model.md when the selected schema defines it, every delta spec, design.md, and tasks.md and continue following the rules injected into their artifact instructions.
       - Follow docs/DEVELOPMENT.md, including its TDD and design-conformance requirements.
       - If implementation reveals a specification ambiguity or contradiction, do not guess; update the applicable artifact or request a decision.
-      - Do not update a main spec's Conceptual Model during apply.
+      - Update an affected main spec's Conceptual Model during apply when the approved model changes its reader-facing vocabulary, states, relationships, or structural invariants. Do not manually merge Requirement deltas.
   archive:
     guidance:
       - Before archiving a quality-spec change, confirm that model.md has exactly `None.` under Unresolved Decisions.
-      - For quality-spec changes, direct `openspec archive` does not publish Conceptual Model replacements; use `node tools/archive-change.mjs <change-name>`.
-      - For quality-spec changes, do not complete publication until the archive command rejects unknown delta sections and completes strict validation of both the change and all main specs.
+      - Confirm that every approved reader-facing Conceptual Model update is already present in its main spec, then archive Requirement deltas with `openspec archive <change-name> --yes`.
+      - Do not complete publication until `npm run lint:openspec` succeeds after archive.
       - Update PRODUCT.md or ARCHITECTURE.md only when the accepted Change alters their subject matter.
