@@ -10,6 +10,8 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const archiveCommand = path.join(repositoryRoot, 'tools', 'archive-change.mjs');
 const templateConfig = path.join(repositoryRoot, 'openspec', 'config.yaml');
 const templateSchema = path.join(repositoryRoot, 'openspec', 'schemas', 'quality-spec');
+const templateStructure = path.join(repositoryRoot, 'openspec', 'specs', '_schema', 'requirement-structure.json');
+const structureValidator = path.join(repositoryRoot, 'tools', 'validate-spec-structure.mjs');
 
 function run(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
@@ -32,6 +34,10 @@ function createWorkspace(t) {
   fs.mkdirSync(path.join(openspecRoot, 'specs'), { recursive: true });
   fs.copyFileSync(templateConfig, path.join(openspecRoot, 'config.yaml'));
   fs.cpSync(templateSchema, path.join(openspecRoot, 'schemas', 'quality-spec'), { recursive: true });
+  fs.mkdirSync(path.join(openspecRoot, 'specs', '_schema'), { recursive: true });
+  fs.copyFileSync(templateStructure, path.join(openspecRoot, 'specs', '_schema', 'requirement-structure.json'));
+  fs.mkdirSync(path.join(workspace, 'tools'), { recursive: true });
+  fs.copyFileSync(structureValidator, path.join(workspace, 'tools', 'validate-spec-structure.mjs'));
   return workspace;
 }
 
@@ -59,6 +65,7 @@ function writePlanningArtifacts(workspace, name, {
   deltas = new Map(),
   skipSpecs = false,
   tasksComplete = true,
+  retirements = null,
 } = {}) {
   newChange(workspace, name);
   const changeRoot = `openspec/changes/${name}`;
@@ -78,6 +85,9 @@ function writePlanningArtifacts(workspace, name, {
 
   for (const [capability, delta] of deltas) {
     writeFile(workspace, `${changeRoot}/specs/${capability}/spec.md`, delta);
+  }
+  if (retirements !== null) {
+    writeFile(workspace, `${changeRoot}/scenario-retirements.json`, `${JSON.stringify(retirements, null, 2)}\n`);
   }
 }
 
@@ -128,8 +138,7 @@ test('publishes a nested new capability without losing conceptual or requirement
   const delta = `## Purpose\n\n` +
     `This capability lets consumers submit a search term and observe all entries satisfying the defined matching rule.\n\n` +
     `## ADDED Requirements\n\n` +
-    requirement('return-matching-items', 'return every entry matching the accepted search term') +
-    `\n- **参照**: [policy] docs/search-policy.md\n`;
+    requirement('return-matching-items', 'return every entry matching the accepted search term');
 
   writePlanningArtifacts(workspace, name, {
     replacements,
@@ -195,6 +204,114 @@ test('ignores level-two examples inside a fenced block with an info string', (t)
   const result = publish(workspace, name);
   requireSuccess(result, 'publish a delta containing a fenced heading example');
   assert.ok(archivedChange(workspace, name));
+});
+
+test('retires an explicitly named Scenario after strict archive', (t) => {
+  const workspace = createWorkspace(t);
+  const name = 'retire-scenario';
+  const capability = 'fixture/existing';
+  const scenarios = `${scenario('Primary result', 'the primary result is returned')}\n` +
+    scenario('Redundant result', 'the same rule is demonstrated');
+  const originalRequirement = `### Requirement: observe-result\n\nThe product MUST return the accepted result.\n\n${scenarios}`;
+  writeFile(workspace, `openspec/specs/${capability}/spec.md`, mainSpec(capability, {
+    requirements: [originalRequirement],
+  }));
+  writePlanningArtifacts(workspace, name, {
+    deltas: new Map([[capability, `## MODIFIED Requirements\n\n${originalRequirement}`]]),
+    retirements: {
+      version: 1,
+      retirements: [{ capability, requirement: 'observe-result', scenario: 'Redundant result [happy]' }],
+    },
+  });
+
+  const result = publish(workspace, name);
+  requireSuccess(result, 'publish Scenario retirement');
+  const published = fs.readFileSync(path.join(workspace, `openspec/specs/${capability}/spec.md`), 'utf8');
+  assert.match(published, /Primary result/);
+  assert.doesNotMatch(published, /Redundant result/);
+});
+
+test('preserves publication behavior when no retirement manifest exists', (t) => {
+  const workspace = createWorkspace(t);
+  const name = 'no-retirement-manifest';
+  const capability = 'fixture/existing';
+  const original = mainSpec(capability, { requirements: [requirement('observe-result', 'return the result')] });
+  writeFile(workspace, `openspec/specs/${capability}/spec.md`, original);
+  writePlanningArtifacts(workspace, name, {
+    deltas: new Map([[capability, `## MODIFIED Requirements\n\n${requirement('observe-result', 'return the revised result')}`]]),
+  });
+  requireSuccess(publish(workspace, name), 'publish without retirement manifest');
+});
+
+for (const invalid of [
+  {
+    name: 'unsupported-retirement-version',
+    manifest: { version: 2, retirements: [] },
+    message: /Unsupported scenario retirement manifest version/,
+  },
+  {
+    name: 'duplicate-retirement',
+    manifest: { version: 1, retirements: [
+      { capability: 'fixture/existing', requirement: 'observe-result', scenario: 'Observe result [happy]' },
+      { capability: 'fixture/existing', requirement: 'observe-result', scenario: 'Observe result [happy]' },
+    ] },
+    message: /Duplicate scenario retirement/,
+  },
+  {
+    name: 'unknown-retirement-capability',
+    manifest: { version: 1, retirements: [
+      { capability: 'fixture/missing', requirement: 'observe-result', scenario: 'Observe result [happy]' },
+    ] },
+    message: /has no delta spec/,
+  },
+  {
+    name: 'unknown-retirement-requirement',
+    manifest: { version: 1, retirements: [
+      { capability: 'fixture/existing', requirement: 'missing-result', scenario: 'Observe result [happy]' },
+    ] },
+    message: /Requirement does not exist/,
+  },
+  {
+    name: 'unknown-retirement-scenario',
+    manifest: { version: 1, retirements: [
+      { capability: 'fixture/existing', requirement: 'observe-result', scenario: 'Missing result [happy]' },
+    ] },
+    message: /does not match the current main spec/,
+  },
+]) {
+  test(`rejects ${invalid.name}`, (t) => {
+    const workspace = createWorkspace(t);
+    const capability = 'fixture/existing';
+    const original = mainSpec(capability, { requirements: [requirement('observe-result', 'return the result')] });
+    writeFile(workspace, `openspec/specs/${capability}/spec.md`, original);
+    writePlanningArtifacts(workspace, invalid.name, {
+      deltas: new Map([[capability, `## MODIFIED Requirements\n\n${requirement('observe-result', 'return the result')}`]]),
+      retirements: invalid.manifest,
+    });
+    const result = publish(workspace, invalid.name);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, invalid.message);
+    assert.equal(fs.readFileSync(path.join(workspace, `openspec/specs/${capability}/spec.md`), 'utf8'), original);
+    assert.equal(archivedChange(workspace, invalid.name), null);
+  });
+}
+
+test('rejects retirement of the last Scenario', (t) => {
+  const workspace = createWorkspace(t);
+  const name = 'retire-last-scenario';
+  const capability = 'fixture/existing';
+  const original = mainSpec(capability, { requirements: [requirement('observe-result', 'return the result')] });
+  writeFile(workspace, `openspec/specs/${capability}/spec.md`, original);
+  writePlanningArtifacts(workspace, name, {
+    deltas: new Map([[capability, `## MODIFIED Requirements\n\n${requirement('observe-result', 'return the result')}`]]),
+    retirements: { version: 1, retirements: [
+      { capability, requirement: 'observe-result', scenario: 'Observe result [happy]' },
+    ] },
+  });
+  const result = publish(workspace, name);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /would leave no Scenario/);
+  assert.equal(fs.readFileSync(path.join(workspace, `openspec/specs/${capability}/spec.md`), 'utf8'), original);
 });
 
 test('replaces an existing conceptual model while preserving unrelated main-spec content', (t) => {
@@ -286,6 +403,37 @@ test('restores specs and the active change when post-archive strict validation f
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Purpose section is too brief/);
   assert.equal(fs.existsSync(path.join(workspace, `openspec/specs/${capability}/spec.md`)), false);
+  assert.equal(fs.existsSync(path.join(workspace, 'openspec', 'changes', name)), true);
+  assert.equal(archivedChange(workspace, name), null);
+});
+
+test('restores specs and the active change when post-archive structural validation fails', (t) => {
+  const workspace = createWorkspace(t);
+  const name = 'invalid-published-structure';
+  const capability = 'fixture/existing';
+  const original = mainSpec(capability, { requirements: [requirement('observe-result', 'return the original result')] });
+  writeFile(workspace, `openspec/specs/${capability}/spec.md`, original);
+  const invalid = `### Requirement: observe-result\n\n` +
+    `The product MUST return the revised result.\n\n` +
+    `- **Unknown block**: This passes OpenSpec syntax but violates repository structure.\n\n` +
+    scenario('Observe result', 'return the original result') + `\n` +
+    scenario('Observe revised result', 'return the revised result');
+  writePlanningArtifacts(workspace, name, {
+    deltas: new Map([[capability, `## MODIFIED Requirements\n\n${invalid}`]]),
+    retirements: {
+      version: 1,
+      retirements: [{
+        capability,
+        requirement: 'observe-result',
+        scenario: 'Observe result [happy]',
+      }],
+    },
+  });
+
+  const result = publish(workspace, name);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /unknown Requirement block "Unknown block"/);
+  assert.equal(fs.readFileSync(path.join(workspace, `openspec/specs/${capability}/spec.md`), 'utf8'), original);
   assert.equal(fs.existsSync(path.join(workspace, 'openspec', 'changes', name)), true);
   assert.equal(archivedChange(workspace, name), null);
 });

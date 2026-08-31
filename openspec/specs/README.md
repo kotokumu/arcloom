@@ -13,7 +13,8 @@
 | design | 仕様をどう実現するか | 要求の再定義 |
 | tasks | 何をどの順序で実装・検証するか | 新しい要求、設計判断 |
 
-main specは次の順序で構成する。共有する非自明な概念がなければConceptual Modelを省略できる。
+main specは次の順序で構成する。Conceptual Modelは分析用artifactの残骸ではなく、仕様を読むための概要である。
+capability固有の用語、状態、分類、値域、関係、単位、同定規則、不変条件がある場合は省略しない。
 
 ```text
 Purpose → Conceptual Model（必要な場合）→ Requirements
@@ -65,8 +66,8 @@ designが所有する。
 
 | 層 | 定義するもの | 定義しないもの |
 |---|---|---|
-| Conceptual Model | 意味、同定、状態空間、分類値、関係、不変条件、値域、単位 | 遷移契機、操作手順、副作用 |
-| Requirement | 適用条件、入力の受理、状態遷移、結果、副作用、失敗時の保証 | 概念や分類値の初出定義 |
+| Conceptual Model | 意味、同定、状態空間、分類値、関係、構造的不変条件、値域、単位 | 遷移契機、操作手順、副作用 |
+| Requirement | 適用条件、入力の受理、判定、状態遷移、操作上の不変条件、結果、副作用、失敗時の保証 | 概念や分類値の初出定義 |
 | Scenario | 具体的な前提と行為に対する観察可能な結果 | Requirementにない規範 |
 
 各概念の定義元は1 capabilityに限定する。意味、不変条件、ライフサイクルを最も強く規定するcapabilityが
@@ -87,6 +88,7 @@ Requirement IDは`<capability-path>/<requirement-slug>`である。cross-referen
 - **前提条件**: <適用できる事前状態、権限、参照対象の存在条件>
 - **入力と受理**: <入力、許容範囲、既定、受理・拒否条件>
 - **振る舞いの規則**: <判定、計算、状態遷移、観察可能な出力>
+- **不変条件**: <各許容結果の前後で常に維持する条件>
 - **副作用**: <関連状態、履歴、通知への変化と変化させないもの>
 - **排他・冪等**: <同時実行、再送、重複、原子性>
 - **失敗の扱い**: <consumerが観察できる失敗結果>
@@ -110,7 +112,43 @@ consumerから見た保証が同じ場合は分けない。
 
 ---
 
-## 5. Scenario
+## 5. 仕様表現の選択
+
+規則の構造から表現を選ぶ。すべてを散文またはScenarioへ展開しない。1つのRequirementに複数の構造が
+含まれる場合は、必要な表現を併用する。該当する構造がない規則は簡潔な規範文で書く。
+
+| 規則の構造 | 表現 | 規範を置く場所 |
+|---|---|---|
+| 数値、日時、version、件数など、連続または順序を持つdomainで範囲により結果が異なる | Partition Table | 受理規則は`入力と受理`、結果規則は`振る舞いの規則` |
+| 到達可能な条件の組み合わせにより結果が異なる | Decision Table | `振る舞いの規則` |
+| 概念がtriggerとguardによりlifecycle stateを移る | State Transition Table | `振る舞いの規則`。状態名と意味はConceptual Model |
+| 常に維持する条件がある | Invariant | 概念の妥当性はConceptual Model、操作が維持する保証はRequirementの`不変条件` |
+| 規則を具体的に例示または検証する | Scenario | 完全なRequirementの後 |
+
+Partition Tableは次の列を使う。境界の包含・除外を明記し、意図しないgapやoverlapを残さない。値の意味、
+単位、精度、時刻基準が自明でない場合はConceptual Modelで定義する。
+
+| Partition | Condition or range | Acceptance or result |
+|---|---|---|
+
+Decision Tableは次の列を使う。異なる保証を生む到達可能な組み合わせを網羅し、既定結果があれば明記する。
+Conceptual Modelが禁止する組み合わせを作らない。
+
+| Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
+|---|---|---|---|---|
+
+State Transition Tableは次の列を使う。各状態の意味はConceptual Modelで一度だけ定義する。表にない遷移を
+拒否、無視、またはcontract外のいずれとするかを明記する。
+
+| Current state | Trigger or event | Guard | Next state | Output or Side Effects |
+|---|---|---|---|---|
+
+Invariantは成功経路や入力検証ではない。状態を変えるRequirementは、どの操作がInvariantを維持し、
+維持できないときconsumerが何を観察するかを書く。
+
+---
+
+## 6. Scenario
 
 各Requirementは主要な正常系を少なくとも1つ持つ。保証が変わる場合に限り、次の観点を追加する。
 
@@ -125,11 +163,12 @@ consumerから見た保証が同じ場合は分けない。
 | `compatibility` | 既存consumer、既存data、contract互換性 |
 
 GIVENは実行前から存在する状態、WHENはconsumerの行為またはevent、THENは外部から観察できる結果を書く。
-内部関数の呼出しや特定テーブルへの書込みだけを期待結果にしない。
+Scenarioは完全なRequirementから導出される具体例であり、partition、decision rule、transition、Invariantの
+唯一の置き場所にしない。内部関数の呼出しや特定テーブルへの書込みだけを期待結果にしない。
 
 ---
 
-## 6. 外部contractと実装SSOT
+## 7. 外部contractと実装SSOT
 
 | 情報 | SSOT | specの扱い |
 |---|---|---|
@@ -149,7 +188,7 @@ machine-readableなinterface SSOTがない場合は、`openspec/templates/interf
 
 ---
 
-## 7. Deltaと公開
+## 8. Deltaと公開
 
 delta specで使用できるlevel-two sectionは次だけである。
 
@@ -174,14 +213,15 @@ node tools/archive-change.mjs <change-name>
 
 ---
 
-## 8. 完成条件
+## 9. 完成条件
 
 - modelに仕様を変える未決事項が残っていない。
 - capability境界と概念所有が既存main specsと矛盾しない。
 - Conceptual Modelに未定義の重要語、分類値、単位、関係がない。
 - 各Requirementが1つの独立した保証を持つ。
+- 連続・順序domain、条件の組み合わせ、lifecycle、常時成立条件に対応する規範表現がConceptual ModelまたはRequirementにある。
 - 各Requirementに検証可能なScenarioがある。
-- ScenarioがRequirementにない規範を追加していない。
+- ScenarioがRequirementにない規範を追加せず、規範表現の代わりになっていない。
 - 実装詳細、現行実装の偶然、不具合、未決事項が規範に混ざっていない。
 - Requirementの`参照`から別SSOTと関連Requirementを追跡できる。
 - `openspec validate <change-name> --strict`が成功する。

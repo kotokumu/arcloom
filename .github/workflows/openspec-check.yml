@@ -9,6 +9,8 @@ on:
       - "openspec/**"
       - "tools/archive-change.mjs"
       - "tools/archive-change.test.mjs"
+      - "tools/validate-spec-structure.mjs"
+      - "tools/validate-spec-structure.test.mjs"
   push:
     branches:
       - main
@@ -37,6 +39,12 @@ jobs:
 
       - name: Validate main specs
         run: openspec validate --specs --strict
+
+      - name: Test specification structure validator
+        run: node --test tools/validate-spec-structure.test.mjs
+
+      - name: Validate main-spec structure
+        run: node tools/validate-spec-structure.mjs
 
       - name: Validate active changes
         run: openspec validate --changes --strict

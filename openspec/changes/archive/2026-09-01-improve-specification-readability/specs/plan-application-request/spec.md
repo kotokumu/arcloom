@@ -1,19 +1,4 @@
-# plan-application-request Specification
-
-## Purpose
-Requests external application of an exact authorized Plan Revision while preserving uncertainty and leaving target state and lifecycle authoritative in the Planning Context.
-
-## Conceptual Model
-
-### External Plan Target Reference and Plan Revision
-
-An External Plan Target Reference is a stable provider-independent identifier for one externally owned Plan representation; it is not target state. A Plan Revision binds one such reference, one caller-established current Plan, and one valid meaningfully unequal proposed Plan. Arcloom preserves this association without independently asserting its provenance.
-
-### Application Request and Result
-
-An Application Request is a passive instruction concerning one exact Plan Revision. A Plan Application Result is either AuthorizationDenied, AuthorizationUndecidable, or Request Receipt Evidence. Request Receipt Evidence is exactly ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, or ReceiptUncertain and describes only whether the exact request was received. No application result establishes mutation, completion, or current external Plan state.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: exact-plan-revision
 
@@ -57,6 +42,12 @@ Invalid application input MUST prevent Actor contact and produce the applicable 
 - **副作用**: Invalid input sends no Application Request.
 - **失敗の扱い**: An invalid Revision or missing Actor produces a stable invalid-input failure. An invalid Authorization Policy produces AuthorizationUndecidable.
 
+#### Scenario: Revision or Actor is invalid [error]
+
+- **GIVEN** an invalid Revision or no Actor
+- **WHEN** the caller requests external application
+- **THEN** the applicable stable invalid-input failure is reported and no Actor is contacted
+
 #### Scenario: Authorization Policy is invalid [error]
 
 - **GIVEN** a valid Revision and Actor but an invalid Authorization Policy
@@ -78,11 +69,23 @@ An Actor MUST receive an Application Request only when the exact Revision is Aut
 - **WHEN** the caller requests external application
 - **THEN** that exact Revision may be sent to the Actor
 
+#### Scenario: Revision is Denied [permission]
+
+- **GIVEN** the exact Revision is Denied in the current invocation
+- **WHEN** the caller requests external application
+- **THEN** the result is AuthorizationDenied and no request is sent to the Actor
+
 #### Scenario: Revision is Undecidable [permission]
 
 - **GIVEN** the exact Revision is Undecidable in the current invocation
 - **WHEN** the caller requests external application
 - **THEN** the result is AuthorizationUndecidable and no request is sent to the Actor
+
+#### Scenario: A prior authorization exists [permission]
+
+- **GIVEN** the exact Revision was Authorized earlier but is not Authorized in the current invocation
+- **WHEN** the caller requests external application
+- **THEN** no request is sent to the Actor
 
 ### Requirement: at-most-one-transmission
 
@@ -120,11 +123,23 @@ A Plan Application Result MUST describe only authorization or request receipt an
 - **WHEN** the capability establishes the result
 - **THEN** it is ReceiptAcknowledged without claiming that the external Plan changed
 
+#### Scenario: Actor explicitly refuses [happy]
+
+- **GIVEN** the Actor explicitly refuses the exact Application Request
+- **WHEN** the capability establishes the result
+- **THEN** it is ReceiptRefused
+
 #### Scenario: Receipt cannot be determined [error]
 
 - **GIVEN** the capability cannot establish whether the Actor received the request
 - **WHEN** it establishes the result
 - **THEN** the result is ReceiptUncertain
+
+#### Scenario: Request was definitely not received [happy]
+
+- **GIVEN** the capability establishes that the Actor did not receive the request
+- **WHEN** it establishes the result
+- **THEN** the result is KnownNotReceived
 
 ### Requirement: cancellation-preserves-uncertainty
 
@@ -133,6 +148,12 @@ Cancellation MUST prevent transmission when observed before sending and preserve
 - **振る舞いの規則**: Established ReceiptAcknowledged, ReceiptRefused, or KnownNotReceived remains the result. Without stronger evidence after possible receipt, the result is ReceiptUncertain.
 - **排他・冪等**: Cancellation never causes retry.
 - **失敗の扱い**: Cancellation before Actor invocation returns the caller's cancellation outcome and sends no request. An Actor that observes cancellation before transmission yields KnownNotReceived.
+
+#### Scenario: Cancelled before transmission [error]
+
+- **GIVEN** an application-request invocation has not begun transmission
+- **WHEN** cancellation is observed
+- **THEN** no request is sent to the Actor
 
 #### Scenario: Cancelled after possible receipt [boundary]
 
@@ -151,6 +172,12 @@ Cancellation MUST prevent transmission when observed before sending and preserve
 - **GIVEN** cancellation has been observed before Actor invocation begins
 - **WHEN** the application-request invocation resolves
 - **THEN** the caller's cancellation outcome is returned and no request is sent
+
+#### Scenario: Actor observes cancellation before transmission [boundary]
+
+- **GIVEN** the Actor has been invoked but has not begun transmission
+- **WHEN** the Actor observes cancellation
+- **THEN** it does not transmit and the result is KnownNotReceived
 
 ### Requirement: external-state-requires-fresh-observation
 

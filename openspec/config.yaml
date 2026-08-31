@@ -36,12 +36,16 @@ rules:
     - >-
       Analyze in the order defined by `openspec/specs/MODELING.md`; do not add a representation or concept merely because the template contains a field for it.
     - >-
+      Select a compact reader-facing Conceptual Model for every affected capability that has dedicated terminology, state, classification, value-domain, relationship, or invariant meaning; do not require readers to infer it from Scenarios.
+    - >-
       Before completion, perform the self-check in `openspec/specs/MODELING.md`. Do not proceed to specs while an unresolved decision can change a Requirement's meaning, scope, or observable result.
   specs:
     - >-
       Before writing, read `model.md` when the selected schema defines it, then read `openspec/specs/README.md`, `openspec/specs/REVIEW.md`, `openspec/specs/_schema/requirement-structure.json`, and affected existing main specs completely and follow their specification rules and structure.
     - >-
       When the selected schema defines model.md, do not create delta specs while it contains an unresolved decision that can change a Requirement's meaning, scope, or observable result.
+    - >-
+      Select Partition Tables, Decision Tables, State Transition Tables, Invariants, and Scenarios from the structure of each rule. Do not leave a normative rule only in model.md or a Scenario.
     - >-
       Before completion, review every criterion in `openspec/specs/REVIEW.md`, resolve P0 and P1 findings, and strictly validate the change after all delta specs exist.
   design:
