@@ -13,7 +13,7 @@ Provides a standard read-only Plan attempt that distinguishes successful observa
 | Plan Attempt | One read-only target-specific Attempt that resolves the binding and begins with one fresh Plan Snapshot. | One resolved Plan Target Binding and caller lifecycle. |
 | Current Plan Not Established | Successful result preserving a coherent Snapshot without a valid current Plan. It is not Failure, Insufficient Information, authoritative absence, or semantic Reconciliation. | One successful Snapshot. |
 | Current Plan Assessed | Successful result preserving the successful Snapshot, exact current Plan, and exact Plan Control Assessment. | One current Plan and Assessment. |
-| Plan Attempt Failure | Failure before either successful result branch exists. | Stable Plan-owned boundary failure, existing Snapshot or Plan Control failure, or exact caller context error. |
+| Plan Attempt Failure | Failure before either successful result branch exists. | Stable Plan-owned boundary failure, existing Snapshot or Plan Control failure, or caller lifecycle outcome. |
 
 ### Plan Attempt Relationship
 
@@ -51,25 +51,25 @@ Plan Control remains the target-specific Reconciliation authority. The Plan Atte
 
 Each Plan Attempt MUST resolve one exact Plan Target Binding, begin with exactly one fresh Plan Snapshot, and preserve every successful Snapshot outcome in exactly one explicit Plan Attempt Result branch.
 
-- **前提条件**: Before control starts, the caller supplies valid Plan Target construction, one exact accepted target kind, a non-nil Plan Target Resolver, and a non-nil Plan Control Assessor. A valid binding identifies the exact requested Target Identity and contains one target-bound Snapshot Observer and Delivery Observer. Every boundary observes the caller lifecycle and returns within its documented cancellation bound.
+- **前提条件**: Before control starts, the caller supplies a valid Plan Target, one exact accepted target kind, a Plan Target Resolver, and a Plan Control Assessor. A valid binding identifies the exact requested Target Identity and contains one target-bound Snapshot Observer and Delivery Observer. Every boundary observes the caller lifecycle and returns within its documented cancellation bound.
 - **振る舞いの規則**:
 
   | Rule | Preconditions or state | Input or boundary result | Plan Attempt result | Side effects |
   |---|---|---|---|---|
   | Invalid setup | No Attempt exists | Invalid Plan Target, accepted kind, Resolver, or Assessor configuration | Corresponding stable setup error before an Attempt or Controller lifecycle exists | No Resolver or observation call. |
-  | Wrong target kind | Attempt begins | Requested Target Identity kind differs from the configured exact kind | Target Binding Unavailable; zero result and Directive | Resolver and all later boundaries are skipped. |
-  | Binding unavailable | Attempt begins with an accepted kind | Resolver fails, or returns an invalid or identity-mismatched binding | Stable Plan-owned boundary failure; zero result and Directive | Snapshot and all later boundaries are skipped. |
-  | Snapshot failure | Exact binding is established | Snapshot Observer cannot establish a successful Snapshot | Existing Snapshot failure; zero result and Directive | Delivery Observation and Assessment are skipped. |
+  | Wrong target kind | Attempt begins | Requested Target Identity kind differs from the configured exact kind | Target Binding Unavailable; neither result nor Directive is established | Resolver and all later boundaries are skipped. |
+  | Binding unavailable | Attempt begins with an accepted kind | Resolver fails, or returns an invalid or identity-mismatched binding | Stable Plan-owned boundary failure; neither result nor Directive is established | Snapshot and all later boundaries are skipped. |
+  | Snapshot failure | Exact binding is established | Snapshot Observer cannot establish a successful Snapshot | Existing Snapshot failure; neither result nor Directive is established | Delivery Observation and Assessment are skipped. |
   | No current Plan | Successful fresh Snapshot exists | Snapshot contains no valid current Plan | Current Plan Not Established preserving that Snapshot and Await Another Request | No Delivery Observation, Assessment, or semantic Reconciliation. |
   | Current Plan | Successful fresh Snapshot contains a valid current Plan | [[plan-reconciliation-loop/current-plan-assessment]] succeeds | Current Plan Assessed preserving the Snapshot and Assessment, with Await Another Request | Exactly one semantic Plan Reconciliation. |
-  | Caller cancellation | Any boundary is about to run or has just returned | Caller context error is observed before a successful branch commits | Exact caller context error; zero result and Directive | No later boundary starts. |
+  | Caller cancellation | Any boundary is about to run or has just returned | Caller lifecycle ends before a successful branch commits | Caller lifecycle outcome; neither result nor Directive is established | No later boundary starts. |
 
 - **不変条件**:
   - The Resolver receives the exact requested Target Identity and the binding identifies that same Target Identity.
   - The Attempt invokes only the observation boundaries in that resolved binding.
   - Exactly one fresh Snapshot is established before any Delivery Observation or Assessment.
   - Earlier snapshots, Request causes, events, receipts, and prior outcomes are not current Plan facts.
-- **失敗の扱い**: Plan-owned binding failures use stable codes and do not expose supplied boundary errors through error unwrapping. Existing Snapshot and Plan Control failures preserve their contracts. The exact caller context error takes precedence whenever observed before a successful result commits. Every failure returns zero Plan Attempt Result and zero Directive.
+- **失敗の扱い**: Plan-owned binding failures use stable codes and do not expose an underlying boundary failure as their own identity. Existing Snapshot and Plan Control failures preserve their contracts. Caller cancellation observed before a successful result commits takes precedence. An Attempt failure establishes neither a Plan Attempt Result nor a Directive.
 - **参照**: [[reconciliation-control-loop/level-based-attempt]]; [[github-plan-snapshot/current-authoritative-snapshot]]; [[github-plan-snapshot/current-plan-eligibility]]
 
 #### Scenario: PRL-FPO-1 Current Plan is established [happy]
@@ -94,7 +94,7 @@ Each Plan Attempt MUST resolve one exact Plan Target Binding, begin with exactly
 
 - **GIVEN** caller cancellation is observed before, during, or immediately after a Plan Attempt boundary and each boundary honors its cancellation contract
 - **WHEN** the Plan Attempt returns
-- **THEN** it returns the exact caller context error with zero Plan Attempt Result and zero Directive instead of a successful branch or composed boundary failure
+- **THEN** it returns the caller lifecycle outcome, establishes neither a Plan Attempt Result nor a Directive, and does not replace that outcome with a Plan-owned or composed boundary failure
 
 ### Requirement: current-plan-assessment
 
@@ -105,10 +105,10 @@ A Plan Attempt with a valid current Plan MUST acquire current caller-selected De
 
   | Rule | Preconditions or state | Boundary result | Plan Attempt result | Side effects |
   |---|---|---|---|---|
-  | Delivery unavailable | Fresh Snapshot contains a valid current Plan | Delivery Observer fails | Stable Plan-owned boundary failure; zero result and Directive | Plan Control is not invoked. |
-  | Assessment unavailable | Current Delivery Observations exist | Plan Control fails to establish an Assessment | Existing Plan Control failure; zero result and Directive | No Current Plan Assessed branch exists. |
+  | Delivery unavailable | Fresh Snapshot contains a valid current Plan | Delivery Observer fails | Stable Plan-owned boundary failure; neither result nor Directive is established | Plan Control is not invoked. |
+  | Assessment unavailable | Current Delivery Observations exist | Plan Control fails to establish an Assessment | Existing Plan Control failure; neither result nor Directive is established | No Current Plan Assessed branch exists. |
   | Assessment established | Current Delivery Observations exist | Plan Control returns Complete, Retain, Revise, or Insufficient Information | Current Plan Assessed preserving the exact Snapshot, current Plan, and Assessment | Revise preserves its exact Proposed Plan. |
-  | Caller cancellation | Any Delivery or Assessment boundary | Caller context error is observed before success commits | Exact caller context error; zero result and Directive | No semantic Reconciliation Result is established. |
+  | Caller cancellation | Any Delivery or Assessment boundary | Caller lifecycle ends before success commits | Caller lifecycle outcome; neither result nor Directive is established | No semantic Reconciliation Result is established. |
 
 - **不変条件**:
   - Delivery Observation begins only after the successful fresh Snapshot.

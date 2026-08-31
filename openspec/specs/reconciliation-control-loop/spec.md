@@ -170,8 +170,8 @@ The Controller MUST create internal reevaluation eligibility after a successful 
   | Await | Await Another Request | Valid; no delay value exists. |
   | Immediate | Reevaluate Immediately | Valid; no delay value exists. |
   | Positive finite delay | Reevaluate After Delay with duration greater than zero and finite | Valid. |
-  | Non-positive delay | Reevaluate After Delay with zero or negative duration | Constructor rejects it; no Directive exists. |
-  | Unconstructed value | Zero Directive returned with nil Attempt error | Controller rejects it as Control Directive Rejected. |
+  | Non-positive delay | Reevaluate After Delay with zero or negative duration | Rejected; no Directive exists. |
+  | Missing or invalid Directive | An otherwise successful Attempt provides no valid Directive | Controller rejects it as Control Directive Rejected. |
 
 - **振る舞いの規則**:
 
@@ -198,10 +198,10 @@ The Controller MUST create internal reevaluation eligibility after a successful 
 - **WHEN** the Host requests it before the delay expires
 - **THEN** it becomes eligible earlier and the stale delay creates no second obligation
 
-#### Scenario: RCL-ECD-6 Unconstructed directive is rejected by control [error]
+#### Scenario: RCL-ECD-6 Missing directive is rejected by control [error]
 
-- **GIVEN** a target-specific Attempt returns a successful value, the zero Directive, and nil error
-- **WHEN** the Controller processes the return
+- **GIVEN** a target-specific Attempt reports success without a valid Directive
+- **WHEN** the Controller processes the outcome
 - **THEN** it reports Control Directive Rejected, exposes no Completion, and creates no Directive-based eligibility
 
 ### Requirement: target-result-isolation
@@ -232,8 +232,8 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
   | Rule | Attempt return | Reported outcome | Eligibility result | Other targets |
   |---|---|---|---|---|
-  | Target failure | Non-nil error with any value and any Directive | Target Attempt Failed with exact target and preserved error cause; no result or Directive | None from failure | Unchanged |
-  | Directive failure | Nil error with invalid or zero Directive | Control Directive Rejected with exact target; no Completion or Directive | None from failure | Unchanged |
+  | Target failure | Attempt reports failure together with any nominal value and any Directive | Target Attempt Failed with exact target and preserved error cause; no result or Directive | None from failure | Unchanged |
+  | Directive failure | Attempt otherwise reports success without a valid Directive | Control Directive Rejected with exact target; no Completion or Directive | None from failure | Unchanged |
   | Preserved Request | Either failure while a same-target Request is already preserved | The same typed failure | Later Request-driven work remains eligible after publication | Unchanged |
   | No preserved Request | Either failure with no later Request | The same typed failure | Target becomes Inactive | Unchanged |
 
@@ -243,7 +243,7 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
 #### Scenario: RCL-FNR-1 Attempt fails without a pending request [error]
 
-- **GIVEN** one target's Attempt returns a non-nil error and no later Request is preserved
+- **GIVEN** one target's Attempt reports failure and no later Request is preserved
 - **WHEN** Target Attempt Failed is published
 - **THEN** no Attempt is automatically scheduled for that target and no returned value or Directive is exposed
 
@@ -255,7 +255,7 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
 #### Scenario: RCL-FNR-4 Invalid directive is distinguishable [error]
 
-- **GIVEN** a target-specific Attempt returns a successful value with an invalid Directive and nil error
+- **GIVEN** a target-specific Attempt reports success with an invalid Directive
 - **WHEN** the Controller reports the Attempt Failure
 - **THEN** the Host observes Control Directive Rejected rather than Target Attempt Failed
 
@@ -266,12 +266,12 @@ The Controller MUST publish returned outcomes and stop through the supplied call
 - **前提条件**: Each target-specific Attempt observes the supplied cancellation and returns within its documented bound.
 - **入力と受理**:
 
-  | Controller lifecycle | Request submission context | Acceptance result |
+  | Controller lifecycle | Request submission lifecycle | Acceptance result |
   |---|---|---|
   | Running | Active until acceptance | Request may be accepted. |
-  | Running | Ends before acceptance | Submission returns that context error and no Request is accepted. |
+  | Running | Ends before acceptance | Submission returns that lifecycle outcome and no Request is accepted. |
   | Running after acceptance | Ends later | The accepted work remains governed only by the Controller lifecycle. |
-  | Ended before acceptance | Active or ended | Submission returns the Controller lifecycle error; it takes precedence when both contexts ended. |
+  | Ended before acceptance | Active or ended | Submission returns the Controller lifecycle outcome; it takes precedence when both lifecycles ended. |
 
 - **振る舞いの規則**:
 
@@ -282,13 +282,13 @@ The Controller MUST publish returned outcomes and stop through the supplied call
   | Running | Caller cancellation | Any target state | Stopping | Reject Requests, start no Attempt, discard Pending and Delayed eligibility, cancel Active Attempts, and discard any unpublished Report and unapplied Directive. |
   | Running with Report Pending | Caller cancellation | Report delivery has not committed | Stopping | Publish no prospective outcome and apply no Directive. |
   | Stopping | Active Attempt returns | Other Active Attempts remain | Stopping | Establish no post-stop Completion; continue waiting only for Active returns. |
-  | Stopping | Last Active Attempt returns | None remain | Stopped | Close the stable Report stream and make the caller context error available to Wait. |
+  | Stopping | Last Active Attempt returns | None remain | Stopped | Close the stable Report stream and make the caller lifecycle outcome available to Wait. |
 
   | Race rule | Publication state when cancellation competes | Observable winner | Directive result | Lifecycle result |
   |---|---|---|---|---|
-  | Delivery first | Report delivery commits first | Publish that one outcome exactly once | Apply only its valid Directive after publication | Then stop with caller context error. |
-  | Cancellation first | Cancellation commits first | Publish no prospective outcome | Apply no Directive | Stop with caller context error. |
-  | Simultaneous readiness | Neither is ordered beforehand | Exactly one of the preceding rows wins | Consistent with the winning row | Reports closes and Wait returns caller context error. |
+  | Delivery first | Report delivery commits first | Publish that one outcome exactly once | Apply only its valid Directive after publication | Then stop with the caller lifecycle outcome. |
+  | Cancellation first | Cancellation commits first | Publish no prospective outcome | Apply no Directive | Stop with the caller lifecycle outcome. |
+  | Simultaneous readiness | Neither is ordered beforehand | Exactly one of the preceding rows wins | Consistent with the winning row | Reports closes and Wait returns the caller lifecycle outcome. |
 
 - **不変条件**:
   - Reports returns one stable stream for the lifecycle.
@@ -298,7 +298,7 @@ The Controller MUST publish returned outcomes and stop through the supplied call
   - Cancellation never waits for Report consumption, Pending or Delayed work, or another timer after all Active Attempts return.
   - An Attempt return observed after cancellation commits establishes no Completion or Directive eligibility, even if it contains nominal success.
 - **副作用**: Report publication is in-process control output and is not delivery of a semantic Reconciliation Result to its Result Destination.
-- **失敗の扱い**: An Attempt that has not successfully completed and published before cancellation establishes no successful Completion. Wait exposes the exact supplied caller context error.
+- **失敗の扱い**: An Attempt that has not successfully completed and published before cancellation establishes no successful Completion. Wait exposes the caller lifecycle outcome.
 
 #### Scenario: RCL-CL-11 Normal operation reports every returned outcome once [happy]
 

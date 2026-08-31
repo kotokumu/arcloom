@@ -192,8 +192,8 @@ A Plan consumer MUST be able to distinguish valid Plan values from invalid input
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
   | Valid complete Plan | Every composition and element invariant holds | Consumer requests validity | Valid | None |
-  | Invalid complete Plan candidate | At least one applicable invariant fails | Consumer validates construction input | One applicable Plan Validation Violation and no valid Plan | None |
-  | Independently validatable value | One Plan value or collection is supplied outside complete Plan construction | Its owning rules are evaluated | The same success or violation category as complete Plan validation | None |
+  | Invalid complete Plan candidate | At least one applicable invariant fails | Consumer validates submitted input | One applicable Plan Validation Violation and no valid Plan | None |
+  | Independently validatable value | One Plan value or collection is supplied outside a complete Plan | Its owning rules are evaluated | The same success or violation category as complete Plan validation | None |
   | Multiple independent violations | More than one applicable rule fails | Validation is requested | One applicable violation without promised selection order | None |
 
 - **不変条件**: A valid Plan reports valid without requiring the consumer to reconstruct its invariants. A Plan Validation Violation exposes its stable category, affected element kind, and applicable collection index.
@@ -229,7 +229,7 @@ A Plan consumer MUST be able to distinguish valid Plan values from invalid input
 - **WHEN** a consumer asks whether it is valid
 - **THEN** the Plan reports valid
 
-#### Scenario: Constructed Plan validity [happy]
+#### Scenario: Valid Plan reports validity [happy]
 
 - **GIVEN** a Plan satisfies every Plan invariant
 - **WHEN** a consumer asks whether it is valid

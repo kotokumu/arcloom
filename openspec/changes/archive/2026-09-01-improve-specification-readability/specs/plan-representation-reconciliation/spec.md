@@ -381,10 +381,10 @@ A reconciliation caller MUST be able to distinguish unavailable external facts, 
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
-  | Invalid context | No valid caller lifecycle exists | Request begins | Stable invalid-context failure and no result | No observation. |
+  | Invalid caller lifecycle | No valid caller lifecycle exists | Request begins | Stable invalid caller-lifecycle failure and no result | No observation. |
   | Caller lifecycle ends | No valid result has returned | Caller cancellation or deadline is observed | Exact caller lifecycle outcome and no result | Later failures do not replace it. |
   | Unusable observation source | Caller lifecycle remains active | Source configuration cannot be used | Stable invalid-observer failure and no result | No observation. |
-  | Invalid expected Plan | Context and source are valid | Expected Plan is invalid | Stable invalid-expected-Plan failure and no result | No observation. |
+  | Invalid expected Plan | Caller lifecycle and source are valid | Expected Plan is invalid | Stable invalid-expected-Plan failure and no result | No observation. |
   | Provider fact unavailable | Observation contract remains valid | Access, rate limit, service health, or detected change prevents a fact | Successful Observation with localized Unavailable Information | Provider detail does not cross the boundary. |
   | Observation contract violated | Caller lifecycle remains active | Source returns invalid Observation or an unrelated cancellation outcome | Stable observation-contract failure and no result | Provider detail does not cross the boundary. |
   | Authoritative not found | Observation contract establishes root absence | Observation succeeds | Successful Observation with authoritative root absence | None |
