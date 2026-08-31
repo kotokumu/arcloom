@@ -71,7 +71,7 @@ The Host owns wake-up causes. The target-specific Attempt owns current-fact acqu
 
 The Controller MUST accept evaluation Requests only for one valid caller-established Target Identity and keep every resulting Attempt, Completion, and Attempt Failure bound to that exact identity.
 
-- **入力と受理**:
+- **Input and Acceptance**:
 
   | Rule | Kind or key condition | Acceptance |
   |---|---|---|
@@ -80,9 +80,9 @@ The Controller MUST accept evaluation Requests only for one valid caller-establi
   | Whitespace-only identity part | Either consists only of Unicode whitespace | Reject synchronously. |
   | Boundary whitespace | Either has leading or trailing Unicode whitespace | Reject synchronously. |
 
-- **振る舞いの規則**: Accepted kind and key bytes are preserved exactly. Equality is byte-exact and case-sensitive for both fields, with no Unicode normalization.
-- **不変条件**: Every Request, Attempt, Completion, and Attempt Failure associated with one accepted target retains the exact accepted Target Identity.
-- **失敗の扱い**: Rejection starts no Attempt and creates no Report.
+- **Behavioral Rules**: Accepted kind and key bytes are preserved exactly. Equality is byte-exact and case-sensitive for both fields, with no Unicode normalization.
+- **Invariants**: Every Request, Attempt, Completion, and Attempt Failure associated with one accepted target retains the exact accepted Target Identity.
+- **Failure Handling**: Rejection starts no Attempt and creates no Report.
 
 #### Scenario: RCL-ETR-1 Valid target is requested [happy]
 
@@ -106,10 +106,10 @@ The Controller MUST accept evaluation Requests only for one valid caller-establi
 
 Each Attempt MUST evaluate one target from facts acquired for that Attempt rather than from the Request occurrence or a previous outcome.
 
-- **入力と受理**: The Attempt receives only the exact Target Identity and caller lifecycle required to acquire its target-specific current facts.
-- **振る舞いの規則**: Request cause, count, metadata, payload, prior result, prior failure, and prior Control Directive are not authoritative decision inputs. The target-specific Attempt decides which current facts to acquire and whether semantic Reconciliation can occur.
-- **不変条件**: The generic Controller neither acquires nor interprets target-specific Observations and never stores a prior target outcome as the authority for a later Attempt.
-- **副作用**: Wake-up causes remain with the Host and do not cross the Attempt boundary.
+- **Input and Acceptance**: The Attempt receives only the exact Target Identity and caller lifecycle required to acquire its target-specific current facts.
+- **Behavioral Rules**: Request cause, count, metadata, payload, prior result, prior failure, and prior Control Directive are not authoritative decision inputs. The target-specific Attempt decides which current facts to acquire and whether semantic Reconciliation can occur.
+- **Invariants**: The generic Controller neither acquires nor interprets target-specific Observations and never stores a prior target outcome as the authority for a later Attempt.
+- **Side Effects**: Wake-up causes remain with the Host and do not cross the Attempt boundary.
 
 #### Scenario: RCL-LBA-1 Provider event wakes a target [happy]
 
@@ -121,8 +121,8 @@ Each Attempt MUST evaluate one target from facts acquired for that Attempt rathe
 
 One caller-scoped Controller MUST serialize Attempts for each Target Identity, preserve later eligibility for a Request received during active work, and allow distinct targets to progress independently within one positive finite concurrency bound.
 
-- **入力と受理**: The configured concurrency bound is a positive finite integer. An invalid bound starts no Controller lifecycle.
-- **振る舞いの規則**:
+- **Input and Acceptance**: The configured concurrency bound is a positive finite integer. An invalid bound starts no Controller lifecycle.
+- **Behavioral Rules**:
 
   | Current target state | Trigger | Guard | Next target state | Observable control result |
   |---|---|---|---|---|
@@ -134,12 +134,12 @@ One caller-scoped Controller MUST serialize Attempts for each Target Identity, p
   | Active with Pending Reentry | Active Attempt returns | Controller remains Running and its Report is published | Pending | At least one later Attempt remains eligible. |
   | Active with Pending Reentry | Caller cancellation commits | Any publication state | Inactive within Stopping | Preserved eligibility is discarded and no later Attempt starts. |
 
-- **不変条件**:
+- **Invariants**:
   - At most one Attempt for a Target Identity is Active.
   - The total Active Attempt count never exceeds the configured bound.
   - State and outcomes for distinct Target Identities are never exchanged.
-- **排他・冪等**: Coincident Request and Attempt return preserve at least one later eligibility without same-target overlap. Duplicate Pending Requests may be satisfied by one Attempt.
-- **失敗の扱い**: Invalid Target Identity rejection follows [[reconciliation-control-loop/exact-target-request]]; invalid concurrency configuration creates no lifecycle.
+- **Concurrency and Idempotency**: Coincident Request and Attempt return preserve at least one later eligibility without same-target overlap. Duplicate Pending Requests may be satisfied by one Attempt.
+- **Failure Handling**: Invalid Target Identity rejection follows [[reconciliation-control-loop/exact-target-request]]; invalid concurrency configuration creates no lifecycle.
 
 #### Scenario: RCL-PEC-1 Duplicate pending requests may coalesce [idempotency]
 
@@ -163,7 +163,7 @@ One caller-scoped Controller MUST serialize Attempts for each Target Identity, p
 
 The Controller MUST create internal reevaluation eligibility after a successful Attempt only according to that Attempt's one valid Control Directive and only after its Completion is published.
 
-- **入力と受理**:
+- **Input and Acceptance**:
 
   | Partition | Directive condition | Acceptance or result |
   |---|---|---|
@@ -173,7 +173,7 @@ The Controller MUST create internal reevaluation eligibility after a successful 
   | Non-positive delay | Reevaluate After Delay with zero or negative duration | Rejected; no Directive exists. |
   | Missing or invalid Directive | An otherwise successful Attempt provides no valid Directive | Controller rejects it as Control Directive Rejected. |
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Completion publication | Directive or event | Eligibility result | Side effect |
   |---|---|---|---|---|
@@ -183,8 +183,8 @@ The Controller MUST create internal reevaluation eligibility after a successful 
   | Early Request | Committed | Valid Request before a delay expires | Pending immediately | The later delay creates no duplicate obligation. |
   | Publication pending | Not committed | Any valid Directive | Unchanged | The Directive is not applied. |
 
-- **不変条件**: Request and Directive eligibility coalesce without same-target overlap or duplicate obligations. Target result content, failure, cancellation, and request cause never imply a Directive.
-- **失敗の扱い**: Control Directive Rejected is distinguishable from Target Attempt Failed, exposes no Completion or Directive, and creates no Directive-based eligibility.
+- **Invariants**: Request and Directive eligibility coalesce without same-target overlap or duplicate obligations. Target result content, failure, cancellation, and request cause never imply a Directive.
+- **Failure Handling**: Control Directive Rejected is distinguishable from Target Attempt Failed, exposes no Completion or Directive, and creates no Directive-based eligibility.
 
 #### Scenario: RCL-ECD-1 Attempt awaits another request [happy]
 
@@ -208,9 +208,9 @@ The Controller MUST create internal reevaluation eligibility after a successful 
 
 A successful Completion MUST preserve its target-owned value without requiring a shared result classification or claiming that semantic Reconciliation occurred.
 
-- **振る舞いの規則**: The Controller associates the successful value with its exact Target Identity and Control Directive but does not inspect the value to determine scheduling or semantic status. The value may be a Reconciliation Result or another target-specific success, including a successful Observation for which semantic Reconciliation was not possible.
-- **不変条件**: Scheduling depends only on the valid Control Directive; result meaning remains owned by the target-specific capability.
-- **副作用**: Generic control defines no universal Reconciliation input, Observation, Result, Failure, outcome taxonomy, evidence, proposal, condition, or effect interface.
+- **Behavioral Rules**: The Controller associates the successful value with its exact Target Identity and Control Directive but does not inspect the value to determine scheduling or semantic status. The value may be a Reconciliation Result or another target-specific success, including a successful Observation for which semantic Reconciliation was not possible.
+- **Invariants**: Scheduling depends only on the valid Control Directive; result meaning remains owned by the target-specific capability.
+- **Side Effects**: Generic control defines no universal Reconciliation input, Observation, Result, Failure, outcome taxonomy, evidence, proposal, condition, or effect interface.
 
 #### Scenario: RCL-TRI-1 Unrelated result types use control [compatibility]
 
@@ -228,7 +228,7 @@ A successful Completion MUST preserve its target-owned value without requiring a
 
 An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed from Control Directive Rejected, and MUST NOT create implicit reevaluation eligibility.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Attempt return | Reported outcome | Eligibility result | Other targets |
   |---|---|---|---|---|
@@ -237,9 +237,9 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
   | Preserved Request | Either failure while a same-target Request is already preserved | The same typed failure | Later Request-driven work remains eligible after publication | Unchanged |
   | No preserved Request | Either failure with no later Request | The same typed failure | Target becomes Inactive | Unchanged |
 
-- **不変条件**: Failure kind, exact Target Identity, and corresponding error remain associated; Failure never contains a successful result or Control Directive.
-- **排他・冪等**: A Request received during the failed Active Attempt may cause later work, but the Failure itself creates none.
-- **失敗の扱い**: Failure for one target neither terminates nor contaminates work for another target.
+- **Invariants**: Failure kind, exact Target Identity, and corresponding error remain associated; Failure never contains a successful result or Control Directive.
+- **Concurrency and Idempotency**: A Request received during the failed Active Attempt may cause later work, but the Failure itself creates none.
+- **Failure Handling**: Failure for one target neither terminates nor contaminates work for another target.
 
 #### Scenario: RCL-FNR-1 Attempt fails without a pending request [error]
 
@@ -263,8 +263,8 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
 The Controller MUST publish returned outcomes and stop through the supplied caller lifecycle without allowing Report backpressure, pending eligibility, timers, or unfinished work to establish post-cancellation success or prevent bounded shutdown after Active Attempts return.
 
-- **前提条件**: Each target-specific Attempt observes the supplied cancellation and returns within its documented bound.
-- **入力と受理**:
+- **Preconditions**: Each target-specific Attempt observes the supplied cancellation and returns within its documented bound.
+- **Input and Acceptance**:
 
   | Controller lifecycle | Request submission lifecycle | Acceptance result |
   |---|---|---|
@@ -273,7 +273,7 @@ The Controller MUST publish returned outcomes and stop through the supplied call
   | Running after acceptance | Ends later | The accepted work remains governed only by the Controller lifecycle. |
   | Ended before acceptance | Active or ended | Submission returns the Controller lifecycle outcome; it takes precedence when both lifecycles ended. |
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Current lifecycle state | Trigger | Guard | Next state | Output or side effects |
   |---|---|---|---|---|
@@ -290,15 +290,15 @@ The Controller MUST publish returned outcomes and stop through the supplied call
   | Cancellation first | Cancellation commits first | Publish no prospective outcome | Apply no Directive | Stop with the caller lifecycle outcome. |
   | Simultaneous readiness | Neither is ordered beforehand | Exactly one of the preceding rows wins | Consistent with the winning row | Reports closes and Wait returns the caller lifecycle outcome. |
 
-- **不変条件**:
+- **Invariants**:
   - Reports returns one stable stream for the lifecycle.
   - At most one unpublished Report is retained; no new Attempt starts while it awaits publication.
   - Report backpressure does not prevent Request acceptance and coalescing, already Active Attempt returns, or cancellation progress.
   - During normal operation with a receiving consumer, every returned outcome is published exactly once without loss or duplication; no order is promised across distinct concurrently Active targets.
   - Cancellation never waits for Report consumption, Pending or Delayed work, or another timer after all Active Attempts return.
   - An Attempt return observed after cancellation commits establishes no Completion or Directive eligibility, even if it contains nominal success.
-- **副作用**: Report publication is in-process control output and is not delivery of a semantic Reconciliation Result to its Result Destination.
-- **失敗の扱い**: An Attempt that has not successfully completed and published before cancellation establishes no successful Completion. Wait exposes the caller lifecycle outcome.
+- **Side Effects**: Report publication is in-process control output and is not delivery of a semantic Reconciliation Result to its Result Destination.
+- **Failure Handling**: An Attempt that has not successfully completed and published before cancellation establishes no successful Completion. Wait exposes the caller lifecycle outcome.
 
 #### Scenario: RCL-CL-11 Normal operation reports every returned outcome once [happy]
 
@@ -328,9 +328,9 @@ The Controller MUST publish returned outcomes and stop through the supplied call
 
 The Controller MUST retain no authoritative target, outcome, or durable scheduling state and MUST be able to evaluate a target after control-state loss from a new Request and newly acquired facts.
 
-- **振る舞いの規則**: A new lifecycle needs no restoration of prior Requests, Completions, Attempt Failures, Pending eligibility, or Delayed eligibility.
-- **不変条件**: All mutable scheduling and unpublished Report state belongs to one started Controller lifecycle and is disposable.
-- **副作用**: Generic control creates no authoritative repository, checkpoint, lease, leader record, or durable queue.
+- **Behavioral Rules**: A new lifecycle needs no restoration of prior Requests, Completions, Attempt Failures, Pending eligibility, or Delayed eligibility.
+- **Invariants**: All mutable scheduling and unpublished Report state belongs to one started Controller lifecycle and is disposable.
+- **Side Effects**: Generic control creates no authoritative repository, checkpoint, lease, leader record, or durable queue.
 
 #### Scenario: RCL-DCS-1 Control state is discarded [compatibility]
 

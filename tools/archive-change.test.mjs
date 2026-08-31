@@ -129,7 +129,7 @@ test('publishes a nested new capability without losing conceptual or requirement
     `This capability lets consumers submit a search term and observe all entries satisfying the defined matching rule.\n\n` +
     `## ADDED Requirements\n\n` +
     requirement('return-matching-items', 'return every entry matching the accepted search term') +
-    `\n- **参照**: [policy] docs/search-policy.md\n`;
+    `\n- **References**: [policy] docs/search-policy.md\n`;
 
   writePlanningArtifacts(workspace, name, {
     replacements,

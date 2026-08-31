@@ -1,105 +1,105 @@
 # Specification Review
 
-仕様の意味品質を確認するチェックリストである。OpenSpecの構文検証は`openspec validate`が担う。
+This checklist verifies the semantic quality of a specification. `openspec validate` verifies OpenSpec syntax.
 
-## 1. 優先度
+## 1. Priority
 
-| Priority | 判定 | 承認条件 |
+| Priority | Criterion | Approval condition |
 |---|---|---|
-| P0 | 誤った規範、矛盾、未決事項の規範化、SSOT境界違反、公開時の情報欠落 | 必ず修正する |
-| P1 | 実装・検証の再現性を損なう欠落または曖昧さ | 原則として修正する |
-| P2 | 可読性、保守性、将来の誤解リスク | 修正または理由を記録する |
+| P0 | Incorrect norm, contradiction, unresolved matter made normative, SSOT boundary violation, or information lost during publication | Must be corrected |
+| P1 | Omission or ambiguity that prevents reproducible implementation or verification | Correct unless a compelling reason is documented |
+| P2 | Readability, maintainability, or risk of future misunderstanding | Correct or document the reason |
 
 ---
 
-## 2. ProblemとScope
+## 2. Problem and Scope
 
-- proposalの問題、期待成果、成功条件が対応しているか。
-- In ScopeとOut of Scopeがconsumerから見た境界を定めているか。
-- 技術方式を成果または要求として固定していないか。
-- capabilityの新設理由を既存capabilityとの差で説明できるか。
-- nested capability pathの各segmentがkebab-caseか。
+- Do the problem, expected outcomes, and success conditions in the proposal correspond?
+- Do In Scope and Out of Scope define the boundary from the consumer's perspective?
+- Does the proposal avoid fixing a technical approach as an outcome or Requirement?
+- Can the reason for a new capability be explained as a difference from existing capabilities?
+- Does every segment of a nested capability path use kebab-case?
 
 ---
 
 ## 3. Conceptual Model
 
-- Requirementが使う重要な対象、状態、分類、値、単位、関係を事前に定義しているか。
-- 対象の同定と一意性が必要な箇所で明確か。
-- 状態空間と遷移条件を混同していないか。
-- 同じ概念を複数capabilityで再定義していないか。
-- 物理DB、API payload、DTO、class、file構造を概念モデルとして転記していないか。
-- 同義語、同語多義、未定量な形容が残っていないか。
-- modelの`Unresolved Decisions`に仕様を変える事項が残っていないか。
-- main specを変える場合、完全な置換後本文がmodelにあるか。
-- テンプレートに欄があることだけを理由に概念や図を追加していないか。
+- Are material subjects, states, classifications, values, units, and relationships defined before the Requirements that use them?
+- Are identification and uniqueness explicit where required?
+- Are the state space and transition conditions kept distinct?
+- Is no concept redefined by multiple capabilities?
+- Does the conceptual model avoid reproducing physical database, API payload, DTO, Class, or file structures?
+- Are there no synonyms, multiple meanings of the same term, or unquantified adjectives?
+- Does the model's `Unresolved Decisions` section contain no matter that changes the specification?
+- When a main spec changes, does the model contain the complete replacement text?
+- Are concepts and diagrams included because they are required, not merely because the template contains fields for them?
 
 ---
 
 ## 4. Requirement
 
-- 1 Requirementが1つの独立して変更・検証できる保証を持つか。
-- 規範の核心がMUSTを含み、条件と保証を明確にしているか。
-- ブロックの項目が同じ分類軸に揃っているか。
-- 受理条件、状態遷移、出力、副作用、失敗時の保証に必要な欠落がないか。
-- concurrency、idempotency、permission、compatibilityが関係する箇所で契約化されているか。
-- 非機能要求が対象、条件、測定方法、閾値を持つか。
-- 実装詳細、現行実装の偶然、不具合、暫定注記、未決事項が混ざっていないか。
-- nested capabilityを含むRequirement IDが正しいpathを使うか。
+- Does each Requirement contain one independently changeable and verifiable guarantee?
+- Does the core norm include MUST and state its conditions and guarantee clearly?
+- Do items in each block use the same classification axis?
+- Are acceptance conditions, state transitions, outputs, side effects, and failure guarantees complete?
+- Are concurrency, idempotency, permission, and compatibility contractual where relevant?
+- Does each non-functional Requirement include its subject, conditions, measurement method, and threshold?
+- Does the Requirement contain no implementation detail, incidental detail of the current implementation, defect, temporary note, or unresolved matter?
+- Does every Requirement ID for a nested capability use the correct path?
 
 ---
 
-## 5. 仕様表現
+## 5. Specification Representations
 
-- 連続または順序を持つdomainで結果が異なる場合、境界とgap・overlapが明確なPartition Tableがあるか。
-- 条件の組み合わせにより結果が異なる場合、到達可能な異なる結果を網羅するDecision Tableがあるか。
-- lifecycle ruleがある場合、current state、trigger、guard、next state、resultを持つState Transition Tableがあるか。
-- 常時成立条件がInvariantとして書かれ、概念妥当性と操作保証に応じた場所へ置かれているか。
-- 状態の意味と値域がConceptual Model、transitionと操作結果がRequirementに置かれているか。
-- 規範表とInvariantが`model.md`またはScenarioだけでなく、公開されるmain specに存在するか。
-- 実在する規則構造に対応しない表現を追加していないか。
+- When results differ in a continuous or ordered domain, is there a Partition Table with explicit boundaries and no gap or overlap?
+- When results differ by combinations of conditions, is there a Decision Table covering every reachable distinct result?
+- When lifecycle rules exist, is there a State Transition Table with current state, trigger, guard, next state, and result?
+- Is every continuously maintained condition written as an Invariant and placed according to whether it defines concept validity or an operational guarantee?
+- Are state meanings and value ranges in the Conceptual Model, and transitions and operational results in Requirements?
+- Do normative tables and Invariants exist in the published main spec, not only in `model.md` or Scenarios?
+- Has no representation been added without a corresponding rule structure?
 
 ---
 
 ## 6. Scenario
 
-- 各Requirementに主要正常系があるか。
-- 保証に関係するerror、boundary、permission、concurrency、idempotency、compatibilityを扱うか。
-- GIVENがconsumerと事前状態、WHENがinteractionまたはevent、THENが観察可能な結果になっているか。
-- Scenarioから入力と期待結果を一意に組み立てられるか。
-- ScenarioがRequirementにない規範や未定義語を導入していないか。
-- Scenarioが規範表またはInvariantを不必要に繰り返さず、具体例として機能しているか。
-- プロジェクトに存在しない観点をテンプレートに合わせて追加していないか。
+- Does each Requirement have a primary success case?
+- Does it cover errors, boundaries, permissions, concurrency, idempotency, and compatibility that affect the guarantee?
+- Does GIVEN describe the consumer and prior state, WHEN an interaction or event, and THEN an observable result?
+- Can the input and expected result be constructed unambiguously from the Scenario?
+- Does no Scenario introduce a norm or undefined term absent from the Requirement?
+- Does each Scenario serve as a concrete example without needlessly repeating a normative table or Invariant?
+- Has no perspective absent from the project been added merely to fill the template?
 
 ---
 
-## 7. SSOTとinterface
+## 7. SSOT and Interfaces
 
-- API、data、UI、message、external contractの既存SSOTを重複していないか。
-- Requirementの`参照`から関連Requirementと別SSOTを追跡できるか。
-- interfaceの詳細と、そのinterfaceを通じた観察可能な保証を混同していないか。
-- machine-readable interfaceが正本の場合、fieldやtypeをmain specへ転記していないか。
-- Conceptual Modelと実装構造の対応はdesignが所有しているか。
-
----
-
-## 8. Workflowと公開
-
-- proposalのcapabilityとRequirement影響がdelta specsへ反映されているか。
-- modelのRequirement Candidatesと実際のRequirementsに説明できない差がないか。
-- designが全delta specsの後に作成され、WHATを再定義していないか。
-- delta specのlevel-two sectionがPurposeと標準Requirement operationだけか。
-- Conceptual Model置換を持つcapabilityに同じpathのRequirement deltaがあるか。
-- apply中にmain specのConceptual Modelを先行更新していないか。
-- tasksがRequirement IDと検証方法を持つか。
-- 公開に`node tools/archive-change.mjs <change-name>`を使うか。
+- Does the spec avoid duplicating existing SSOTs for APIs, data, UI, messages, and external contracts?
+- Are related Requirements and other SSOTs traceable from the Requirement's `References` block?
+- Are Interface details kept distinct from observable guarantees provided through that Interface?
+- When a machine-readable Interface is authoritative, does the main spec avoid reproducing its fields and types?
+- Does design own the mapping between the Conceptual Model and implementation structures?
 
 ---
 
-## 9. 最終確認
+## 8. Workflow and Publication
 
-- [ ] P0/P1指摘が0件である。
-- [ ] `openspec validate <change-name> --strict`が成功する。
-- [ ] main specとdelta specの概念、用語、Requirement IDが矛盾しない。
-- [ ] 実装者と検証者が追加の仕様判断なしで着手できる。
-- [ ] 公開後の`openspec validate --specs --strict`が成功する。
+- Are the proposal's capability and Requirement impacts reflected in delta specs?
+- Can every difference between the model's Requirement Candidates and the actual Requirements be explained?
+- Was design created after all delta specs, without redefining WHAT?
+- Are the delta spec's level-two sections limited to Purpose and standard Requirement operations?
+- Does each capability with a Conceptual Model replacement have a Requirement delta at the same path?
+- During apply, was the main spec's Conceptual Model left unchanged until publication?
+- Does every task identify a Requirement ID and verification method?
+- Will publication use `node tools/archive-change.mjs <change-name>`?
+
+---
+
+## 9. Final Check
+
+- [ ] There are no P0 or P1 findings.
+- [ ] `openspec validate <change-name> --strict` succeeds.
+- [ ] Concepts, terminology, and Requirement IDs are consistent between main and delta specs.
+- [ ] Implementers and verifiers can begin without making additional specification decisions.
+- [ ] `openspec validate --specs --strict` succeeds after publication.

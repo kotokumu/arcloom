@@ -19,9 +19,9 @@ An Authorization Evaluation associates one exact Authorization Subject with one 
 
 Authorization MUST evaluate the exact established Authorization Subject supplied by the consumer and bind the resulting Authorization Evaluation to that subject.
 
-- **入力と受理**: The consumer supplies an Authorization Subject whose domain validity has already been established by its owner and a valid Authorization Policy.
-- **振る舞いの規則**: Authorization neither interprets nor substitutes the subject's domain meaning. The resulting Evaluation contains that exact subject and its aggregate Decision.
-- **失敗の扱い**: An empty or otherwise invalid Policy cannot produce Authorized.
+- **Input and Acceptance**: The consumer supplies an Authorization Subject whose domain validity has already been established by its owner and a valid Authorization Policy.
+- **Behavioral Rules**: Authorization neither interprets nor substitutes the subject's domain meaning. The resulting Evaluation contains that exact subject and its aggregate Decision.
+- **Failure Handling**: An empty or otherwise invalid Policy cannot produce Authorized.
 
 #### Scenario: Valid subject and policy [happy]
 
@@ -39,7 +39,7 @@ Authorization MUST evaluate the exact established Authorization Subject supplied
 
 Authorization MUST aggregate current Rule Conclusions using deny-overrides, all-permit, otherwise-undecidable semantics.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -63,7 +63,7 @@ Authorization MUST aggregate current Rule Conclusions using deny-overrides, all-
 
 Missing, unavailable, invalid, or failed authorization evidence MUST NOT produce Permit.
 
-- **振る舞いの規則**: A Rule that cannot establish the evidence it requires yields no permission for the subject.
+- **Behavioral Rules**: A Rule that cannot establish the evidence it requires yields no permission for the subject.
 
 #### Scenario: Required evidence is unavailable [error]
 
@@ -75,7 +75,7 @@ Missing, unavailable, invalid, or failed authorization evidence MUST NOT produce
 
 Cancellation before authorization completion MUST establish no Authorization Decision.
 
-- **失敗の扱い**: The caller observes its cancellation outcome and receives no established Evaluation.
+- **Failure Handling**: The caller observes its cancellation outcome and receives no established Evaluation.
 
 #### Scenario: Evaluation is cancelled [error]
 
@@ -87,8 +87,8 @@ Cancellation before authorization completion MUST establish no Authorization Dec
 
 Each Authorization Evaluation MUST be recalculated from its current supplied subject, Policy, and evidence and remain isolated from other evaluations.
 
-- **振る舞いの規則**: Prior Decisions are not inputs to a later Evaluation. Authorization does not modify the supplied subject, whose reachable semantic state remains unchanged for the Evaluation's lifetime.
-- **排他・冪等**: Concurrent evaluations exchange no subject, evidence, or Decision state.
+- **Behavioral Rules**: Prior Decisions are not inputs to a later Evaluation. Authorization does not modify the supplied subject, whose reachable semantic state remains unchanged for the Evaluation's lifetime.
+- **Concurrency and Idempotency**: Concurrent evaluations exchange no subject, evidence, or Decision state.
 
 #### Scenario: Prior authorization exists [happy]
 

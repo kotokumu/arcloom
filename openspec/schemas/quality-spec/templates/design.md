@@ -1,6 +1,6 @@
 ## Context
 
-<!-- 技術判断に必要な現状と制約だけを書く。問題と要求は proposal/specs を参照する。 -->
+<!-- State only the current conditions and constraints required for technical decisions. Reference the proposal and specs for the problem and requirements. -->
 
 ## Goals / Non-Goals
 

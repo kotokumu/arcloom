@@ -692,7 +692,7 @@ Level: Controller behavior unit tests through the public Observer Port and expor
 
 #### Canonical Difference sequence
 
-The literal fixture uses expected name `Release`, Goal `Ship`, acceptance conditions `A` and `e\u0301`, Tasks `Build` and `試験`, and target date `2026-09-01`. The present complete Observation uses name ` release `, Goal `Ship!`, acceptance-condition raw values `a`, `é`, blank, and duplicate `a`; Task raw values ` build `, `試験`, multiline `bad\n`, and duplicate ` build `; and an absent target date.
+The literal fixture uses expected name `Release`, Goal `Ship`, acceptance conditions `A` and `e\u0301`, Tasks `Build` and `\u8a66\u9a13`, and target date `2026-09-01`. The present complete Observation uses name ` release `, Goal `Ship!`, acceptance-condition raw values `a`, `é`, blank, and duplicate `a`; Task raw values ` build `, `\u8a66\u9a13`, multiline `bad\n`, and duplicate ` build `; and an absent target date. The escape sequence denotes the exact original Unicode code points.
 
 | Order | Location | Category | Payload |
 |---|---|---|---|

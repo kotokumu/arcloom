@@ -23,8 +23,8 @@ Representation Progress contains the overall representation state, ordered obser
 
 GitHub Plan Snapshot observation MUST concern the exact valid GitHub Milestone Target supplied by the caller.
 
-- **入力と受理**: The target contains a valid repository identity and positive Milestone number.
-- **失敗の扱い**: An invalid target is rejected before GitHub access.
+- **Input and Acceptance**: The target contains a valid repository identity and positive Milestone number.
+- **Failure Handling**: An invalid target is rejected before GitHub access.
 
 #### Scenario: Valid target is observed [happy]
 
@@ -42,7 +42,7 @@ GitHub Plan Snapshot observation MUST concern the exact valid GitHub Milestone T
 
 Each successful GitHub Plan Snapshot MUST be derived from a fresh observation of the targeted GitHub Milestone and its currently observable membership.
 
-- **振る舞いの規則**: Earlier GitHub Plan Snapshots are not fact sources for a later observation.
+- **Behavioral Rules**: Earlier GitHub Plan Snapshots are not fact sources for a later observation.
 
 #### Scenario: Re-observe changed facts [happy]
 
@@ -54,14 +54,14 @@ Each successful GitHub Plan Snapshot MUST be derived from a fresh observation of
 
 A GitHub Plan Snapshot MUST expose a current Plan only when all required current GitHub facts and membership are known, coherent, valid, and complete.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
   | Current Plan established | Root, required values, and membership are coherent, valid, and complete | Snapshot is formed | Preserve the exact current Plan and Representation Progress | None |
   | Current Plan not established | A coherent root and Progress exist | Required meaning is missing, conflicting, invalid, unsupported, unusable, or membership is Incomplete | Preserve coherent Progress without a current Plan | No authoritative absence claim. |
-- **失敗の扱い**: Missing, conflicting, invalid, incomplete, unsupported, or unusable required Plan facts never produce a current Plan and never establish authoritative Plan absence.
-- **参照**: [related] `openspec/specs/plan/spec.md`; [related] `openspec/specs/github-plan-representation-observation/spec.md`
+- **Failure Handling**: Missing, conflicting, invalid, incomplete, unsupported, or unusable required Plan facts never produce a current Plan and never establish authoritative Plan absence.
+- **References**: [related] `openspec/specs/plan/spec.md`; [related] `openspec/specs/github-plan-representation-observation/spec.md`
 
 #### Scenario: Plan facts are complete [happy]
 
@@ -79,15 +79,15 @@ A GitHub Plan Snapshot MUST expose a current Plan only when all required current
 
 A GitHub Plan Snapshot MUST express Representation Progress without GitHub-specific identity or lifecycle meaning and MUST NOT treat representation state as Plan completion.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
   | Complete membership | A coherent current root exists | Every current distinct member and its state are established | Preserve all members with Complete membership | None |
   | Incomplete membership | A coherent current root and some coherent members exist | Complete current membership cannot be established | Preserve coherent members with Incomplete membership | None |
 
-- **不変条件**: Overall and member states are Open, Closed, or Unknown; distinct observed members remain distinct; Progress contains no Provider identity or metadata.
-- **参照**: [[plan-control/plan-completion-meaning]]
+- **Invariants**: Overall and member states are Open, Closed, or Unknown; distinct observed members remain distinct; Progress contains no Provider identity or metadata.
+- **References**: [[plan-control/plan-completion-meaning]]
 
 #### Scenario: Current membership is complete [happy]
 
@@ -105,8 +105,8 @@ A GitHub Plan Snapshot MUST express Representation Progress without GitHub-speci
 
 An unavailable or unsuccessful GitHub observation MUST NOT become a successful current GitHub Plan Snapshot or authoritative absence.
 
-- **振る舞いの規則**: A coherent current root with partial member progress produces a successful GitHub Plan Snapshot with Incomplete progress and no current Plan.
-- **失敗の扱い**: When no coherent current root and Representation Progress can be established, observation returns no successful GitHub Plan Snapshot and makes no absence claim.
+- **Behavioral Rules**: A coherent current root with partial member progress produces a successful GitHub Plan Snapshot with Incomplete progress and no current Plan.
+- **Failure Handling**: When no coherent current root and Representation Progress can be established, observation returns no successful GitHub Plan Snapshot and makes no absence claim.
 
 #### Scenario: Root cannot be established [error]
 
@@ -124,8 +124,8 @@ An unavailable or unsuccessful GitHub observation MUST NOT become a successful c
 
 Each GitHub Plan Snapshot observation MUST remain bound to its own target and caller lifecycle.
 
-- **排他・冪等**: Concurrent observations exchange no target or result facts.
-- **失敗の扱い**: Cancellation before success yields no successful GitHub Plan Snapshot for that invocation.
+- **Concurrency and Idempotency**: Concurrent observations exchange no target or result facts.
+- **Failure Handling**: Cancellation before success yields no successful GitHub Plan Snapshot for that invocation.
 
 #### Scenario: Observation is cancelled [error]
 

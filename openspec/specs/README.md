@@ -1,229 +1,204 @@
 # Product Specification Rules
 
-`openspec/specs/`は、consumerから観察・検証できる保証と、その解釈に必要な概念定義のSSOTである。
-実装構造、調査メモ、未決事項、不具合の記録は置かない。
+`openspec/specs/` is the SSOT for guarantees that consumers can observe and verify, and for the conceptual definitions required to interpret those guarantees. Do not place implementation structures, research notes, unresolved matters, or defect records here.
 
-## 1. Artifactの責務
+## 1. Artifact Responsibilities
 
-| Artifact | 答える問い | 書かないこと |
+| Artifact | Question it answers | What it must not contain |
 |---|---|---|
-| proposal | なぜ変えるか。どの成果と範囲を扱うか | 技術方式、詳細な保証 |
-| model | どの概念、状態、関係、制約が保証を支えるか | 確定していない規範、実装設計 |
-| spec | 対象は何を保証するか | 実装方法、現行実装の偶然、未決事項 |
-| design | 仕様をどう実現するか | 要求の再定義 |
-| tasks | 何をどの順序で実装・検証するか | 新しい要求、設計判断 |
+| proposal | Why is the change needed, and which outcomes and scope does it cover? | Technical approaches or detailed guarantees |
+| model | Which concepts, states, relationships, and constraints support the guarantees? | Unsettled norms or implementation design |
+| spec | What does the subject guarantee? | Implementation methods, incidental details of the current implementation, or unresolved matters |
+| design | How will the specification be realized? | Redefinition of requirements |
+| tasks | What will be implemented and verified, and in what order? | New requirements or design decisions |
 
-main specは次の順序で構成する。Conceptual Modelは分析用artifactの残骸ではなく、仕様を読むための概要である。
-capability固有の用語、状態、分類、値域、関係、単位、同定規則、不変条件がある場合は省略しない。
+A main spec uses the following order. The Conceptual Model is an overview needed to read the specification, not a remnant of an analysis artifact. Do not omit capability-specific terminology, states, classifications, value ranges, relationships, units, identification rules, or invariants when they exist.
 
 ```text
-Purpose → Conceptual Model（必要な場合）→ Requirements
+Purpose -> Conceptual Model (when required) -> Requirements
 ```
 
-Requirement固有の外部SSOTは、そのRequirement内の`参照`に置く。Conceptual Modelの根拠は、同section内の
-`### References`に置ける。archiveで維持できない独立した`## References`は使わない。
+Place an external SSOT specific to a Requirement in that Requirement's `References` block. Sources for the Conceptual Model may appear in `### References` within that section. Do not use an independent `## References` section that cannot be preserved during archival.
 
 ---
 
-## 2. Capabilityの境界とpath
+## 2. Capability Boundaries and Paths
 
-capabilityは、consumerから見た一貫した責務で切る。consumerには利用者、呼出し元、外部システム、
-別component、自動処理を含む。新設前に既存capabilityを検索する。
+Define a capability around a responsibility that is coherent from the consumer's perspective. Consumers include users, callers, external systems, other Components, and automated processes. Search existing capabilities before creating one.
 
-| 対象 | 判定 | 置き場所 |
+| Subject | Criterion | Location |
 |---|---|---|
-| 観察可能な機能 | consumer、契機、結果を説明できる | その保証を所有するcapability |
-| 再利用される製品規則 | 複数capabilityが同じ意味へ依存する | 意味を最も強く規定するcapability |
-| 実装だけの構造 | consumerが依存する契約を持たない | designまたはcode |
+| Observable function | Its consumer, trigger, and result can be explained | The capability that owns the guarantee |
+| Reused product rule | Multiple capabilities depend on the same meaning | The capability that defines that meaning most strongly |
+| Implementation-only structure | No contract exists on which a consumer depends | Design or code |
 
-技術レイヤー、データ構造、framework、shared utilityを、その存在だけでcapabilityにしない。
+Do not create a capability solely because a technical layer, data structure, Framework, or shared utility exists.
 
-capability IDは`openspec/specs/`から`spec.md`の親ディレクトリまでの相対pathである。各segmentは
-kebab-caseとする。ネストしたpathを使用できる。
+A capability ID is the path relative to `openspec/specs/`, ending at the directory that contains `spec.md`. Every segment uses kebab-case. Nested paths are permitted.
 
 ```text
 openspec/specs/platform/search/spec.md
-→ platform/search
+-> platform/search
 ```
 
 ---
 
 ## 3. Conceptual Model
 
-Conceptual Model（概念モデル）は、Requirement群の解釈に必要な概念、状態、分類、関係、制約を定義する。
-用語集や物理データ定義を転記する場所ではない。
+The Conceptual Model defines the concepts, states, classifications, relationships, and constraints required to interpret a group of Requirements. It is not a place to reproduce a glossary or physical data definition.
 
-次のいずれかを満たす概念だけを定義する。
+Define only concepts that satisfy at least one of these conditions:
 
-- 複数のRequirementが参照する。
-- 状態、分類、値集合、単位、同定規則を持つ。
-- 概念間の関係や不変条件が振る舞いの意味を変える。
-- 同語多義または同義語がRequirementの解釈を変える。
-- Scenarioから逆算しなければ意味を一意に読めない。
+- Multiple Requirements reference the concept.
+- The concept has states, classifications, a value set, a unit, or an identification rule.
+- A relationship or invariant between concepts changes the meaning of behavior.
+- Synonymy or multiple meanings of the same term change the interpretation of a Requirement.
+- The meaning cannot be read unambiguously without inferring it from Scenarios.
 
-テーブル、カラム、DTO、API payload、class、packageをConceptual Modelにしない。概念と物理構造の対応は
-designが所有する。
+Do not turn tables, columns, DTOs, API payloads, Classes, or Packages into the Conceptual Model. Design owns the mapping between concepts and physical structures.
 
-| 層 | 定義するもの | 定義しないもの |
+| Layer | Defines | Does not define |
 |---|---|---|
-| Conceptual Model | 意味、同定、状態空間、分類値、関係、構造的不変条件、値域、単位 | 遷移契機、操作手順、副作用 |
-| Requirement | 適用条件、入力の受理、判定、状態遷移、操作上の不変条件、結果、副作用、失敗時の保証 | 概念や分類値の初出定義 |
-| Scenario | 具体的な前提と行為に対する観察可能な結果 | Requirementにない規範 |
+| Conceptual Model | Meaning, identification, state space, classification values, relationships, structural invariants, value ranges, and units | Transition triggers, operational procedures, or side effects |
+| Requirement | Applicability, input acceptance, decisions, state transitions, operational invariants, results, side effects, and failure guarantees | First definitions of concepts or classification values |
+| Scenario | Observable results for concrete preconditions and actions | Norms absent from the Requirement |
 
-各概念の定義元は1 capabilityに限定する。意味、不変条件、ライフサイクルを最も強く規定するcapabilityが
-所有する。他のcapabilityは再定義せずRequirement IDまたはConceptual ModelのReferencesから参照する。
+Each concept has exactly one defining capability. The capability that most strongly determines its meaning, invariants, and lifecycle owns it. Other capabilities reference the Requirement ID or the Conceptual Model's References instead of redefining it.
 
 ---
 
 ## 4. Requirement
 
-Requirement IDは`<capability-path>/<requirement-slug>`である。cross-referenceは
-`[[<capability-path>/<requirement-slug>]]`と書く。slugとpathの各segmentはkebab-caseとする。
+A Requirement ID is `<capability-path>/<requirement-slug>`. Write a cross-reference as `[[<capability-path>/<requirement-slug>]]`. The slug and every path segment use kebab-case.
 
 ```markdown
 ### Requirement: <stable-kebab-case-slug>
 
-対象は、<規範の核心>する（MUST）。
+The subject MUST <core normative guarantee>.
 
-- **前提条件**: <適用できる事前状態、権限、参照対象の存在条件>
-- **入力と受理**: <入力、許容範囲、既定、受理・拒否条件>
-- **振る舞いの規則**: <判定、計算、状態遷移、観察可能な出力>
-- **不変条件**: <各許容結果の前後で常に維持する条件>
-- **副作用**: <関連状態、履歴、通知への変化と変化させないもの>
-- **排他・冪等**: <同時実行、再送、重複、原子性>
-- **失敗の扱い**: <consumerが観察できる失敗結果>
-- **参照**: <Requirementが依存する別SSOT>
+- **Preconditions**: <applicable prior state, permissions, and required referenced objects>
+- **Input and Acceptance**: <input, allowed range, defaults, and acceptance or rejection conditions>
+- **Behavioral Rules**: <decisions, calculations, state transitions, and observable output>
+- **Invariants**: <conditions preserved before and after every permitted result>
+- **Side Effects**: <changes and non-changes to related state, history, and notifications>
+- **Concurrency and Idempotency**: <concurrent execution, retries, duplicates, and atomicity>
+- **Failure Handling**: <failure result observable by the consumer>
+- **References**: <another SSOT on which the Requirement depends>
 
 #### Scenario: <concrete behavior> [happy]
 
-- **GIVEN** <consumerと事前状態>
-- **WHEN** <interactionまたはevent>
-- **THEN** <観察可能な結果>
+- **GIVEN** <consumer and prior state>
+- **WHEN** <interaction or event>
+- **THEN** <observable result>
 ```
 
-上のコードは記述形式を示す書き下ろし例である。ブロックは必要なものだけを使い、
-`_schema/requirement-structure.json`の順序を守る。同じブロック内の箇条書きは同じ分類軸に揃える。
+The code above is an original example that demonstrates the writing format. Use only the blocks that are necessary and preserve the order defined in `_schema/requirement-structure.json`. Items in the same block use the same classification axis.
 
-独立して変更・検証する保証が異なる場合はRequirementを分ける。入口や技術経路だけが異なり、
-consumerから見た保証が同じ場合は分けない。
+Separate Requirements when their guarantees change or can be verified independently. Do not separate them when only the entry point or technical path differs and the consumer observes the same guarantee.
 
-非機能要求も、対象、条件、測定方法、閾値、失敗時の保証が確定している場合はRequirementとして書く。
-「高速」「安全」「大量」などの未定量な形容だけを規範にしない。
+Write a non-functional Requirement only when its subject, conditions, measurement method, threshold, and failure guarantee are settled. Do not make unquantified adjectives such as "fast," "secure," or "high-volume" normative by themselves.
 
 ---
 
-## 5. 仕様表現の選択
+## 5. Selecting a Specification Representation
 
-規則の構造から表現を選ぶ。すべてを散文またはScenarioへ展開しない。1つのRequirementに複数の構造が
-含まれる場合は、必要な表現を併用する。該当する構造がない規則は簡潔な規範文で書く。
+Select a representation based on the structure of the rule. Do not expand every rule into prose or Scenarios. When one Requirement contains multiple structures, combine the representations it needs. Use concise normative prose for rules that have none of these structures.
 
-| 規則の構造 | 表現 | 規範を置く場所 |
+| Rule structure | Representation | Normative location |
 |---|---|---|
-| 数値、日時、version、件数など、連続または順序を持つdomainで範囲により結果が異なる | Partition Table | 受理規則は`入力と受理`、結果規則は`振る舞いの規則` |
-| 到達可能な条件の組み合わせにより結果が異なる | Decision Table | `振る舞いの規則` |
-| 概念がtriggerとguardによりlifecycle stateを移る | State Transition Table | `振る舞いの規則`。状態名と意味はConceptual Model |
-| 常に維持する条件がある | Invariant | 概念の妥当性はConceptual Model、操作が維持する保証はRequirementの`不変条件` |
-| 規則を具体的に例示または検証する | Scenario | 完全なRequirementの後 |
+| Results differ by range in a continuous or ordered domain such as numbers, dates, versions, or counts | Partition Table | Acceptance rules in `Input and Acceptance`; result rules in `Behavioral Rules` |
+| Results differ across reachable combinations of conditions | Decision Table | `Behavioral Rules` |
+| A concept moves through lifecycle states based on triggers and guards | State Transition Table | `Behavioral Rules`; state names and meanings in the Conceptual Model |
+| A condition must always be preserved | Invariant | Concept validity in the Conceptual Model; operational guarantees in the Requirement's `Invariants` block |
+| A rule is illustrated or verified concretely | Scenario | After the complete Requirement |
 
-Partition Tableは次の列を使う。境界の包含・除外を明記し、意図しないgapやoverlapを残さない。値の意味、
-単位、精度、時刻基準が自明でない場合はConceptual Modelで定義する。
+A Partition Table uses the following columns. State whether each boundary is included or excluded, and leave no unintended gap or overlap. Define a value's meaning, unit, precision, or time basis in the Conceptual Model when it is not self-evident.
 
 | Partition | Condition or range | Acceptance or result |
 |---|---|---|
 
-Decision Tableは次の列を使う。異なる保証を生む到達可能な組み合わせを網羅し、既定結果があれば明記する。
-Conceptual Modelが禁止する組み合わせを作らない。
+A Decision Table uses the following columns. Cover every reachable combination that produces a distinct guarantee and state any default result. Do not create combinations prohibited by the Conceptual Model.
 
 | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
 |---|---|---|---|---|
 
-State Transition Tableは次の列を使う。各状態の意味はConceptual Modelで一度だけ定義する。表にない遷移を
-拒否、無視、またはcontract外のいずれとするかを明記する。
+A State Transition Table uses the following columns. Define each state's meaning once in the Conceptual Model. State whether a transition absent from the table is rejected, ignored, or outside the contract.
 
 | Current state | Trigger or event | Guard | Next state | Output or Side Effects |
 |---|---|---|---|---|
 
-Invariantは成功経路や入力検証ではない。状態を変えるRequirementは、どの操作がInvariantを維持し、
-維持できないときconsumerが何を観察するかを書く。
+An Invariant is not a success path or input validation rule. A Requirement that changes state states which operation preserves the Invariant and what the consumer observes when it cannot be preserved.
 
 ---
 
 ## 6. Scenario
 
-各Requirementは主要な正常系を少なくとも1つ持つ。保証が変わる場合に限り、次の観点を追加する。
+Each Requirement has at least one primary success Scenario. Add the following perspectives only when the guarantee changes.
 
-| Tag | 対象 |
+| Tag | Subject |
 |---|---|
-| `happy` | 主要な正常結果 |
-| `error` | 入力拒否、前提不成立、依存先の失敗 |
-| `boundary` | 空、0、上限、期限境界、全件、部分件 |
-| `permission` | 未認証、権限不足、許可範囲外 |
-| `concurrency` | 同時更新、競合、順序逆転 |
-| `idempotency` | 再送、重複、retry |
-| `compatibility` | 既存consumer、既存data、contract互換性 |
+| `happy` | Primary successful result |
+| `error` | Input rejection, unmet precondition, or dependency failure |
+| `boundary` | Empty, zero, upper limit, deadline boundary, complete set, or partial set |
+| `permission` | Unauthenticated, insufficient permission, or outside the permitted scope |
+| `concurrency` | Concurrent update, conflict, or reversed order |
+| `idempotency` | Retry or duplicate |
+| `compatibility` | Existing consumer, data, or contract compatibility |
 
-GIVENは実行前から存在する状態、WHENはconsumerの行為またはevent、THENは外部から観察できる結果を書く。
-Scenarioは完全なRequirementから導出される具体例であり、partition、decision rule、transition、Invariantの
-唯一の置き場所にしない。内部関数の呼出しや特定テーブルへの書込みだけを期待結果にしない。
+GIVEN describes state that exists before execution, WHEN describes a consumer action or event, and THEN describes an externally observable result. A Scenario is a concrete example derived from a complete Requirement. It is not the sole location for a partition, decision rule, transition, or Invariant. Do not make an internal function call or write to a particular table the only expected result.
 
 ---
 
-## 7. 外部contractと実装SSOT
+## 7. External Contracts and Implementation SSOTs
 
-| 情報 | SSOT | specの扱い |
+| Information | SSOT | Treatment in a spec |
 |---|---|---|
-| 製品規則、状態遷移、不変条件 | main spec | Conceptual ModelまたはRequirementに書く |
-| APIの型、status、error code | OpenAPI、IDL | Requirementの`参照`から参照する |
-| dataの型、制約、index | migration、schema | 概念上の意味だけを書き、物理定義を参照する |
-| UIの配置、component、visual state | design system、UI artifact | consumerが観察できる操作と結果だけを書く |
-| file、message、eventの項目contract | machine-readable schema | 既存SSOTを参照する |
-| 不具合、実装乖離、調査メモ | issue tracker、audit record | specに書かない |
+| Product rules, state transitions, and invariants | Main spec | Write them in the Conceptual Model or a Requirement |
+| API types, statuses, and error codes | OpenAPI or IDL | Reference them from the Requirement's `References` block |
+| Data types, constraints, and indexes | Migration or schema | State only conceptual meaning and reference the physical definition |
+| UI placement, Components, and visual states | Design system or UI artifact | State only operations and results observable by a consumer |
+| Field contracts for files, messages, and events | Machine-readable schema | Reference the existing SSOT |
+| Defects, implementation divergence, and research notes | Issue tracker or audit record | Do not write them in a spec |
 
-machine-readableなinterface SSOTがない場合は、`openspec/templates/interface-contract.md`をOpenSpec外の
-管理場所へコピーして正本にできる。この文書はOpenSpec capabilityではない。interfaceを通じた観察可能な
-保証は、それを所有するcapabilityのRequirementに置く。
+When no machine-readable Interface SSOT exists, copy `openspec/templates/interface-contract.md` to a location managed outside OpenSpec and make that copy authoritative. The document is not an OpenSpec capability. Place observable guarantees provided through the Interface in a Requirement of the capability that owns them.
 
-参照型は`[related]`、`[interface]`、`[api]`、`[data]`、`[code]`、`[decision]`、`[policy]`、
-`[external]`から選ぶ。参照は規範の代わりではなく、規範と別SSOTの接続を担う。
+Select a reference type from `[related]`, `[interface]`, `[api]`, `[data]`, `[code]`, `[decision]`, `[policy]`, and `[external]`. A reference does not replace a norm; it connects the norm to another SSOT.
 
 ---
 
-## 8. Deltaと公開
+## 8. Delta and Publication
 
-delta specで使用できるlevel-two sectionは次だけである。
+A delta spec may use only the following level-two sections:
 
-- `## Purpose`: 新規capabilityだけに使用する。
+- `## Purpose`: use only for a new capability.
 - `## ADDED Requirements`
 - `## MODIFIED Requirements`
 - `## REMOVED Requirements`
 - `## RENAMED Requirements`
 
-`MODIFIED`は更新後のRequirement全体を載せる。独自sectionはOpenSpec 1.10.0のarchiveでmain specへ
-反映されない。`## References`やConceptual Modelのdeltaを追加しない。
+`MODIFIED` contains the complete Requirement after the update. Custom sections are not applied to the main spec by the OpenSpec 1.10.0 archive process. Do not add an `## References` section or a Conceptual Model delta.
 
-Conceptual Modelの変更は`model.md`の`Main Spec Conceptual Model Replacements`へ完全な置換後本文として書く。
-公開には次を使う。
+Write a Conceptual Model change as the complete replacement text in `Main Spec Conceptual Model Replacements` in `model.md`. Publish with:
 
 ```bash
 node tools/archive-change.mjs <change-name>
 ```
 
-公開コマンドは未知のdelta sectionを拒否し、Conceptual ModelをstageしてからRequirement deltaをarchiveし、
-公開後の全main specsをstrict validationする。directな`openspec archive`はConceptual Modelを反映しない。
+The publication command rejects unknown delta sections, stages Conceptual Model replacements before archiving Requirement deltas, and strictly validates every published main spec. A direct `openspec archive` does not apply Conceptual Model replacements.
 
 ---
 
-## 9. 完成条件
+## 9. Completion Conditions
 
-- modelに仕様を変える未決事項が残っていない。
-- capability境界と概念所有が既存main specsと矛盾しない。
-- Conceptual Modelに未定義の重要語、分類値、単位、関係がない。
-- 各Requirementが1つの独立した保証を持つ。
-- 連続・順序domain、条件の組み合わせ、lifecycle、常時成立条件に対応する規範表現がConceptual ModelまたはRequirementにある。
-- 各Requirementに検証可能なScenarioがある。
-- ScenarioがRequirementにない規範を追加せず、規範表現の代わりになっていない。
-- 実装詳細、現行実装の偶然、不具合、未決事項が規範に混ざっていない。
-- Requirementの`参照`から別SSOTと関連Requirementを追跡できる。
-- `openspec validate <change-name> --strict`が成功する。
-- `REVIEW.md`のP0/P1指摘が解消されている。
-- Quality Workflowでは`archive-change.mjs`による公開後strict validationが成功する。
+- The model contains no unresolved matter that changes the specification.
+- Capability boundaries and concept ownership do not contradict existing main specs.
+- The Conceptual Model contains no undefined material term, classification value, unit, or relationship.
+- Each Requirement contains one independently changeable guarantee.
+- The Conceptual Model or Requirement contains a normative representation for every continuous or ordered domain, combination of conditions, lifecycle, and continuously maintained condition.
+- Each Requirement has a verifiable Scenario.
+- No Scenario adds a norm absent from its Requirement or substitutes for a normative representation.
+- Norms contain no implementation detail, incidental detail of the current implementation, defect, or unresolved matter.
+- Related Requirements and other SSOTs are traceable from each Requirement's `References` block.
+- `openspec validate <change-name> --strict` succeeds.
+- All P0 and P1 findings from `REVIEW.md` are resolved.
+- In the Quality Workflow, strict validation succeeds after publication through `archive-change.mjs`.

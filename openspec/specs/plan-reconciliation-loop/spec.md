@@ -51,8 +51,8 @@ Plan Control remains the target-specific Reconciliation authority. The Plan Atte
 
 Each Plan Attempt MUST resolve one exact Plan Target Binding, begin with exactly one fresh Plan Snapshot, and preserve every successful Snapshot outcome in exactly one explicit Plan Attempt Result branch.
 
-- **前提条件**: Before control starts, the caller supplies a valid Plan Target, one exact accepted target kind, a Plan Target Resolver, and a Plan Control Assessor. A valid binding identifies the exact requested Target Identity and contains one target-bound Snapshot Observer and Delivery Observer. Every boundary observes the caller lifecycle and returns within its documented cancellation bound.
-- **振る舞いの規則**:
+- **Preconditions**: Before control starts, the caller supplies a valid Plan Target, one exact accepted target kind, a Plan Target Resolver, and a Plan Control Assessor. A valid binding identifies the exact requested Target Identity and contains one target-bound Snapshot Observer and Delivery Observer. Every boundary observes the caller lifecycle and returns within its documented cancellation bound.
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or boundary result | Plan Attempt result | Side effects |
   |---|---|---|---|---|
@@ -64,13 +64,13 @@ Each Plan Attempt MUST resolve one exact Plan Target Binding, begin with exactly
   | Current Plan | Successful fresh Snapshot contains a valid current Plan | [[plan-reconciliation-loop/current-plan-assessment]] succeeds | Current Plan Assessed preserving the Snapshot and Assessment, with Await Another Request | Exactly one semantic Plan Reconciliation. |
   | Caller cancellation | Any boundary is about to run or has just returned | Caller lifecycle ends before a successful branch commits | Caller lifecycle outcome; neither result nor Directive is established | No later boundary starts. |
 
-- **不変条件**:
+- **Invariants**:
   - The Resolver receives the exact requested Target Identity and the binding identifies that same Target Identity.
   - The Attempt invokes only the observation boundaries in that resolved binding.
   - Exactly one fresh Snapshot is established before any Delivery Observation or Assessment.
   - Earlier snapshots, Request causes, events, receipts, and prior outcomes are not current Plan facts.
-- **失敗の扱い**: Plan-owned binding failures use stable codes and do not expose an underlying boundary failure as their own identity. Existing Snapshot and Plan Control failures preserve their contracts. Caller cancellation observed before a successful result commits takes precedence. An Attempt failure establishes neither a Plan Attempt Result nor a Directive.
-- **参照**: [[reconciliation-control-loop/level-based-attempt]]; [[github-plan-snapshot/current-authoritative-snapshot]]; [[github-plan-snapshot/current-plan-eligibility]]
+- **Failure Handling**: Plan-owned binding failures use stable codes and do not expose an underlying boundary failure as their own identity. Existing Snapshot and Plan Control failures preserve their contracts. Caller cancellation observed before a successful result commits takes precedence. An Attempt failure establishes neither a Plan Attempt Result nor a Directive.
+- **References**: [[reconciliation-control-loop/level-based-attempt]]; [[github-plan-snapshot/current-authoritative-snapshot]]; [[github-plan-snapshot/current-plan-eligibility]]
 
 #### Scenario: PRL-FPO-1 Current Plan is established [happy]
 
@@ -100,8 +100,8 @@ Each Plan Attempt MUST resolve one exact Plan Target Binding, begin with exactly
 
 A Plan Attempt with a valid current Plan MUST acquire current caller-selected Delivery Observations after the fresh Snapshot, perform exactly one semantic Plan Reconciliation through Plan Control, and establish Current Plan Assessed from that exact Plan and Assessment.
 
-- **入力と受理**: Plan Control receives the exact current Plan from the fresh Snapshot and the Delivery Observations acquired afterward through the same Plan Target Binding.
-- **振る舞いの規則**:
+- **Input and Acceptance**: Plan Control receives the exact current Plan from the fresh Snapshot and the Delivery Observations acquired afterward through the same Plan Target Binding.
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Boundary result | Plan Attempt result | Side effects |
   |---|---|---|---|---|
@@ -110,12 +110,12 @@ A Plan Attempt with a valid current Plan MUST acquire current caller-selected De
   | Assessment established | Current Delivery Observations exist | Plan Control returns Complete, Retain, Revise, or Insufficient Information | Current Plan Assessed preserving the exact Snapshot, current Plan, and Assessment | Revise preserves its exact Proposed Plan. |
   | Caller cancellation | Any Delivery or Assessment boundary | Caller lifecycle ends before success commits | Caller lifecycle outcome; neither result nor Directive is established | No semantic Reconciliation Result is established. |
 
-- **不変条件**:
+- **Invariants**:
   - Delivery Observation begins only after the successful fresh Snapshot.
   - Current Plan Assessed associates the exact Assessment with the exact current Plan and successful Snapshot used to request it.
   - Only Current Plan Assessed records that exactly one semantic Plan Reconciliation occurred.
-- **失敗の扱い**: Delivery Observation failure, Plan Control failure, or caller lifecycle termination produces no Current Plan Assessed branch and no successful Plan Attempt Result.
-- **参照**: [related] `openspec/specs/plan-control/spec.md`
+- **Failure Handling**: Delivery Observation failure, Plan Control failure, or caller lifecycle termination produces no Current Plan Assessed branch and no successful Plan Attempt Result.
+- **References**: [related] `openspec/specs/plan-control/spec.md`
 
 #### Scenario: PRL-CPA-1 Current Plan is assessed [happy]
 
@@ -133,7 +133,7 @@ A Plan Attempt with a valid current Plan MUST acquire current caller-selected De
 
 Every successful Plan Attempt Result branch MUST remain read-only, select Await Another Request, and leave every proposed external application to a separate explicit interaction.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Successful branch | Assessment classification | Control Directive | Externally effective result |
   |---|---|---|---|
@@ -143,9 +143,9 @@ Every successful Plan Attempt Result branch MUST remain read-only, select Await 
   | Current Plan Assessed | Revise | Await Another Request | Proposed Plan remains only inside the Assessment and is not an externally effective revision. |
   | Current Plan Assessed | Insufficient Information | Await Another Request | No inferred retry or target mutation. |
 
-- **不変条件**: A successful Plan Attempt never converts a Plan Control Assessment or Proposed Plan into Authorization, application authority, Delivery Acceptance, or an externally effective revision.
-- **副作用**: The Attempt performs no Authorization evaluation, application request, Actor contact for mutation, target mutation, Task execution, or Delivery Acceptance. Snapshot observation and AI assessment retain only the operational I/O, cost, and telemetry effects of their existing Provider contracts.
-- **参照**: [[reconciliation-control-loop/explicit-control-directive]]; [[plan-application-request/current-authorization-required]]; [[plan-application-request/external-state-requires-fresh-observation]]
+- **Invariants**: A successful Plan Attempt never converts a Plan Control Assessment or Proposed Plan into Authorization, application authority, Delivery Acceptance, or an externally effective revision.
+- **Side Effects**: The Attempt performs no Authorization evaluation, application request, Actor contact for mutation, target mutation, Task execution, or Delivery Acceptance. Snapshot observation and AI assessment retain only the operational I/O, cost, and telemetry effects of their existing Provider contracts.
+- **References**: [[reconciliation-control-loop/explicit-control-directive]]; [[plan-application-request/current-authorization-required]]; [[plan-application-request/external-state-requires-fresh-observation]]
 
 #### Scenario: PRL-RPA-1 Assessment proposes revision [happy]
 
@@ -157,11 +157,11 @@ Every successful Plan Attempt Result branch MUST remain read-only, select Await 
 
 Every later Plan evaluation requested after an external interaction or event MUST use the same ordinary Target Identity Request and fresh-observation behavior as any other Request.
 
-- **入力と受理**: The Host supplies only the valid Plan Target Identity required by [[reconciliation-control-loop/exact-target-request]].
-- **振る舞いの規則**: Event type, Authorization Decision, Plan Application Result, request receipt, and prior Plan Attempt Result do not enter the Attempt as current Plan facts or scheduling instructions. The later Attempt follows [[plan-reconciliation-loop/fresh-plan-observation]].
-- **不変条件**: An external occurrence starts no Plan Attempt unless the Host submits an ordinary Request or a prior published valid Control Directive already made the target eligible.
-- **副作用**: No external interaction or application result automatically creates a Reconciliation Request or Control Directive.
-- **参照**: [[reconciliation-control-loop/level-based-attempt]]; [[plan-application-request/request-interaction-result]]
+- **Input and Acceptance**: The Host supplies only the valid Plan Target Identity required by [[reconciliation-control-loop/exact-target-request]].
+- **Behavioral Rules**: Event type, Authorization Decision, Plan Application Result, request receipt, and prior Plan Attempt Result do not enter the Attempt as current Plan facts or scheduling instructions. The later Attempt follows [[plan-reconciliation-loop/fresh-plan-observation]].
+- **Invariants**: An external occurrence starts no Plan Attempt unless the Host submits an ordinary Request or a prior published valid Control Directive already made the target eligible.
+- **Side Effects**: No external interaction or application result automatically creates a Reconciliation Request or Control Directive.
+- **References**: [[reconciliation-control-loop/level-based-attempt]]; [[plan-application-request/request-interaction-result]]
 
 #### Scenario: PRL-OPR-1 Caller requests after application interaction [happy]
 

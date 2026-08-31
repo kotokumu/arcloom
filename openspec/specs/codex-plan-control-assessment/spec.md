@@ -19,7 +19,7 @@ Safe Host Configuration consists of a Host-selected Codex 0.149.1 executable, a 
 
 A successful Codex-backed assessment MUST yield exactly one valid provider-independent Plan Control Assessment: Complete, Retain, Revise, or Insufficient Information.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -27,7 +27,7 @@ A successful Codex-backed assessment MUST yield exactly one valid provider-indep
   | Retain | One valid judgment is established | Outcome is Retain | Retain with no Proposed Plan | None |
   | Revise | One valid judgment is established | Outcome is Revise | Revise with exactly one valid Proposed Plan | None |
   | Insufficient Information | One valid judgment is established | Outcome is Insufficient Information | Insufficient Information with no Proposed Plan | None |
-- **参照**: [[plan-control/ai-control-assessment]]; [[plan-control/ai-result-contract]]
+- **References**: [[plan-control/ai-control-assessment]]; [[plan-control/ai-result-contract]]
 
 #### Scenario: Plan should be revised [happy]
 
@@ -39,8 +39,8 @@ A successful Codex-backed assessment MUST yield exactly one valid provider-indep
 
 A Codex-backed assessment MUST concern the exact current Plan and caller-owned observation material supplied for that invocation.
 
-- **入力と受理**: The caller supplies one valid current Plan and immutable observation material whose vocabulary and meaning remain caller-owned.
-- **振る舞いの規則**: The judgment is associated only with that Plan and observation material.
+- **Input and Acceptance**: The caller supplies one valid current Plan and immutable observation material whose vocabulary and meaning remain caller-owned.
+- **Behavioral Rules**: The judgment is associated only with that Plan and observation material.
 
 #### Scenario: Assessment material is supplied [happy]
 
@@ -52,7 +52,7 @@ A Codex-backed assessment MUST concern the exact current Plan and caller-owned o
 
 A Codex-backed assessment MUST remain read-only and MUST NOT authorize or apply a Plan revision.
 
-- **副作用**: Assessment modifies neither supplied material nor any external provider and makes no authorization or application request.
+- **Side Effects**: Assessment modifies neither supplied material nor any external provider and makes no authorization or application request.
 
 #### Scenario: Assessment proposes a revision [happy]
 
@@ -64,7 +64,7 @@ A Codex-backed assessment MUST remain read-only and MUST NOT authorize or apply 
 
 Missing, malformed, ambiguous, conflicting, or failed AI output MUST NOT produce a successful Plan Control Assessment.
 
-- **失敗の扱い**: No provider protocol detail becomes a successful provider-independent judgment.
+- **Failure Handling**: No provider protocol detail becomes a successful provider-independent judgment.
 
 #### Scenario: Output has conflicting meanings [error]
 
@@ -76,8 +76,8 @@ Missing, malformed, ambiguous, conflicting, or failed AI output MUST NOT produce
 
 Each Codex-backed assessment MUST be independent of prior and concurrent assessments and retain no authoritative AI session state.
 
-- **振る舞いの規則**: A later assessment depends only on its current supplied material.
-- **排他・冪等**: Concurrent assessments exchange no Plan, observation, or judgment state.
+- **Behavioral Rules**: A later assessment depends only on its current supplied material.
+- **Concurrency and Idempotency**: Concurrent assessments exchange no Plan, observation, or judgment state.
 
 #### Scenario: A Plan is reassessed [happy]
 
@@ -95,9 +95,9 @@ Each Codex-backed assessment MUST be independent of prior and concurrent assessm
 
 A cancelled in-progress assessment MUST establish no successful judgment and terminate within its accepted finite shutdown bound.
 
-- **入力と受理**: The Host supplies one Codex assessment interaction with a positive finite shutdown bound.
-- **振る舞いの規則**: Success is established only after the correlated Turn completes, one translatable final output is established, and caller cancellation has not already occurred. Cancellation after that establishment does not replace success.
-- **失敗の扱い**: Cancellation before success establishes no assessment and returns the caller lifecycle outcome no later than that bound plus scheduling tolerance. A concurrent shutdown failure remains observable without hiding the caller lifecycle outcome.
+- **Input and Acceptance**: The Host supplies one Codex assessment interaction with a positive finite shutdown bound.
+- **Behavioral Rules**: Success is established only after the correlated Turn completes, one translatable final output is established, and caller cancellation has not already occurred. Cancellation after that establishment does not replace success.
+- **Failure Handling**: Cancellation before success establishes no assessment and returns the caller lifecycle outcome no later than that bound plus scheduling tolerance. A concurrent shutdown failure remains observable without hiding the caller lifecycle outcome.
 
 #### Scenario: Assessment is cancelled [error]
 
@@ -109,10 +109,10 @@ A cancelled in-progress assessment MUST establish no successful judgment and ter
 
 The capability MUST begin an external-AI Turn only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
 
-- **前提条件**: The Host supplies an absolute executable path for Codex 0.149.1 and a positive finite shutdown bound.
-- **入力と受理**: The executable path is absolute and identifies Codex 0.149.1, the shutdown bound is positive and finite, and mutable request paths are valid when used. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox.
-- **不変条件**: Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
-- **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents an external-AI Turn. A preliminary Host interaction required to establish compatibility produces no assessment Turn when incompatibility is established.
+- **Preconditions**: The Host supplies an absolute executable path for Codex 0.149.1 and a positive finite shutdown bound.
+- **Input and Acceptance**: The executable path is absolute and identifies Codex 0.149.1, the shutdown bound is positive and finite, and mutable request paths are valid when used. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox.
+- **Invariants**: Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
+- **Failure Handling**: Incompatible, invalid, or unsafe local input prevents an external-AI Turn. A preliminary Host interaction required to establish compatibility produces no assessment Turn when incompatibility is established.
 
 #### Scenario: Configuration is unsafe [error]
 

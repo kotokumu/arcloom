@@ -8,10 +8,10 @@ Requests external application of an exact authorized Plan Revision while preserv
 
 A Plan application request MUST concern one exact valid Plan Revision.
 
-- **入力と受理**: A Revision contains one External Plan Target Reference, one valid caller-established current Plan, and one valid meaningfully unequal proposed Plan.
-- **振る舞いの規則**: The Application Request preserves those exact values.
-- **失敗の扱い**: An invalid or meaningfully unchanged Revision produces no external application request.
-- **参照**: [related] `openspec/specs/plan/spec.md`
+- **Input and Acceptance**: A Revision contains one External Plan Target Reference, one valid caller-established current Plan, and one valid meaningfully unequal proposed Plan.
+- **Behavioral Rules**: The Application Request preserves those exact values.
+- **Failure Handling**: An invalid or meaningfully unchanged Revision produces no external application request.
+- **References**: [related] `openspec/specs/plan/spec.md`
 
 #### Scenario: Revision is valid [happy]
 
@@ -29,8 +29,8 @@ A Plan application request MUST concern one exact valid Plan Revision.
 
 The capability MUST preserve the caller-established association between the External Plan Target Reference and current Plan without claiming independent verification.
 
-- **前提条件**: The caller owns the precondition that the target and current Plan concern the same fresh external observation.
-- **振る舞いの規則**: The same target/current association remains part of the Revision throughout one consideration.
+- **Preconditions**: The caller owns the precondition that the target and current Plan concern the same fresh external observation.
+- **Behavioral Rules**: The same target/current association remains part of the Revision throughout one consideration.
 
 #### Scenario: Caller supplies an association [happy]
 
@@ -42,9 +42,9 @@ The capability MUST preserve the caller-established association between the Exte
 
 Invalid application input MUST prevent Actor contact and produce the applicable stable failure meaning.
 
-- **入力と受理**: A valid Revision, valid Authorization Policy, and Actor are required.
-- **失敗の扱い**: An invalid Revision or missing Actor produces a stable invalid-input failure. An invalid Authorization Policy produces AuthorizationUndecidable.
-- **副作用**: Invalid input sends no Application Request.
+- **Input and Acceptance**: A valid Revision, valid Authorization Policy, and Actor are required.
+- **Failure Handling**: An invalid Revision or missing Actor produces a stable invalid-input failure. An invalid Authorization Policy produces AuthorizationUndecidable.
+- **Side Effects**: Invalid input sends no Application Request.
 
 #### Scenario: Revision or Actor is invalid [error]
 
@@ -62,10 +62,10 @@ Invalid application input MUST prevent Actor contact and produce the applicable 
 
 An Actor MUST receive an Application Request only when the exact Revision is Authorized during the current invocation.
 
-- **前提条件**: Authorization evaluates the exact Revision as its Authorization Subject.
-- **振る舞いの規則**: Current Authorized permits one possible transmission; current Denied produces AuthorizationDenied; current Undecidable produces AuthorizationUndecidable.
-- **副作用**: Denied or Undecidable sends no Application Request.
-- **参照**: [[authorization/exact-authorization-subject]]; [[authorization/authorization-decision-semantics]]
+- **Preconditions**: Authorization evaluates the exact Revision as its Authorization Subject.
+- **Behavioral Rules**: Current Authorized permits one possible transmission; current Denied produces AuthorizationDenied; current Undecidable produces AuthorizationUndecidable.
+- **Side Effects**: Denied or Undecidable sends no Application Request.
+- **References**: [[authorization/exact-authorization-subject]]; [[authorization/authorization-decision-semantics]]
 
 #### Scenario: Revision is Authorized [happy]
 
@@ -95,7 +95,7 @@ An Actor MUST receive an Application Request only when the exact Revision is Aut
 
 One application-request invocation MUST transmit to the Actor at most once and MUST NOT retry after receipt may have occurred.
 
-- **排他・冪等**: Once transmission may have begun, the same invocation cannot become sendable again.
+- **Concurrency and Idempotency**: Once transmission may have begun, the same invocation cannot become sendable again.
 
 #### Scenario: Actor receipt is uncertain [idempotency]
 
@@ -107,8 +107,8 @@ One application-request invocation MUST transmit to the Actor at most once and M
 
 A Plan Application Result MUST describe only authorization or request receipt and keep all defined outcomes distinct.
 
-- **振る舞いの規則**: The result is exactly AuthorizationDenied, AuthorizationUndecidable, ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, or ReceiptUncertain.
-- **副作用**: No result claims that the external Plan changed.
+- **Behavioral Rules**: The result is exactly AuthorizationDenied, AuthorizationUndecidable, ReceiptAcknowledged, ReceiptRefused, KnownNotReceived, or ReceiptUncertain.
+- **Side Effects**: No result claims that the external Plan changed.
 
 #### Scenario: Actor explicitly acknowledges [happy]
 
@@ -138,9 +138,9 @@ A Plan Application Result MUST describe only authorization or request receipt an
 
 Cancellation MUST prevent transmission when observed before sending and preserve the strongest established receipt meaning after transmission may have begun.
 
-- **振る舞いの規則**: Established ReceiptAcknowledged, ReceiptRefused, or KnownNotReceived remains the result. Without stronger evidence after possible receipt, the result is ReceiptUncertain.
-- **排他・冪等**: Cancellation never causes retry.
-- **失敗の扱い**: Cancellation before Actor invocation returns the caller's cancellation outcome and sends no request. An Actor that observes cancellation before transmission yields KnownNotReceived.
+- **Behavioral Rules**: Established ReceiptAcknowledged, ReceiptRefused, or KnownNotReceived remains the result. Without stronger evidence after possible receipt, the result is ReceiptUncertain.
+- **Concurrency and Idempotency**: Cancellation never causes retry.
+- **Failure Handling**: Cancellation before Actor invocation returns the caller's cancellation outcome and sends no request. An Actor that observes cancellation before transmission yields KnownNotReceived.
 
 #### Scenario: Cancelled before transmission [error]
 
@@ -176,8 +176,8 @@ Cancellation MUST prevent transmission when observed before sending and preserve
 
 No Plan Application Result MUST establish the current external Plan; only a later current observation may establish it.
 
-- **振る舞いの規則**: Receipt evidence concerns the request interaction only and cannot establish mutation, completion, or causality.
-- **参照**: [[github-plan-snapshot/current-authoritative-snapshot]]
+- **Behavioral Rules**: Receipt evidence concerns the request interaction only and cannot establish mutation, completion, or causality.
+- **References**: [[github-plan-snapshot/current-authoritative-snapshot]]
 
 #### Scenario: Application was acknowledged [happy]
 
@@ -189,8 +189,8 @@ No Plan Application Result MUST establish the current external Plan; only a late
 
 The application-request capability MUST retain no authoritative application state and express no provider-specific mutation semantics.
 
-- **振る舞いの規則**: A later invocation receives no prior Result as authoritative input.
-- **副作用**: The capability owns neither external target state nor a durable application lifecycle.
+- **Behavioral Rules**: A later invocation receives no prior Result as authoritative input.
+- **Side Effects**: The capability owns neither external target state nor a durable application lifecycle.
 
 #### Scenario: A later invocation begins [happy]
 

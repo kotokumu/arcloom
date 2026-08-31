@@ -8,62 +8,62 @@
   },
   "blocks": [
     {
-      "label": "前提条件",
-      "purpose": "操作を適用できる事前状態、権限、参照対象の存在条件"
+      "label": "Preconditions",
+      "purpose": "Prior state, permissions, and existence conditions for referenced subjects required to apply the operation"
     },
     {
-      "label": "入力と受理",
-      "purpose": "入力、許容範囲、既定、受理・拒否条件"
+      "label": "Input and Acceptance",
+      "purpose": "Input, permitted range, defaults, and acceptance or rejection conditions"
     },
     {
-      "label": "振る舞いの規則",
-      "purpose": "判定、計算、状態遷移、外部から観察できる出力"
+      "label": "Behavioral Rules",
+      "purpose": "Decisions, calculations, state transitions, and externally observable output"
     },
     {
-      "label": "不変条件",
-      "purpose": "操作の各許容結果の前後で維持する条件"
+      "label": "Invariants",
+      "purpose": "Conditions preserved before and after every permitted result of the operation"
     },
     {
-      "label": "副作用",
-      "purpose": "関連状態、履歴、通知への変化と変化させないもの"
+      "label": "Side Effects",
+      "purpose": "Changes and non-changes to related state, history, and notifications"
     },
     {
-      "label": "排他・冪等",
-      "purpose": "同時実行、再送、重複、原子性"
+      "label": "Concurrency and Idempotency",
+      "purpose": "Concurrent execution, retries, duplicates, and atomicity"
     },
     {
-      "label": "失敗の扱い",
-      "purpose": "consumerが観察できる失敗結果と失敗時に維持する状態"
+      "label": "Failure Handling",
+      "purpose": "Failure results observable by the consumer and state preserved after failure"
     },
     {
-      "label": "参照",
-      "purpose": "Requirementが依存するinterface、API、data、policy、external contractのSSOT"
+      "label": "References",
+      "purpose": "SSOT for an Interface, API, data definition, Policy, or external contract on which the Requirement depends"
     }
   ],
   "representations": [
     {
       "name": "Partition Table",
-      "when": "連続または順序を持つdomainで範囲により受理または結果が異なる",
+      "when": "Acceptance or results differ by range in a continuous or ordered domain",
       "columns": ["Partition", "Condition or range", "Acceptance or result"]
     },
     {
       "name": "Decision Table",
-      "when": "条件の組み合わせにより結果が異なる",
+      "when": "Results differ by combinations of conditions",
       "columns": ["Rule", "Preconditions or state", "Input or event condition", "Output or response", "Side Effects"]
     },
     {
       "name": "State Transition Table",
-      "when": "triggerと任意のguardによりlifecycle stateが変化する",
+      "when": "A lifecycle state changes based on a trigger and optional guard",
       "columns": ["Current state", "Trigger or event", "Guard", "Next state", "Output or Side Effects"]
     },
     {
       "name": "Invariant",
-      "when": "常に維持する条件がある",
+      "when": "A condition must always be maintained",
       "format": "<subject> MUST <condition that remains true>."
     },
     {
       "name": "Scenario",
-      "when": "具体的な利用例または検証例が必要である",
+      "when": "A concrete usage or verification example is required",
       "required_steps": ["GIVEN", "WHEN", "THEN"]
     }
   ],

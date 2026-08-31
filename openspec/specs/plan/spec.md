@@ -30,9 +30,9 @@ A Plan is valid exactly when its composition and every contained value satisfy t
 
 A Plan consumer MUST be able to use the provider-independent Plan composition defined by this capability.
 
-- **入力と受理**: A Plan accepts one name, one Goal, one or more Acceptance Conditions, zero or more Tasks, and an optional Target Date.
-- **振る舞いの規則**: The accepted values retain the composition, collection order, and provider independence defined by the Plan Conceptual Model.
-- **失敗の扱い**: Input that violates the Plan composition produces a Plan Validation Violation and no valid Plan.
+- **Input and Acceptance**: A Plan accepts one name, one Goal, one or more Acceptance Conditions, zero or more Tasks, and an optional Target Date.
+- **Behavioral Rules**: The accepted values retain the composition, collection order, and provider independence defined by the Plan Conceptual Model.
+- **Failure Handling**: Input that violates the Plan composition produces a Plan Validation Violation and no valid Plan.
 
 #### Scenario: Minimum Plan [happy]
 
@@ -50,9 +50,9 @@ A Plan consumer MUST be able to use the provider-independent Plan composition de
 
 A Plan consumer MUST receive exact preservation of valid Plan Text and rejection of invalid Plan Text.
 
-- **入力と受理**: Plan Text is accepted exactly when it satisfies the Plan Text definition in the Conceptual Model.
-- **振る舞いの規則**: Accepted text retains its exact UTF-8 value, including permitted leading or trailing whitespace and original Goal or Acceptance Condition line endings.
-- **失敗の扱い**: Invalid text produces a Plan Validation Violation identifying the affected element.
+- **Input and Acceptance**: Plan Text is accepted exactly when it satisfies the Plan Text definition in the Conceptual Model.
+- **Behavioral Rules**: Accepted text retains its exact UTF-8 value, including permitted leading or trailing whitespace and original Goal or Acceptance Condition line endings.
+- **Failure Handling**: Invalid text produces a Plan Validation Violation identifying the affected element.
 
 #### Scenario: Unicode Plan [happy]
 
@@ -82,9 +82,9 @@ A Plan consumer MUST receive exact preservation of valid Plan Text and rejection
 
 A Plan consumer MUST receive ordered, exact-identity Plan Collections whose members satisfy Plan validity.
 
-- **入力と受理**: Acceptance Condition and Task collections accept individually valid members; independently validated empty collections are valid, while a complete Plan still requires at least one Acceptance Condition.
-- **振る舞いの規則**: Member identity is exact preserved text, duplicate identities are rejected, and declared order is preserved.
-- **失敗の扱い**: An invalid or duplicate member produces the same stable Plan Validation Violation whether the collection is validated independently or as part of a Plan. A collection-member violation includes its input index. No ordering among simultaneous independent violations is guaranteed.
+- **Input and Acceptance**: Acceptance Condition and Task collections accept individually valid members; independently validated empty collections are valid, while a complete Plan still requires at least one Acceptance Condition.
+- **Behavioral Rules**: Member identity is exact preserved text, duplicate identities are rejected, and declared order is preserved.
+- **Failure Handling**: An invalid or duplicate member produces the same stable Plan Validation Violation whether the collection is validated independently or as part of a Plan. A collection-member violation includes its input index. No ordering among simultaneous independent violations is guaranteed.
 
 #### Scenario: Duplicate acceptance condition [error]
 
@@ -102,9 +102,9 @@ A Plan consumer MUST receive ordered, exact-identity Plan Collections whose memb
 
 A Plan consumer MUST receive a Target Date only when it satisfies the Target Date definition in the Conceptual Model.
 
-- **入力と受理**: A present value is canonical `YYYY-MM-DD` text representing a valid date from `0001-01-01` through `9999-12-31`.
-- **振る舞いの規則**: The accepted value retains its canonical text and has no time, time-zone, whitespace, or Provider-specific deadline meaning.
-- **失敗の扱い**: A non-canonical or invalid date produces an invalid-target-date Plan Validation Violation and no valid Target Date.
+- **Input and Acceptance**: A present value is canonical `YYYY-MM-DD` text representing a valid date from `0001-01-01` through `9999-12-31`.
+- **Behavioral Rules**: The accepted value retains its canonical text and has no time, time-zone, whitespace, or Provider-specific deadline meaning.
+- **Failure Handling**: A non-canonical or invalid date produces an invalid-target-date Plan Validation Violation and no valid Target Date.
 
 #### Scenario: Leap-day target [happy]
 
@@ -122,8 +122,8 @@ A Plan consumer MUST receive a Target Date only when it satisfies the Target Dat
 
 A Plan consumer MUST be able to distinguish valid Plan values from invalid input through the Plan validity and Plan Validation Violation concepts.
 
-- **入力と受理**: Complete Plan input and independently validatable Plan values use the same applicable validity rules.
-- **振る舞いの規則**:
+- **Input and Acceptance**: Complete Plan input and independently validatable Plan values use the same applicable validity rules.
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -132,8 +132,8 @@ A Plan consumer MUST be able to distinguish valid Plan values from invalid input
   | Independently validatable value | One Plan value or collection is supplied outside a complete Plan | Its owning rules are evaluated | The same success or violation category as complete Plan validation | None |
   | Multiple independent violations | More than one applicable rule fails | Validation is requested | One applicable violation without promised selection order | None |
 
-- **不変条件**: A valid Plan reports valid without requiring the consumer to reconstruct its invariants. A Plan Validation Violation exposes its stable category, affected element kind, and applicable collection index.
-- **失敗の扱い**: Failed validation returns no valid value. When independent violations coexist, one applicable violation is returned without guaranteeing which is selected first.
+- **Invariants**: A valid Plan reports valid without requiring the consumer to reconstruct its invariants. A Plan Validation Violation exposes its stable category, affected element kind, and applicable collection index.
+- **Failure Handling**: Failed validation returns no valid value. When independent violations coexist, one applicable violation is returned without guaranteeing which is selected first.
 
 #### Scenario: Invalid Task in a collection [error]
 
