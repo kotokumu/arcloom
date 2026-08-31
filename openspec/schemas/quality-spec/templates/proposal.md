@@ -1,14 +1,14 @@
 ## Why
 
-<!-- 解決する問題と、今この変更が必要な理由。実現方法は書かない。 -->
+<!-- The problem to solve and why this change is needed now. Do not describe the implementation approach. -->
 
 ## Intended Outcomes
 
-<!-- 利用者または外部システムに生じる成果。 -->
+<!-- Outcomes for users or external systems. -->
 
 ## Success Criteria
 
-<!-- 技術方式に依存せず、観察・測定できる達成条件。 -->
+<!-- Observable and measurable completion conditions independent of a technical approach. -->
 
 - SC-1: <!-- measurable outcome -->
 
@@ -26,15 +26,15 @@
 
 ### New Capabilities
 
-<!-- なければ「なし」。技術レイヤーや共有 utility を capability にしない。 -->
+<!-- Write "None" when there are none. Do not turn a technical layer or shared utility into a capability. -->
 
-- `<capability-path>`: <!-- consumerから見た一貫した責務 -->
+- `<capability-path>`: <!-- coherent responsibility from the consumer's perspective -->
 
 ### Modified Capabilities
 
 <!--
-なければ「なし」。既存パスと変更する Requirement ID を記載する。
-New/Modified ともになく製品仕様を変えない場合だけ .openspec.yaml に skip_specs: true を設定する。
+Write "None" when there are none. State the existing path and each changed Requirement ID.
+Set `skip_specs: true` in `.openspec.yaml` only when there are no New or Modified Capabilities and the product specification does not change.
 -->
 
 - `<existing-capability-path>`: `[[<capability-path>/<requirement-slug>]]` — <!-- changed guarantee -->
@@ -48,12 +48,12 @@ New/Modified ともになく製品仕様を変えない場合だけ .openspec.ya
 ## Decisions Required
 
 <!--
-モデリング開始前に判断が必要と判明した事項。なければ「なし」。
-現在の解決状態は model.md の Unresolved Decisions が所有する。
+Matters found to require a decision before modeling begins. Write "None" when there are none.
+The Unresolved Decisions section in model.md owns the current resolution state.
 -->
 
 - <!-- decision and why it blocks modeling/specification -->
 
 ## Impact
 
-<!-- 影響する利用者、外部システム、既存契約、データ移行。技術設計の詳細は書かない。 -->
+<!-- Affected users, external systems, existing contracts, and data migration. Do not write technical design details. -->

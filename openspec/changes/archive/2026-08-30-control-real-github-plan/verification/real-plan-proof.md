@@ -81,11 +81,11 @@ The assessment outcome was `Revise`. The proposed Plan was:
 
 ## Exact Revision Authorization
 
-The exact Revision is the Stable Target Reference, Initial GitHub Plan Snapshot, and proposed Plan recorded above. The operator authorized that complete subject with the exact user message `承認します`.
+The exact Revision is the Stable Target Reference, Initial GitHub Plan Snapshot, and proposed Plan recorded above. The operator authorized that complete subject with the exact user message `\u627f\u8a8d\u3057\u307e\u3059` ("I approve"). The escape sequence records the original Unicode code points without changing the evidence.
 
 | Authorization field | Evidence |
 |---|---|
-| Reference | `codex-task:user-message:2026-08-29T13:32:06Z:承認します` |
+| Reference | `codex-task:user-message:2026-08-29T13:32:06Z:\u627f\u8a8d\u3057\u307e\u3059` |
 | Current at evaluation | yes |
 | Subject binding | exact Target Reference, current Plan, and proposed Plan |
 | Policy decision | `Authorized` |

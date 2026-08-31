@@ -39,10 +39,10 @@ Unavailable Information identifies a Plan Location whose required meaning cannot
 
 A reconciliation caller MUST receive a result concerning one valid expected Plan and one externally associated Plan target.
 
-- **前提条件**: The caller supplies a valid expected Plan derived from the applicable proposed Change and an observation source bound to that same Change target. The caller owns this association, and the observation source remains bound to exactly that target for its lifetime.
-- **入力と受理**: Target selection and Provider-native identity remain outside Plan, Observation, Evidence, and result meaning. Target existence, access, and lifecycle remain observation facts rather than input-validity checks.
-- **振る舞いの規則**: Every result applies only to the supplied Plan and the Observation of the bound target.
-- **失敗の扱い**: A missing or unusable observation source produces a stable invalid-observer failure. An invalid expected Plan produces a stable invalid-expected-Plan failure. Both return no valid result before observation begins.
+- **Preconditions**: The caller supplies a valid expected Plan derived from the applicable proposed Change and an observation source bound to that same Change target. The caller owns this association, and the observation source remains bound to exactly that target for its lifetime.
+- **Input and Acceptance**: Target selection and Provider-native identity remain outside Plan, Observation, Evidence, and result meaning. Target existence, access, and lifecycle remain observation facts rather than input-validity checks.
+- **Behavioral Rules**: Every result applies only to the supplied Plan and the Observation of the bound target.
+- **Failure Handling**: A missing or unusable observation source produces a stable invalid-observer failure. An invalid expected Plan produces a stable invalid-expected-Plan failure. Both return no valid result before observation begins.
 
 #### Scenario: Target-bound reconciliation [happy]
 
@@ -66,8 +66,8 @@ A reconciliation caller MUST receive a result concerning one valid expected Plan
 
 An observation source MUST provide one coherent logical Observation that satisfies the Observation classifications in the Conceptual Model.
 
-- **入力と受理**: Multiple external reads, pages, or retries may contribute facts, but every known fact belongs to the same bound target and every detected contradiction is resolved as Unavailable Information.
-- **振る舞いの規則**:
+- **Input and Acceptance**: Multiple external reads, pages, or retries may contribute facts, but every known fact belongs to the same bound target and every detected contradiction is resolved as Unavailable Information.
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -78,9 +78,9 @@ An observation source MUST provide one coherent logical Observation that satisfi
   | Uncertain collection | Some coherent members exist | Complete membership cannot be established | Preserve coherent members and classify the collection Incomplete | None |
   | Root inconsistency | Inconsistency spans top-level locations | Observation is classified | Mark the Plan root Unavailable | Descendant uncertainty is covered. |
 
-- **不変条件**: Every known fact belongs to the same bound target. Provider identifiers, resource types, fields, and failures do not enter the Observation, and facts outside an affected location remain usable.
-- **失敗の扱い**: An impossible combination of Observation states produces a stable observation-contract failure and no valid reconciliation result. Concurrent external changes that the observation source cannot detect are outside this guarantee.
-- **参照**: [related] `plan` Conceptual Model for Plan validity and Plan Validation Violations.
+- **Invariants**: Every known fact belongs to the same bound target. Provider identifiers, resource types, fields, and failures do not enter the Observation, and facts outside an affected location remain usable.
+- **Failure Handling**: An impossible combination of Observation states produces a stable observation-contract failure and no valid reconciliation result. Concurrent external changes that the observation source cannot detect are outside this guarantee.
+- **References**: [related] `plan` Conceptual Model for Plan validity and Plan Validation Violations.
 
 #### Scenario: Provider-native representation is observed [happy]
 
@@ -110,9 +110,9 @@ An observation source MUST provide one coherent logical Observation that satisfi
 
 Reconciliation MUST compare expected Plan meaning with known observed meaning using the identity rules owned by Plan and Observation.
 
-- **振る舞いの規則**: Plan name, Goal, and Target Date use exact preserved value. Acceptance Conditions use exact statement and Tasks use exact name. Complete collections use order-independent membership. Case, whitespace, line endings, and Unicode code-point sequences are not normalized.
-- **失敗の扱い**: Unknown or Unavailable meaning does not become a known mismatch under this Requirement.
-- **参照**: [related] `plan` Conceptual Model for exact Plan Text and Plan Collection identity.
+- **Behavioral Rules**: Plan name, Goal, and Target Date use exact preserved value. Acceptance Conditions use exact statement and Tasks use exact name. Complete collections use order-independent membership. Case, whitespace, line endings, and Unicode code-point sequences are not normalized.
+- **Failure Handling**: Unknown or Unavailable meaning does not become a known mismatch under this Requirement.
+- **References**: [related] `plan` Conceptual Model for exact Plan Text and Plan Collection identity.
 
 #### Scenario: Equal meaning in a different order [happy]
 
@@ -130,7 +130,7 @@ Reconciliation MUST compare expected Plan meaning with known observed meaning us
 
 Reconciliation MUST represent every known mismatch as the Difference classification defined in the Conceptual Model.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -141,9 +141,9 @@ Reconciliation MUST represent every known mismatch as the Difference classificat
   | Root absent | Observation authoritatively establishes external root absence | Comparison occurs | One covering ExpectedAbsent at the Plan root carrying the immutable expected Plan | Suppress descendant Evidence. |
   | Incomplete collection omission | Expected member is not among observed coherent members | Membership is Incomplete | No member-level ExpectedAbsent | Preserve collection Unavailable Information. |
 
-- **不変条件**: Each Difference identifies one Plan Location, carries only the payload permitted by its kind, is unique, and follows the canonical location and raw UTF-8 ordering defined by this Requirement.
-- **副作用**: An authoritative root absence produces one covering root `ExpectedAbsent` carrying the complete immutable expected Plan and suppresses descendant Evidence.
-- **失敗の扱い**: Missing expected members in an Incomplete collection are not classified as absent. An empty Complete collection produces member-level absence without producing `InvalidObserved` solely for emptiness.
+- **Invariants**: Each Difference identifies one Plan Location, carries only the payload permitted by its kind, is unique, and follows the canonical location and raw UTF-8 ordering defined by this Requirement.
+- **Side Effects**: An authoritative root absence produces one covering root `ExpectedAbsent` carrying the complete immutable expected Plan and suppresses descendant Evidence.
+- **Failure Handling**: Missing expected members in an Incomplete collection are not classified as absent. An empty Complete collection produces member-level absence without producing `InvalidObserved` solely for emptiness.
 
 #### Scenario: Scalar value differs [happy]
 
@@ -173,9 +173,9 @@ Reconciliation MUST represent every known mismatch as the Difference classificat
 
 Reconciliation MUST preserve facts that cannot be established as Unavailable Information rather than a known Difference.
 
-- **振る舞いの規則**: Unavailable Information identifies only Plan root, Plan name, Goal, Acceptance Condition collection, Task collection, or Target Date. Items are unique and ordered in that sequence.
-- **副作用**: Root Unavailable Information covers every descendant unavailable item and every Difference. An Incomplete collection produces one unavailable item at its collection location, prevents omitted expected members from becoming absent, and preserves Differences established from observed members.
-- **失敗の扱い**: Provider failure detail never becomes Unavailable Information payload.
+- **Behavioral Rules**: Unavailable Information identifies only Plan root, Plan name, Goal, Acceptance Condition collection, Task collection, or Target Date. Items are unique and ordered in that sequence.
+- **Side Effects**: Root Unavailable Information covers every descendant unavailable item and every Difference. An Incomplete collection produces one unavailable item at its collection location, prevents omitted expected members from becoming absent, and preserves Differences established from observed members.
+- **Failure Handling**: Provider failure detail never becomes Unavailable Information payload.
 
 #### Scenario: Plan existence is unavailable [boundary]
 
@@ -193,7 +193,7 @@ Reconciliation MUST preserve facts that cannot be established as Unavailable Inf
 
 A result consumer MUST receive an immutable Reconciliation Determination derived only from its Evidence.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -201,8 +201,8 @@ A result consumer MUST receive an immutable Reconciliation Determination derived
   | Not satisfied | Evidence contains at least one Difference and no Unavailable Information | Result is derived | NotSatisfied with the known Differences | None |
   | Undecidable | Evidence contains Unavailable Information, with or without non-covered Differences | Result is derived | Undecidable with all non-covered Evidence | None |
 
-- **不変条件**: The caller cannot select the determination independently or alter returned Evidence so that later reads contradict it.
-- **排他・冪等**: Reading or attempting to alter one returned collection does not change the stored result or another read.
+- **Invariants**: The caller cannot select the determination independently or alter returned Evidence so that later reads contradict it.
+- **Concurrency and Idempotency**: Reading or attempting to alter one returned collection does not change the stored result or another read.
 
 #### Scenario: Equal complete representation [happy]
 
@@ -226,7 +226,7 @@ A result consumer MUST receive an immutable Reconciliation Determination derived
 
 A reconciliation caller MUST be able to distinguish unavailable external facts, caller lifecycle termination, invalid inputs, and observation-contract failures.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -237,7 +237,7 @@ A reconciliation caller MUST be able to distinguish unavailable external facts, 
   | Provider fact unavailable | Observation contract remains valid | Access, rate limit, service health, or detected change prevents a fact | Successful Observation with localized Unavailable Information | Provider detail does not cross the boundary. |
   | Observation contract violated | Caller lifecycle remains active | Source returns invalid Observation or an unrelated cancellation outcome | Stable observation-contract failure and no result | Provider detail does not cross the boundary. |
   | Authoritative not found | Observation contract establishes root absence | Observation succeeds | Successful Observation with authoritative root absence | None |
-- **失敗の扱い**: A failed or invalid Observation produces a stable observation-contract failure and no valid result. Caller cancellation or deadline expiration observed before return takes precedence over unusable observation source, invalid expected Plan, and observation-contract failure. An unusable observation source takes precedence over an invalid expected Plan. Cancellation after return does not alter the result. A cancellation report not caused by the caller is an observation-contract failure.
+- **Failure Handling**: A failed or invalid Observation produces a stable observation-contract failure and no valid result. Caller cancellation or deadline expiration observed before return takes precedence over unusable observation source, invalid expected Plan, and observation-contract failure. An unusable observation source takes precedence over an invalid expected Plan. Cancellation after return does not alter the result. A cancellation report not caused by the caller is an observation-contract failure.
 
 #### Scenario: Provider cannot establish current facts [error]
 
@@ -267,8 +267,8 @@ A reconciliation caller MUST be able to distinguish unavailable external facts, 
 
 Reconciliation MUST remain read-only, stateless between calls, and isolated across concurrent callers.
 
-- **副作用**: Reconciliation does not mutate the expected Plan, request or authorize external change, persist Observation or result, or depend on prior runtime state. Each call obtains a new logical Observation.
-- **排他・冪等**: Concurrent calls share no per-call Observation or result state and do not mix facts.
+- **Side Effects**: Reconciliation does not mutate the expected Plan, request or authorize external change, persist Observation or result, or depend on prior runtime state. Each call obtains a new logical Observation.
+- **Concurrency and Idempotency**: Concurrent calls share no per-call Observation or result state and do not mix facts.
 
 #### Scenario: External facts change [happy]
 

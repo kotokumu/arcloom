@@ -8,8 +8,8 @@ Obtains a read-only Codex-backed Plan Control judgment with provider-independent
 
 A successful Codex-backed assessment MUST yield exactly one valid provider-independent Plan Control Assessment: Complete, Retain, Revise, or Insufficient Information.
 
-- **振る舞いの規則**: Revise contains exactly one valid Proposed Plan. Complete, Retain, and Insufficient Information contain no Proposed Plan.
-- **参照**: [related] `openspec/specs/plan-control/spec.md` (PLC-3 and PLC-5)
+- **Behavioral Rules**: Revise contains exactly one valid Proposed Plan. Complete, Retain, and Insufficient Information contain no Proposed Plan.
+- **References**: [related] `openspec/specs/plan-control/spec.md` (PLC-3 and PLC-5)
 
 #### Scenario: Plan should be revised [happy]
 
@@ -27,8 +27,8 @@ A successful Codex-backed assessment MUST yield exactly one valid provider-indep
 
 A Codex-backed assessment MUST concern the exact current Plan and caller-owned observation material supplied for that invocation.
 
-- **入力と受理**: The caller supplies one valid current Plan and immutable observation material whose vocabulary and meaning remain caller-owned.
-- **振る舞いの規則**: The judgment is associated only with that Plan and observation material.
+- **Input and Acceptance**: The caller supplies one valid current Plan and immutable observation material whose vocabulary and meaning remain caller-owned.
+- **Behavioral Rules**: The judgment is associated only with that Plan and observation material.
 
 #### Scenario: Assessment material is supplied [happy]
 
@@ -40,7 +40,7 @@ A Codex-backed assessment MUST concern the exact current Plan and caller-owned o
 
 A Codex-backed assessment MUST remain read-only and MUST NOT authorize or apply a Plan revision.
 
-- **副作用**: Assessment modifies neither supplied material nor any external provider and makes no authorization or application request.
+- **Side Effects**: Assessment modifies neither supplied material nor any external provider and makes no authorization or application request.
 
 #### Scenario: Assessment proposes a revision [happy]
 
@@ -52,7 +52,7 @@ A Codex-backed assessment MUST remain read-only and MUST NOT authorize or apply 
 
 Missing, malformed, ambiguous, conflicting, or failed AI output MUST NOT produce a successful Plan Control Assessment.
 
-- **失敗の扱い**: No provider protocol detail becomes a successful provider-independent judgment.
+- **Failure Handling**: No provider protocol detail becomes a successful provider-independent judgment.
 
 #### Scenario: Output has conflicting meanings [error]
 
@@ -64,8 +64,8 @@ Missing, malformed, ambiguous, conflicting, or failed AI output MUST NOT produce
 
 Each Codex-backed assessment MUST be independent of prior and concurrent assessments and retain no authoritative AI session state.
 
-- **振る舞いの規則**: A later assessment depends only on its current supplied material.
-- **排他・冪等**: Concurrent assessments exchange no Plan, observation, or judgment state.
+- **Behavioral Rules**: A later assessment depends only on its current supplied material.
+- **Concurrency and Idempotency**: Concurrent assessments exchange no Plan, observation, or judgment state.
 
 #### Scenario: A Plan is reassessed [happy]
 
@@ -83,9 +83,9 @@ Each Codex-backed assessment MUST be independent of prior and concurrent assessm
 
 A cancelled in-progress assessment MUST establish no successful judgment and terminate within its accepted finite shutdown bound.
 
-- **入力と受理**: The supplied Codex app-server SDK Client is configured with a positive finite shutdown bound before it is composed with the Plan Control adapter.
-- **状態と遷移**: Success is established only after the correlated Turn reports `completed`, one translatable final output is established, and cancellation has not already occurred. Cancellation after that establishment does not replace success.
-- **失敗の扱い**: Cancellation before success returns no assessment with an error matching the supplied context error no later than that bound plus scheduling tolerance. A concurrent shutdown failure remains observable without hiding the context error.
+- **Input and Acceptance**: The supplied Codex app-server SDK Client is configured with a positive finite shutdown bound before it is composed with the Plan Control adapter.
+- **State and Transitions**: Success is established only after the correlated Turn reports `completed`, one translatable final output is established, and cancellation has not already occurred. Cancellation after that establishment does not replace success.
+- **Failure Handling**: Cancellation before success returns no assessment with an error matching the supplied context error no later than that bound plus scheduling tolerance. A concurrent shutdown failure remains observable without hiding the context error.
 
 #### Scenario: Assessment is cancelled [error]
 
@@ -97,10 +97,10 @@ A cancelled in-progress assessment MUST establish no successful judgment and ter
 
 The capability MUST begin an external-AI Turn only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
 
-- **前提条件**: The Host supplies an absolute executable path for Codex 0.149.1 through a Codex app-server SDK Client that satisfies the accepted lifecycle contract.
-- **入力と受理**: Local assessment inputs must be valid and compatible. The SDK validates the executable path and positive finite shutdown bound before process start, verifies the app-server version before starting a Thread, and revalidates mutable request paths before each call. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox.
-- **構成の隔離**: Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
-- **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents an external-AI Turn. Configuration that only the app-server can validate may start and initialize the process but cannot start a Thread or Turn after incompatibility is established.
+- **Preconditions**: The Host supplies an absolute executable path for Codex 0.149.1 through a Codex app-server SDK Client that satisfies the accepted lifecycle contract.
+- **Input and Acceptance**: Local assessment inputs must be valid and compatible. The SDK validates the executable path and positive finite shutdown bound before process start, verifies the app-server version before starting a Thread, and revalidates mutable request paths before each call. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox.
+- **Configuration Isolation**: Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
+- **Failure Handling**: Incompatible, invalid, or unsafe local input prevents an external-AI Turn. Configuration that only the app-server can validate may start and initialize the process but cannot start a Thread or Turn after incompatibility is established.
 
 #### Scenario: Configuration is unsafe [error]
 

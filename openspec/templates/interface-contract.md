@@ -2,11 +2,11 @@
 
 ## Purpose
 
-<!-- consumerと提供側の境界、およびこのcontractが所有する情報。 -->
+<!-- The boundary between consumer and provider, and the information this contract owns. -->
 
 ## Contract
 
-<!-- machine-readable schemaが正本なら、項目を転記せずそのパスだけを書く。 -->
+<!-- When a machine-readable schema is authoritative, state only its path instead of reproducing its fields. -->
 
 | Element | Meaning | Type / format | Required | Constraints |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@
 
 ## Compatibility
 
-<!-- versioning、additive/breaking change、unknown element handling、migration。必要な場合だけ書く。 -->
+<!-- Versioning, additive or breaking changes, unknown-element handling, and migration. Write only when required. -->
 
 ## References
 

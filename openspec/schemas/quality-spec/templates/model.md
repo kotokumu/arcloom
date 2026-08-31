@@ -1,8 +1,8 @@
 # Specification Analysis: <!-- change name -->
 
 <!--
-Requirement の理解と境界判断に必要な表現だけを使う。
-該当しない表・節を埋めるための概念を作らず、不要な任意節は削除する。
+Use only representations required to understand Requirements and determine boundaries.
+Do not invent concepts to fill inapplicable tables or sections. Delete unnecessary optional sections.
 -->
 
 ## 1. Boundary
@@ -18,7 +18,7 @@ Requirement の理解と境界判断に必要な表現だけを使う。
 
 ## 2. Consumers and Observable Events
 
-<!-- 仕様変更がある場合に記載する。pure implementation では「該当なし」と理由を書く。 -->
+<!-- Complete this section for a specification change. For a pure implementation change, write "Not applicable" and explain why. -->
 
 | Consumer / actor | Trigger / prior state | Interaction or event | Observable result |
 |---|---|---|---|
@@ -29,21 +29,21 @@ Requirement の理解と境界判断に必要な表現だけを使う。
 ## 3. Conceptual Model
 
 <!--
-Requirementを読む前に必要な概念、状態、分類、関係、制約だけを残し、公開する簡潔な概要を選ぶ。
-Scenarioから用語や状態空間を逆算させない。
+Preserve only the concepts, states, classifications, relationships, and constraints required before reading the Requirements, and select a concise overview for publication.
+Do not force readers to infer terminology or the state space backward from Scenarios.
 -->
 
 | Concept | Meaning | Identity / relevant values | Owner capability and rationale |
 |---|---|---|---|
 | <!-- canonical term --> | <!-- specification meaning --> | <!-- only what affects requirements --> | <!-- single owner + reason --> |
 
-### 3-1. Supporting Models（任意）
+### 3-1. Supporting Models (Optional)
 
 <!--
-概念一覧だけでは Requirement を一意に解釈できない場合に限り、必要な表現を追加する。
-候補: 状態定義、分類、値域の表、関係図、構造的不変条件。
-受理partition、条件の組み合わせ、transition rule、操作上のInvariant、出力、副作用はRequirementへ置く。
-物理テーブル、DTO、API payload、class の図は作らない。
+Add a representation only when the concept list alone does not permit an unambiguous interpretation of the Requirements.
+Options include state definitions, classification and value-range tables, relationship diagrams, and structural Invariants.
+Place acceptance partitions, combinations of conditions, transition rules, operational Invariants, output, and Side Effects in Requirements.
+Do not diagram physical tables, DTOs, API payloads, or Classes.
 -->
 
 ---
@@ -51,12 +51,12 @@ Scenarioから用語や状態空間を逆算させない。
 ## 4. Main Spec Conceptual Model Replacements
 
 <!--
-変更がなければ `None.` と書く。
-変更があるcapabilityごとに、pathをcode表記したlevel-three見出しを置く。その直後の
-markdown fenceへ`## Conceptual Model`見出しを除いた完全な置換後本文を書く。
-差分や省略記号は書かない。各 capability には同じpathのRequirement deltaも必要である。
-Conceptual Model節全体を削除する場合は、markdown fenceの代わりに`REMOVE`と書く。
-`tools/archive-change.mjs` がこの内容をmain specへ反映し、Requirement deltaと一緒にarchiveする。
+Write `None.` when there is no change.
+For each changed capability, add a level-three heading containing its path as code. Immediately after it,
+write the complete replacement text without the `## Conceptual Model` heading in a Markdown fence.
+Do not write a diff or ellipsis. Each capability also requires a Requirement delta at the same path.
+To delete the entire Conceptual Model section, write `REMOVE` instead of a Markdown fence.
+`tools/archive-change.mjs` applies this content to the main spec and archives it with the Requirement delta.
 -->
 
 None.
@@ -74,8 +74,8 @@ None.
 ## 6. Unresolved Decisions
 
 <!--
-現在の未決状態のSSOT。proposalのDecisions Requiredをすべて解決するか、ここへ引き継ぐ。
-specs作成前に解決し、公開前は正確に`None.`と書く。推奨案を決定として扱わない。
+This is the SSOT for the current unresolved state. Resolve every item from the proposal's Decisions Required section or carry it here.
+Resolve all items before creating specs and write exactly `None.` before publication. Do not treat a recommendation as a decision.
 -->
 
 None.

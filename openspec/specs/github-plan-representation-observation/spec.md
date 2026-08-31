@@ -28,10 +28,10 @@ One observation request produces either a valid provider-independent Observation
 
 A GitHub Plan observation caller MUST bind one valid GitHub Plan Target before any external fact is accessed.
 
-- **入力と受理**: The target satisfies the GitHub Plan Target definition and remains bound for the observation capability lifetime.
-- **振る舞いの規則**: Every Observation concerns only that target, while Provider-native identity remains outside the provider-independent Observation.
-- **失敗の扱い**: Invalid local binding input is rejected before GitHub access. Local acceptance makes no claim about remote existence, access, permissions, or lifecycle.
-- **参照**: [related] `github-plan-creation-dry-run` Conceptual Model for GitHub Repository Target and GitHub Plan Representation.
+- **Input and Acceptance**: The target satisfies the GitHub Plan Target definition and remains bound for the observation capability lifetime.
+- **Behavioral Rules**: Every Observation concerns only that target, while Provider-native identity remains outside the provider-independent Observation.
+- **Failure Handling**: Invalid local binding input is rejected before GitHub access. Local acceptance makes no claim about remote existence, access, permissions, or lifecycle.
+- **References**: [related] `github-plan-creation-dry-run` Conceptual Model for GitHub Repository Target and GitHub Plan Representation.
 
 #### Scenario: Valid target is bound [happy]
 
@@ -49,9 +49,9 @@ A GitHub Plan observation caller MUST bind one valid GitHub Plan Target before a
 
 GitHub Plan observation MUST interpret `arcloom-plan:v1` meaning only from a valid machine-readable block at the beginning of native content and MUST preserve independently established facts when other payload meaning is unusable.
 
-- **入力と受理**: A valid block exposes the exact representation-specific values defined by the Versioned Plan Narrative. Unknown version-one members do not affect known members. Human-readable narrative contributes no fact.
-- **振る舞いの規則**: An absent, unsupported, or ambiguous block makes all payload-backed locations Unavailable. One unusable required member makes only its Plan Location Unavailable. A decoded value that violates Plan meaning becomes a known Plan Validation Violation. An empty Acceptance Condition collection is known Complete and empty.
-- **参照**: [related] `github-plan-creation-dry-run` Conceptual Model for Versioned Plan Narrative; [related] `plan` Conceptual Model for Plan validity; [related] `plan-representation-reconciliation` Conceptual Model for Observation and Unavailable Information.
+- **Input and Acceptance**: A valid block exposes the exact representation-specific values defined by the Versioned Plan Narrative. Unknown version-one members do not affect known members. Human-readable narrative contributes no fact.
+- **Behavioral Rules**: An absent, unsupported, or ambiguous block makes all payload-backed locations Unavailable. One unusable required member makes only its Plan Location Unavailable. A decoded value that violates Plan meaning becomes a known Plan Validation Violation. An empty Acceptance Condition collection is known Complete and empty.
+- **References**: [related] `github-plan-creation-dry-run` Conceptual Model for Versioned Plan Narrative; [related] `plan` Conceptual Model for Plan validity; [related] `plan-representation-reconciliation` Conceptual Model for Observation and Unavailable Information.
 
 #### Scenario: Version-one payload is valid [happy]
 
@@ -75,9 +75,9 @@ GitHub Plan observation MUST interpret `arcloom-plan:v1` meaning only from a val
 
 GitHub Plan observation MUST project a Milestone representation into the Plan meaning assigned by the Conceptual Model.
 
-- **振る舞いの規則**: Milestone title supplies Plan name; its Versioned Plan Narrative supplies Goal and Acceptance Conditions; its native target date supplies present or absent Target Date; and the Complete assigned-Issue collection supplies Tasks. Open and closed Issues are included and Pull Requests are excluded.
-- **失敗の扱い**: A present native target date that cannot represent a valid Plan date becomes a known target-date violation. Absence remains known absence.
-- **参照**: [related] `plan` Conceptual Model; [related] `plan-representation-reconciliation` Conceptual Model.
+- **Behavioral Rules**: Milestone title supplies Plan name; its Versioned Plan Narrative supplies Goal and Acceptance Conditions; its native target date supplies present or absent Target Date; and the Complete assigned-Issue collection supplies Tasks. Open and closed Issues are included and Pull Requests are excluded.
+- **Failure Handling**: A present native target date that cannot represent a valid Plan date becomes a known target-date violation. Absence remains known absence.
+- **References**: [related] `plan` Conceptual Model; [related] `plan-representation-reconciliation` Conceptual Model.
 
 #### Scenario: Complete Milestone representation is observed [happy]
 
@@ -101,9 +101,9 @@ GitHub Plan observation MUST project a Milestone representation into the Plan me
 
 GitHub Plan observation MUST project a parent Issue representation into the Plan meaning assigned by the Conceptual Model.
 
-- **振る舞いの規則**: Parent Issue title supplies Plan name; its Versioned Plan Narrative supplies Goal, Acceptance Conditions, and optional Target Date; and the Complete Sub-issue collection supplies Tasks. A completely established empty Sub-issue collection is known Complete and empty.
-- **失敗の扱い**: A selected parent resource that is a Pull Request makes the Plan root Unavailable and contributes no descendant state.
-- **参照**: [related] `plan` Conceptual Model; [related] `plan-representation-reconciliation` Conceptual Model.
+- **Behavioral Rules**: Parent Issue title supplies Plan name; its Versioned Plan Narrative supplies Goal, Acceptance Conditions, and optional Target Date; and the Complete Sub-issue collection supplies Tasks. A completely established empty Sub-issue collection is known Complete and empty.
+- **Failure Handling**: A selected parent resource that is a Pull Request makes the Plan root Unavailable and contributes no descendant state.
+- **References**: [related] `plan` Conceptual Model; [related] `plan-representation-reconciliation` Conceptual Model.
 
 #### Scenario: Complete Issue representation is observed [happy]
 
@@ -121,7 +121,7 @@ GitHub Plan observation MUST project a parent Issue representation into the Plan
 
 A GitHub Plan observation caller MUST receive unavailable GitHub facts as localized Unavailable Information without Provider detail, except for its own cancellation or deadline outcome before success.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -130,10 +130,10 @@ A GitHub Plan observation caller MUST receive unavailable GitHub facts as locali
   | Partial collection | Some coherent members are established | Complete membership cannot be established | Members remain observable and membership is Incomplete | Omitted members do not become authoritative absence. |
   | Non-authoritative absence | GitHub does not unambiguously establish absence | A resource cannot be selected conclusively | The affected location is Unavailable | No authoritative Plan absence is claimed. |
 
-- **不変条件**: Provider failure detail never crosses the observation boundary, and an inability to establish a fact never becomes authoritative absence.
-- **副作用**: Target binding remains unchanged. Provider errors, response content, credentials, rate-limit information, request identifiers, redirect targets, and target identity do not enter the Observation.
-- **失敗の扱い**: Caller cancellation or deadline expiration before success returns the supplied caller-lifecycle outcome and no successful Observation. No other Provider failure crosses the observation boundary.
-- **参照**: [related] `plan-representation-reconciliation` Conceptual Model for localized Unavailable Information and covering rules.
+- **Invariants**: Provider failure detail never crosses the observation boundary, and an inability to establish a fact never becomes authoritative absence.
+- **Side Effects**: Target binding remains unchanged. Provider errors, response content, credentials, rate-limit information, request identifiers, redirect targets, and target identity do not enter the Observation.
+- **Failure Handling**: Caller cancellation or deadline expiration before success returns the supplied caller-lifecycle outcome and no successful Observation. No other Provider failure crosses the observation boundary.
+- **References**: [related] `plan-representation-reconciliation` Conceptual Model for localized Unavailable Information and covering rules.
 
 #### Scenario: Root facts are inaccessible [error]
 
@@ -157,7 +157,7 @@ A GitHub Plan observation caller MUST receive unavailable GitHub facts as locali
 
 GitHub Plan observation MUST expose Task membership as Complete only after the whole external collection is coherently established and otherwise preserve only the facts justified by Task Collection Establishment.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -167,8 +167,8 @@ GitHub Plan observation MUST expose Task membership as Complete only after the w
   | Repeated resource conflicts | One external resource is observed repeatedly | Titles conflict | Contribute neither conflicting title and classify membership Incomplete | None |
   | Distinct resources share a title | Distinct external identities are observed | Titles are equal | Preserve distinct observations for Plan duplicate classification | None |
 
-- **不変条件**: Collection order does not affect correspondence, and external-resource identity is not replaced by Task-name equality during observation.
-- **参照**: [related] `plan` Conceptual Model for Task identity and duplicate validity; [related] `plan-representation-reconciliation` Conceptual Model for Complete and Incomplete collection meaning.
+- **Invariants**: Collection order does not affect correspondence, and external-resource identity is not replaced by Task-name equality during observation.
+- **References**: [related] `plan` Conceptual Model for Task identity and duplicate validity; [related] `plan-representation-reconciliation` Conceptual Model for Complete and Incomplete collection meaning.
 
 #### Scenario: Complete collection spans multiple Provider responses [happy]
 
@@ -198,9 +198,9 @@ GitHub Plan observation MUST expose Task membership as Complete only after the w
 
 A GitHub Plan observation caller MUST receive read-only observation of the declared Milestone and Issue representations on GitHub.com using access supplied by the Host.
 
-- **前提条件**: The selected GitHub Plan Target uses a supported GitHub.com representation. GitHub Enterprise Server is outside this capability.
-- **振る舞いの規則**: Observation uses only external read operations and produces the provider-independent Observation contract.
-- **失敗の扱い**: When the external GitHub contract cannot establish a required fact, the affected Plan Location follows [[github-plan-representation-observation/conservative-failure-observation]].
+- **Preconditions**: The selected GitHub Plan Target uses a supported GitHub.com representation. GitHub Enterprise Server is outside this capability.
+- **Behavioral Rules**: Observation uses only external read operations and produces the provider-independent Observation contract.
+- **Failure Handling**: When the external GitHub contract cannot establish a required fact, the affected Plan Location follows [[github-plan-representation-observation/conservative-failure-observation]].
 
 #### Scenario: Supported representation is observed [happy]
 
@@ -212,9 +212,9 @@ A GitHub Plan observation caller MUST receive read-only observation of the decla
 
 GitHub Plan observation MUST remain read-only, stateless between requests, and isolated across concurrent callers.
 
-- **振る舞いの規則**: Each request derives its result from current GitHub facts and does not depend on a prior Observation or Arcloom-owned durable state.
-- **副作用**: Observation performs no external mutation, authorization decision, persistence, Provider identifier generation, or credential storage and does not modify Host-owned GitHub access state.
-- **排他・冪等**: Concurrent requests through the same configured observation capability do not mix facts, results, failures, or caller-lifecycle outcomes.
+- **Behavioral Rules**: Each request derives its result from current GitHub facts and does not depend on a prior Observation or Arcloom-owned durable state.
+- **Side Effects**: Observation performs no external mutation, authorization decision, persistence, Provider identifier generation, or credential storage and does not modify Host-owned GitHub access state.
+- **Concurrency and Idempotency**: Concurrent requests through the same configured observation capability do not mix facts, results, failures, or caller-lifecycle outcomes.
 
 #### Scenario: GitHub facts change between observations [happy]
 

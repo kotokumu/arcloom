@@ -24,11 +24,11 @@ A Plan Control Failure produces no valid assessment. Invalid input identifies an
 
 A Plan Control caller MUST receive an assessment concerning one valid Plan Snapshot supplied for that decision.
 
-- **前提条件**: The Plan Snapshot has been established from authoritative external facts. Plan creation and removal remain outside this capability.
-- **入力と受理**: One valid Plan Snapshot and the Delivery Observations for the decision are supplied.
-- **振る舞いの規則**: The result concerns adjustment or completion of exactly that Plan Snapshot.
-- **失敗の扱い**: If no valid Plan Snapshot exists, Plan Control returns a stable invalid-input failure, requests no AI assessment, and returns no valid result.
-- **参照**: [related] `plan` Conceptual Model for Plan validity and identity.
+- **Preconditions**: The Plan Snapshot has been established from authoritative external facts. Plan creation and removal remain outside this capability.
+- **Input and Acceptance**: One valid Plan Snapshot and the Delivery Observations for the decision are supplied.
+- **Behavioral Rules**: The result concerns adjustment or completion of exactly that Plan Snapshot.
+- **Failure Handling**: If no valid Plan Snapshot exists, Plan Control returns a stable invalid-input failure, requests no AI assessment, and returns no valid result.
+- **References**: [related] `plan` Conceptual Model for Plan validity and identity.
 
 #### Scenario: Existing Plan is controlled [happy]
 
@@ -46,8 +46,8 @@ A Plan Control caller MUST receive an assessment concerning one valid Plan Snaps
 
 A Plan Control caller MUST receive Complete only when the external AI determines from available Delivery Observations that the Plan Goal and Acceptance Conditions have been achieved.
 
-- **振る舞いの規則**: Plan Control preserves the AI-owned semantic judgment without independently re-evaluating Delivery Observations. Task completion is evidence available to the AI but is neither necessary nor sufficient by itself for Complete.
-- **副作用**: Complete does not constitute Delivery Acceptance.
+- **Behavioral Rules**: Plan Control preserves the AI-owned semantic judgment without independently re-evaluating Delivery Observations. Task completion is evidence available to the AI but is neither necessary nor sufficient by itself for Complete.
+- **Side Effects**: Complete does not constitute Delivery Acceptance.
 
 #### Scenario: Goal and acceptance conditions are achieved [happy]
 
@@ -71,7 +71,7 @@ A Plan Control caller MUST receive Complete only when the external AI determines
 
 The external AI MUST select exactly one Plan Control Assessment defined by this capability for the supplied Plan Snapshot and Delivery Observations.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -80,8 +80,8 @@ The external AI MUST select exactly one Plan Control Assessment defined by this 
   | Revise | Exact Snapshot and observations are supplied | AI judges adjustment is required | Revise with exactly one Proposed Plan | None |
   | Insufficient Information | Exact Snapshot is supplied | Required evidence is unavailable | Insufficient Information with no Proposed Plan | None |
 
-- **不変条件**: Exactly one classification is established and remains associated with the exact supplied Snapshot and Delivery Observations.
-- **副作用**: An assessment does not change external Plan state. This Plan-specific contract neither constrains other reconciliation results nor exposes a Change concept.
+- **Invariants**: Exactly one classification is established and remains associated with the exact supplied Snapshot and Delivery Observations.
+- **Side Effects**: An assessment does not change external Plan state. This Plan-specific contract neither constrains other reconciliation results nor exposes a Change concept.
 
 #### Scenario: Plan adjustment is required [happy]
 
@@ -99,9 +99,9 @@ The external AI MUST select exactly one Plan Control Assessment defined by this 
 
 Plan Control MUST make supplied Delivery Observations available to the external AI without imposing a fixed observation set or restricting valid Plan revision beyond Plan invariants.
 
-- **入力と受理**: Delivery Observations may concern schedule, progress, remaining work, quality, or requirement changes.
-- **振る舞いの規則**: The external AI owns their semantic interpretation and may revise any Plan element subject to Plan validity. Scope remains expressed through Goal, Acceptance Conditions, and Tasks rather than a separate required Scope element.
-- **参照**: [related] `plan` Conceptual Model for Plan composition and validity.
+- **Input and Acceptance**: Delivery Observations may concern schedule, progress, remaining work, quality, or requirement changes.
+- **Behavioral Rules**: The external AI owns their semantic interpretation and may revise any Plan element subject to Plan validity. Scope remains expressed through Goal, Acceptance Conditions, and Tasks rather than a separate required Scope element.
+- **References**: [related] `plan` Conceptual Model for Plan composition and validity.
 
 #### Scenario: Plan is delayed [happy]
 
@@ -113,7 +113,7 @@ Plan Control MUST make supplied Delivery Observations available to the external 
 
 Plan Control MUST validate the external AI response form and Proposed Plan structure without replacing or semantically re-evaluating a valid AI-owned assessment.
 
-- **振る舞いの規則**:
+- **Behavioral Rules**:
 
   | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
   |---|---|---|---|---|
@@ -122,8 +122,8 @@ Plan Control MUST validate the external AI response form and Proposed Plan struc
   | Equal proposal | Exactly one Revise exists | Proposed Plan equals the Snapshot | AI Contract Failure and no Assessment | None |
   | Invalid proposal | Exactly one Revise exists | Proposed Plan is invalid | AI Contract Failure and no Assessment | None |
   | Invalid classification | Response is empty, malformed, or contradictory | Zero or multiple outcomes exist | AI Contract Failure and no Assessment | None |
-- **失敗の扱い**: An empty, malformed, contradictory, or otherwise invalid response produces AI Contract Failure and no valid Plan Control Assessment.
-- **参照**: [related] `plan` Conceptual Model for exact Plan element identity and validity.
+- **Failure Handling**: An empty, malformed, contradictory, or otherwise invalid response produces AI Contract Failure and no valid Plan Control Assessment.
+- **References**: [related] `plan` Conceptual Model for exact Plan element identity and validity.
 
 #### Scenario: Proposed Plan equals the snapshot [boundary]
 
@@ -141,8 +141,8 @@ Plan Control MUST validate the external AI response form and Proposed Plan struc
 
 A Plan Control caller MUST be able to distinguish AI Boundary Failure, AI Contract Failure, valid Insufficient Information, and its own lifecycle outcome.
 
-- **振る舞いの規則**: A valid result remains associated with the Plan Snapshot supplied to that AI request. Detecting a newer authoritative Plan or revalidating a result before external application remains outside this capability.
-- **失敗の扱い**: AI unavailability, Provider-side timeout while the caller lifecycle remains active, or another failure before an AI response becomes AI Boundary Failure and returns no result. Caller cancellation or deadline expiration before a valid response returns the supplied lifecycle outcome and no result. A valid Insufficient Information response remains an assessment rather than a failure.
+- **Behavioral Rules**: A valid result remains associated with the Plan Snapshot supplied to that AI request. Detecting a newer authoritative Plan or revalidating a result before external application remains outside this capability.
+- **Failure Handling**: AI unavailability, Provider-side timeout while the caller lifecycle remains active, or another failure before an AI response becomes AI Boundary Failure and returns no result. Caller cancellation or deadline expiration before a valid response returns the supplied lifecycle outcome and no result. A valid Insufficient Information response remains an assessment rather than a failure.
 
 #### Scenario: AI is unavailable [error]
 
@@ -166,7 +166,7 @@ A Plan Control caller MUST be able to distinguish AI Boundary Failure, AI Contra
 
 Plan Control MUST remain an assessment capability and cause none of the external effects excluded by this Requirement.
 
-- **副作用**: Plan Control does not authorize or apply a Proposed Plan, perform Tasks, decide Delivery Acceptance, collect observations, persist an authoritative Plan, or expose a Change concept or contract. It does not prescribe how a result becomes effective outside this capability.
+- **Side Effects**: Plan Control does not authorize or apply a Proposed Plan, perform Tasks, decide Delivery Acceptance, collect observations, persist an authoritative Plan, or expose a Change concept or contract. It does not prescribe how a result becomes effective outside this capability.
 
 #### Scenario: Valid adjustment is proposed [happy]
 
@@ -178,8 +178,8 @@ Plan Control MUST remain an assessment capability and cause none of the external
 
 Plan Control MUST derive each assessment only from the Plan Snapshot, Delivery Observations, and AI response established for that decision.
 
-- **振る舞いの規則**: A previous runtime decision is never authoritative input to a later decision.
-- **副作用**: Plan Control retains no authoritative Plan or assessment state between requests.
+- **Behavioral Rules**: A previous runtime decision is never authoritative input to a later decision.
+- **Side Effects**: Plan Control retains no authoritative Plan or assessment state between requests.
 
 #### Scenario: Runtime state is discarded [compatibility]
 

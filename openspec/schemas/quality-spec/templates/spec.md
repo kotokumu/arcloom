@@ -6,24 +6,24 @@
 
 ### Requirement: <!-- stable-kebab-case-slug -->
 
-対象は、<!-- 規範の核心 -->する（MUST）。
+The subject MUST <!-- core normative guarantee -->.
 
-- **前提条件**: <!-- 操作を適用できる事前状態・権限・存在条件 -->
-- **入力と受理**: <!-- 入力、許容範囲、拒否条件 -->
-- **振る舞いの規則**: <!-- 判定、計算、状態遷移、出力 -->
-- **不変条件**: <!-- 各許容結果の前後で維持する条件 -->
-- **副作用**: <!-- 関連状態・履歴・通知への変化と、変化させないもの -->
-- **排他・冪等**: <!-- 同時実行、再送、原子性 -->
-- **失敗の扱い**: <!-- 利用者またはconsumerが観察できる失敗結果 -->
-- **参照**: <!-- optional: [interface]/[api]/[data]/[policy]/[external] SSOT path -->
+- **Preconditions**: <!-- prior state, permissions, and existence conditions required to apply the operation -->
+- **Input and Acceptance**: <!-- input, permitted range, and rejection conditions -->
+- **Behavioral Rules**: <!-- decisions, calculations, state transitions, and output -->
+- **Invariants**: <!-- conditions preserved before and after every permitted result -->
+- **Side Effects**: <!-- changes and non-changes to related state, history, and notifications -->
+- **Concurrency and Idempotency**: <!-- concurrent execution, retries, and atomicity -->
+- **Failure Handling**: <!-- failure result observable by a user or consumer -->
+- **References**: <!-- optional: [interface]/[api]/[data]/[policy]/[external] SSOT path -->
 
 <!--
-規則の構造に応じて、該当block内で次の表現を使う。
-- 連続または順序domain: Partition Table（Partition | Condition or range | Acceptance or result）
-- 条件の組み合わせ: Decision Table（Rule | Preconditions or state | Input or event condition | Output or response | Side Effects）
-- lifecycle: State Transition Table（Current state | Trigger or event | Guard | Next state | Output or Side Effects）
-- 常時成立する操作保証: `不変条件`内の規範的Invariant
-該当する表現だけを使う。規範表またはInvariantをmodel.mdやScenarioだけに残さない。
+Use these representations in the applicable block according to the rule's structure:
+- Continuous or ordered domain: Partition Table (Partition | Condition or range | Acceptance or result)
+- Combination of conditions: Decision Table (Rule | Preconditions or state | Input or event condition | Output or response | Side Effects)
+- Lifecycle: State Transition Table (Current state | Trigger or event | Guard | Next state | Output or Side Effects)
+- Continuously maintained operational guarantee: normative Invariant in `Invariants`
+Use only applicable representations. Do not leave a normative table or Invariant only in model.md or a Scenario.
 -->
 
 #### Scenario: <!-- concrete behavior --> [happy]
@@ -34,7 +34,7 @@
 
 ## MODIFIED Requirements
 
-<!-- 既存 Requirement の見出しから全 Scenario までをコピーし、完全な更新後の内容を書く。 -->
+<!-- Copy the existing Requirement from its heading through every Scenario and write the complete updated content. -->
 
 ## REMOVED Requirements
 
