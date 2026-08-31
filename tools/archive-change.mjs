@@ -146,148 +146,6 @@ function checkDeltaSections(delta) {
   return content;
 }
 
-function requirementScenarios(content) {
-  const { lines, visible } = structuralLines(content);
-  const requirements = new Map();
-  let current = null;
-
-  for (let index = 0; index < lines.length; index += 1) {
-    if (visible[index] === null) continue;
-    const requirement = visible[index].match(/^ {0,3}### Requirement:\s*(\S.*?)\s*$/);
-    if (requirement) {
-      current = { heading: requirement[1], scenarios: [] };
-      if (requirements.has(current.heading)) abort(`Duplicate Requirement heading: ${current.heading}`);
-      requirements.set(current.heading, current);
-      continue;
-    }
-    if (/^ {0,3}##(?:#)?\s+/.test(visible[index]) && !/^ {0,3}#### Scenario:/.test(visible[index])) {
-      if (/^ {0,3}##\s+/.test(visible[index])) current = null;
-      continue;
-    }
-    if (!current) continue;
-    const scenario = visible[index].match(/^ {0,3}#### Scenario:\s*(.*?)\s*$/);
-    if (scenario) current.scenarios.push({ heading: scenario[1], start: index });
-  }
-
-  const starts = [...requirements.values()].flatMap((requirement) => requirement.scenarios)
-    .sort((left, right) => left.start - right.start);
-  for (let index = 0; index < starts.length; index += 1) {
-    const scenario = starts[index];
-    const nextScenario = starts[index + 1]?.start ?? lines.length;
-    let end = nextScenario;
-    for (let cursor = scenario.start + 1; cursor < nextScenario; cursor += 1) {
-      if (visible[cursor]?.match(/^ {0,3}### Requirement:/) || visible[cursor]?.match(/^ {0,3}##\s+/)) {
-        end = cursor;
-        break;
-      }
-    }
-    scenario.end = end;
-  }
-  return { lines, requirements };
-}
-
-function deltaRenames(content) {
-  const renames = new Map();
-  const lines = content.replace(/\r\n?/g, '\n').split('\n');
-  let from = null;
-  for (const line of lines) {
-    const fromMatch = line.match(/^\s*-?\s*FROM:\s*`?###\s*Requirement:\s*(.+?)`?\s*$/);
-    const toMatch = line.match(/^\s*-?\s*TO:\s*`?###\s*Requirement:\s*(.+?)`?\s*$/);
-    if (fromMatch) from = fromMatch[1].trim();
-    if (toMatch && from) {
-      renames.set(toMatch[1].trim(), from);
-      from = null;
-    }
-  }
-  return renames;
-}
-
-function loadScenarioRetirements(changeDir, deltas, mainSpecsRoot) {
-  const manifestFile = path.join(changeDir, 'scenario-retirements.json');
-  if (!fs.existsSync(manifestFile)) return [];
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  } catch (error) {
-    abort(`Invalid scenario-retirements.json: ${error.message}`);
-  }
-  if (manifest.version !== 1) abort(`Unsupported scenario retirement manifest version: ${manifest.version}`);
-  if (!Array.isArray(manifest.retirements)) abort('scenario-retirements.json must contain a retirements array.');
-
-  const deltaByCapability = new Map(deltas.map((delta) => [delta.capability, delta]));
-  const seen = new Set();
-  const counts = new Map();
-  const publishedScenarioCounts = new Map();
-  const retirements = [];
-  for (const entry of manifest.retirements) {
-    if (!entry || typeof entry.capability !== 'string' || typeof entry.requirement !== 'string' ||
-        typeof entry.scenario !== 'string') {
-      abort('Every scenario retirement must contain string capability, requirement, and scenario fields.');
-    }
-    const identity = `${entry.capability}\0${entry.requirement}\0${entry.scenario}`;
-    if (seen.has(identity)) abort(`Duplicate scenario retirement: ${entry.capability}/${entry.requirement}/${entry.scenario}`);
-    seen.add(identity);
-    const delta = deltaByCapability.get(entry.capability);
-    if (!delta) abort(`Scenario retirement capability has no delta spec: ${entry.capability}`);
-    const mainFile = path.join(mainSpecsRoot, ...entry.capability.split('/'), 'spec.md');
-    if (!fs.existsSync(mainFile)) abort(`Scenario retirement capability does not exist: ${entry.capability}`);
-    const main = requirementScenarios(fs.readFileSync(mainFile, 'utf8'));
-    const deltaStructure = requirementScenarios(delta.content);
-    const currentRequirementName = deltaRenames(delta.content).get(entry.requirement) ?? entry.requirement;
-    const mainRequirement = main.requirements.get(currentRequirementName);
-    const deltaRequirement = deltaStructure.requirements.get(entry.requirement);
-    if (!mainRequirement) abort(`Scenario retirement Requirement does not exist: ${entry.capability}/${entry.requirement}`);
-    if (!deltaRequirement) abort(`Scenario retirement Requirement is not MODIFIED by its delta: ${entry.capability}/${entry.requirement}`);
-    if (!mainRequirement.scenarios.some((scenario) => scenario.heading === entry.scenario)) {
-      abort(`Scenario retirement does not match the current main spec: ${entry.capability}/${entry.requirement}/${entry.scenario}`);
-    }
-    if (!deltaRequirement.scenarios.some((scenario) => scenario.heading === entry.scenario)) {
-      abort(`Scenario retirement does not match the delta spec: ${entry.capability}/${entry.requirement}/${entry.scenario}`);
-    }
-    const requirementIdentity = `${entry.capability}\0${entry.requirement}`;
-    counts.set(requirementIdentity, (counts.get(requirementIdentity) ?? 0) + 1);
-    publishedScenarioCounts.set(requirementIdentity, deltaRequirement.scenarios.length);
-    retirements.push({ ...entry, currentRequirementName, mainFile });
-  }
-  for (const retirement of retirements) {
-    const requirementIdentity = `${retirement.capability}\0${retirement.requirement}`;
-    if (publishedScenarioCounts.get(requirementIdentity) <= counts.get(requirementIdentity)) {
-      abort(`Scenario retirement would leave no Scenario: ${retirement.capability}/${retirement.requirement}`);
-    }
-  }
-  return retirements;
-}
-
-function applyScenarioRetirements(retirements) {
-  const byFile = new Map();
-  for (const retirement of retirements) {
-    const entries = byFile.get(retirement.mainFile) ?? [];
-    entries.push(retirement);
-    byFile.set(retirement.mainFile, entries);
-  }
-  for (const [file, entries] of byFile) {
-    const structure = requirementScenarios(fs.readFileSync(file, 'utf8'));
-    const ranges = entries.map((entry) => {
-      const requirement = structure.requirements.get(entry.requirement);
-      const scenario = requirement?.scenarios.find((candidate) => candidate.heading === entry.scenario);
-      if (!scenario) abort(`Published Scenario is missing during retirement: ${entry.capability}/${entry.requirement}/${entry.scenario}`);
-      return scenario;
-    }).sort((left, right) => right.start - left.start);
-    for (const range of ranges) structure.lines.splice(range.start, range.end - range.start);
-    writeAtomically(file, `${structure.lines.join('\n').trimEnd()}\n`);
-  }
-}
-
-function runStructureValidation(root) {
-  const command = path.join(root, 'tools', 'validate-spec-structure.mjs');
-  const result = spawnSync(process.execPath, [command, root], { cwd: root, encoding: 'utf8' });
-  if (result.error) abort(`Failed to execute specification structure validator: ${result.error.message}`);
-  if (result.status !== 0) {
-    const detail = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
-    abort(`Specification structure validation failed${detail ? `:\n${detail}` : '.'}`);
-  }
-}
-
 function stripHtmlComments(text) {
   const withoutClosedComments = text.replace(/<!--[\s\S]*?--!?>/g, '');
   const unterminatedComment = withoutClosedComments.indexOf('<!--');
@@ -535,7 +393,6 @@ function main() {
         `openspec/changes/${changeName}/specs/${capability}/spec.md.`);
     }
   }
-  const retirements = loadScenarioRetirements(changeDir, deltas, mainSpecsRoot);
 
   runOpenSpec(root, ['schema', 'validate', 'quality-spec']);
   runOpenSpec(root, ['validate', '--specs', '--strict', '--json']);
@@ -591,10 +448,9 @@ function main() {
     const archiveOutput = runOpenSpec(root, ['archive', changeName, '--yes', '--json']);
     archiveResult = JSON.parse(archiveOutput);
     if (!archiveResult.archive?.path) abort('OpenSpec did not return an archive path.');
-    applyScenarioRetirements(retirements);
     publishedStates = captureStates(snapshots);
+
     runOpenSpec(root, ['validate', '--specs', '--strict', '--json']);
-    runStructureValidation(root);
 
     process.stdout.write(`${JSON.stringify(archiveResult, null, 2)}\n`);
   } catch (error) {
