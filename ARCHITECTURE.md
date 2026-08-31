@@ -21,7 +21,7 @@ This document does not ratify the file structure of an existing implementation a
 
 ### 2.1 Do Not Own the Source of Truth
 
-External systems own the authoritative meaning, representation, permissions, and lifecycle of the facts required for Reconciliation. Arcloom holds no durable business or control state and observes external facts without requiring an Arcloom-owned representation.
+Arcloom does not become the authoritative owner of durable business state or control state. External systems that manage the meaning, permissions, and lifecycle of the facts required for Reconciliation own their authoritative sources.
 
 ### 2.2 Separate Reconciliation, Control, and External Interaction
 
@@ -31,7 +31,11 @@ Reconciliation is one target-specific, read-only judgment that relates expected 
 
 Do not fix the way Delivery and Development Improvement proceed to a single workflow. Preserve a structure in which consumers can combine Arcloom Components and external Actors as needed.
 
-### 2.4 Define Boundaries by Responsibility and Ownership
+### 2.4 Leave No External Dependency on Arcloom
+
+External facts remain meaningful and observable without Arcloom; external systems do not retain Arcloom-owned representations for Arcloom to observe them.
+
+### 2.5 Define Boundaries by Responsibility and Ownership
 
 Component boundaries are defined by the owners of Concepts, responsibilities, invariants, decisions, and external contracts, not by processing order or a list of capabilities.
 
