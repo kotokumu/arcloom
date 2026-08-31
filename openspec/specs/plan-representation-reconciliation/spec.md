@@ -56,12 +56,6 @@ A reconciliation caller MUST receive a result concerning one valid expected Plan
 - **WHEN** a caller configures reconciliation
 - **THEN** configuration fails with the stable invalid-observer category and no observation occurs
 
-#### Scenario: Zero Controller is called
-
-- **GIVEN** the caller has no usable configured reconciliation boundary and its lifecycle remains active
-- **WHEN** the caller requests reconciliation
-- **THEN** the request fails with the stable invalid-observer category, performs no observation, and returns no valid result
-
 #### Scenario: Expected Plan is invalid
 
 - **GIVEN** the supplied expected Plan is invalid

@@ -116,7 +116,7 @@ A Plan consumer MUST receive ordered, exact-identity Plan Collections whose memb
 - **WHEN** the consumer validates their collection
 - **THEN** exact duplicates produce the same duplicate violation as Plan validation and an empty collection satisfies the collection rule
 
-#### Scenario: Standalone collection contains a zero element
+#### Scenario: Standalone collection contains an invalid member
 
 - **GIVEN** an independently validated collection contains an invalid Acceptance Condition or Task at a known input index
 - **WHEN** the consumer validates the collection
@@ -168,13 +168,13 @@ A Plan consumer MUST be able to distinguish valid Plan values from invalid input
 - **WHEN** a consumer validates the input
 - **THEN** one applicable Plan Validation Violation is returned without a promised ordering among the violations
 
-#### Scenario: Constructed Plan validity
+#### Scenario: Valid Plan reports validity
 
 - **GIVEN** a Plan satisfies every Plan invariant
 - **WHEN** a consumer asks whether it is valid
 - **THEN** the Plan reports valid
 
-#### Scenario: Zero Plan validity
+#### Scenario: Invalid Plan reports invalidity
 
 - **GIVEN** a Plan value does not satisfy the Plan invariants
 - **WHEN** a consumer asks whether it is valid
