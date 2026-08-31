@@ -60,7 +60,7 @@ Each Plan Attempt MUST begin with one fresh snapshot observation of its bound ex
 - **WHEN** a Plan Attempt begins
 - **THEN** it returns a stable Plan reconciliation boundary failure without snapshot observation or Plan Control Assessment
 
-#### Scenario: PRL-FPO-5 Exact target binding is used [isolation]
+#### Scenario: PRL-FPO-5 Exact target binding is used [boundary]
 
 - **GIVEN** two Plan Target Identities resolve to distinct self-identifying Snapshot and Delivery Observation bindings
 - **WHEN** each Plan Attempt runs
