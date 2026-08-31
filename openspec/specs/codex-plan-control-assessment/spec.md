@@ -95,7 +95,7 @@ Each Codex-backed assessment MUST be independent of prior and concurrent assessm
 A cancelled in-progress assessment MUST establish no successful judgment and terminate within its accepted finite shutdown bound.
 
 - **入力と受理**: The Host supplies one Codex assessment interaction with a positive finite shutdown bound.
-- **状態と遷移**: Success is established only after the correlated Turn completes, one translatable final output is established, and caller cancellation has not already occurred. Cancellation after that establishment does not replace success.
+- **振る舞いの規則**: Success is established only after the correlated Turn completes, one translatable final output is established, and caller cancellation has not already occurred. Cancellation after that establishment does not replace success.
 - **失敗の扱い**: Cancellation before success establishes no assessment and returns the caller lifecycle outcome no later than that bound plus scheduling tolerance. A concurrent shutdown failure remains observable without hiding the caller lifecycle outcome.
 
 #### Scenario: Assessment is cancelled [error]
@@ -109,8 +109,7 @@ A cancelled in-progress assessment MUST establish no successful judgment and ter
 The capability MUST begin an external-AI Turn only with Safe Host Configuration and MUST provide no input that relaxes its fixed read-only constraints.
 
 - **前提条件**: The Host supplies an absolute executable path for Codex 0.149.1 and a positive finite shutdown bound.
-- **入力と受理**: The executable path is absolute and identifies Codex 0.149.1, the shutdown bound is positive and finite, and mutable request paths are valid when used. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox.
-- **構成の隔離**: Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
+- **入力と受理**: The executable path is absolute and identifies Codex 0.149.1, the shutdown bound is positive and finite, and mutable request paths are valid when used. Every Turn fixes approval policy to `never` and uses a read-only sandbox with agent-initiated network access disabled. Read-only local tool activity may occur within that sandbox. Effective MCP servers, Apps, Hooks, and Web Search are rejected before starting a Turn. These constraints are not caller-relaxable.
 - **失敗の扱い**: Incompatible, invalid, or unsafe local input prevents an external-AI Turn. A preliminary Host interaction required to establish compatibility produces no assessment Turn when incompatibility is established.
 
 #### Scenario: Configuration is unsafe [error]
