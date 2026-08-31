@@ -9,8 +9,10 @@ on:
       - "openspec/**"
       - "tools/archive-change.mjs"
       - "tools/archive-change.test.mjs"
-      - "tools/validate-spec-structure.mjs"
-      - "tools/validate-spec-structure.test.mjs"
+      - ".remarkignore"
+      - ".remarkrc.mjs"
+      - "package.json"
+      - "package-lock.json"
   push:
     branches:
       - main
@@ -30,6 +32,10 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "20"
+          cache: npm
+
+      - name: Install Markdown tooling
+        run: npm ci
 
       - name: Install OpenSpec
         run: npm install --global @fission-ai/openspec@1.10.0
@@ -40,11 +46,8 @@ jobs:
       - name: Validate main specs
         run: openspec validate --specs --strict
 
-      - name: Test specification structure validator
-        run: node --test tools/validate-spec-structure.test.mjs
-
-      - name: Validate main-spec structure
-        run: node tools/validate-spec-structure.mjs
+      - name: Lint Markdown
+        run: npm run lint:markdown
 
       - name: Validate active changes
         run: openspec validate --changes --strict
