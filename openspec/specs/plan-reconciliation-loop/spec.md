@@ -25,9 +25,9 @@ Both successful branches select Await Another Request. The Attempt performs no A
 
 Each Plan Attempt MUST begin with one fresh snapshot observation of its bound external Plan target and preserve every successful snapshot outcome in exactly one explicit Plan Attempt Result branch.
 
-- **前提条件**: Before control starts, the caller supplies valid Plan Target construction, an exact accepted target kind, a non-nil Plan Target Resolver, and a non-nil Plan Control Assessor. A successful binding contains the exact requested Target Identity with one target-bound snapshot Observer and Delivery Observer. The Resolver observes the supplied caller context and returns within its documented cancellation bound after that context ends.
+- **前提条件**: Before control starts, the caller supplies a valid Plan Target, an exact accepted target kind, a Plan Target Resolver, and a Plan Control Assessor. A successful binding contains the exact requested Target Identity with one target-bound snapshot Observer and Delivery Observer. The Resolver observes the supplied caller context and returns within its documented cancellation bound after that context ends.
 - **振る舞いの規則**: The Plan Attempt resolves that binding, validates exact identity equality, invokes the snapshot Observer exactly once, and establishes the fresh Snapshot before any Delivery Observation. Earlier snapshots and request causes are not fact sources. A successful Snapshot without a valid current Plan establishes Current Plan Not Established with no Delivery Observation, no Assessment request, and no semantic Plan Reconciliation. A successful Snapshot with a valid current Plan may establish only Current Plan Assessed after satisfying [[plan-reconciliation-loop/current-plan-assessment]].
-- **失敗の扱い**: Invalid Plan Target, target-kind, Resolver, or Assessor configuration is rejected before an Attempt boundary or Controller lifecycle exists. Unavailable, invalid, or identity-mismatched resolved binding and Delivery Observation failure are runtime Plan Attempt failures with stable Plan-owned codes and do not expose supplied errors through error unwrapping. Existing Snapshot and Plan Control failures preserve their existing contracts. A caller context error observed before or after each boundary call wins unchanged. Every Attempt failure returns zero Plan Attempt Result and zero Directive.
+- **失敗の扱い**: Invalid Plan Target, target-kind, Resolver, or Assessor configuration is rejected before an Attempt boundary or Controller lifecycle exists. Unavailable, invalid, or identity-mismatched resolved binding and Delivery Observation failure are Plan Attempt failures with stable Plan-owned codes and do not expose an underlying boundary failure as their own identity. Existing Snapshot and Plan Control failures preserve their existing contracts. Caller cancellation observed before or after each boundary interaction takes precedence. An Attempt failure establishes neither a Plan Attempt Result nor a Directive.
 - **参照**: [[reconciliation-control-loop/level-based-attempt]]; [[github-plan-snapshot/current-authoritative-snapshot]]; [[github-plan-snapshot/current-plan-eligibility]]
 
 #### Scenario: PRL-FPO-1 Current Plan is established [happy]
@@ -38,9 +38,9 @@ Each Plan Attempt MUST begin with one fresh snapshot observation of its bound ex
 
 #### Scenario: PRL-FPO-0 Invalid Plan reconciliation configuration is rejected [error]
 
-- **GIVEN** Plan Target construction or Plan Attempt boundary construction receives an invalid target identity, missing observation boundary, invalid accepted kind, nil Resolver, or nil Assessor
-- **WHEN** the caller constructs that value or Plan Attempt boundary
-- **THEN** construction returns the corresponding stable setup error before an Attempt boundary or Controller lifecycle exists
+- **GIVEN** a Plan Target or Plan Attempt is configured with an invalid target identity, a missing observation boundary, an invalid accepted kind, no Resolver, or no Assessor
+- **WHEN** the caller submits that configuration for use
+- **THEN** it is rejected with the corresponding stable setup failure before any Attempt or Controller lifecycle begins
 
 #### Scenario: PRL-FPO-2 Snapshot has no current Plan [boundary]
 

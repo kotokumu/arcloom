@@ -109,7 +109,7 @@ The control loop MUST schedule internal reevaluation after a successful Attempt 
 - **入力と受理**: A successful completion contains exactly Await Another Request, Reevaluate Immediately, or Reevaluate After Delay with one positive finite delay.
 - **振る舞いの規則**: Await creates no internal eligibility; Immediate creates eligibility without waiting for another request; Delay creates eligibility after its duration. A new request may make a delayed target eligible earlier.
 - **排他・冪等**: Request eligibility and Directive eligibility coalesce without creating same-target overlap or duplicate obligations.
-- **失敗の扱い**: The delayed-Directive constructor rejects a non-positive delay. If the target-specific Attempt boundary returns the unconstructed zero Directive with nil error, the Controller produces Control Directive Rejected, distinguishable from Target Attempt Failed, and schedules no Directive-based reevaluation.
+- **失敗の扱い**: A delayed Directive with a non-positive delay is rejected. If an otherwise successful target-specific Attempt provides no valid Directive, the Controller produces Control Directive Rejected, distinguishable from Target Attempt Failed, and schedules no Directive-based reevaluation.
 
 #### Scenario: RCL-ECD-1 Attempt awaits another request [happy]
 
@@ -135,16 +135,16 @@ The control loop MUST schedule internal reevaluation after a successful Attempt 
 - **WHEN** the Host requests it before the delay expires
 - **THEN** it may become eligible immediately and the later delay does not create another pending obligation
 
-#### Scenario: RCL-ECD-5 Non-positive delayed directive is rejected at construction [error]
+#### Scenario: RCL-ECD-5 Non-positive delayed directive is rejected [error]
 
 - **GIVEN** a caller supplies zero or negative duration for Reevaluate After Delay
-- **WHEN** it constructs the Directive
-- **THEN** construction is rejected and no Directive exists to return from an Attempt
+- **WHEN** it submits the delayed Directive for use
+- **THEN** the Directive is rejected and cannot direct an Attempt reevaluation
 
-#### Scenario: RCL-ECD-6 Unconstructed directive is rejected by control [error]
+#### Scenario: RCL-ECD-6 Missing directive is rejected by control [error]
 
-- **GIVEN** a target-specific Attempt boundary returns a successful value, the zero Directive, and nil error
-- **WHEN** the control loop processes the return
+- **GIVEN** a target-specific Attempt reports success without a valid Directive
+- **WHEN** the control loop processes the outcome
 - **THEN** it reports one target-bound Control Directive Rejected failure, exposes no Completion, and schedules no Directive-based Attempt
 
 #### Scenario: RCL-ECD-7 Directive is committed after Completion delivery [boundary]
@@ -163,7 +163,7 @@ A successful Completion MUST preserve its target-owned value without requiring a
 #### Scenario: RCL-TRI-1 Unrelated result types use control [compatibility]
 
 - **GIVEN** two Controller instances use target-specific Attempt boundaries with unrelated successful-value meanings
-- **WHEN** each successfully completes through its typed control loop
+- **WHEN** each successfully completes through its Controller
 - **THEN** each Host consumer receives its target-specific result unchanged and scheduling follows only its Control Directive
 
 #### Scenario: RCL-TRI-2 Successful Attempt performs no Reconciliation [boundary]
@@ -206,8 +206,8 @@ An Attempt Failure MUST remain target-bound, distinguish Target Attempt Failed f
 
 #### Scenario: RCL-FNR-5 Target Attempt error outranks returned values [error]
 
-- **GIVEN** a target-specific Attempt boundary returns a non-nil error together with any successful value and any valid or invalid Directive value
-- **WHEN** the control loop processes that return
+- **GIVEN** a target-specific Attempt reports failure together with any nominal successful value and any valid or invalid Directive
+- **WHEN** the control loop processes that outcome
 - **THEN** it reports one Target Attempt Failed outcome preserving the exact target and error cause, exposes no Completion or Directive, and schedules no Directive-based Attempt
 
 ### Requirement: caller-lifecycle
