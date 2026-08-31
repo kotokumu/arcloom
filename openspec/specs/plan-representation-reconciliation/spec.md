@@ -295,17 +295,17 @@ A reconciliation caller MUST be able to distinguish unavailable external facts, 
 - **WHEN** the caller cancels or its deadline expires
 - **THEN** reconciliation returns the caller lifecycle outcome and no valid result
 
-#### Scenario: Caller context is nil
+#### Scenario: Caller lifecycle input is absent
 
 - **GIVEN** no valid caller lifecycle input accompanies the request
 - **WHEN** a caller requests reconciliation
-- **THEN** the request fails with the stable invalid-context category, performs no observation, and returns no valid result
+- **THEN** the request fails with the stable invalid caller-lifecycle category, performs no observation, and returns no valid result
 
-#### Scenario: Nil context and invalid expected Plan coexist
+#### Scenario: Missing caller lifecycle and invalid expected Plan coexist
 
 - **GIVEN** caller lifecycle input is absent and the expected Plan is invalid
 - **WHEN** a caller requests reconciliation
-- **THEN** the stable invalid-context category takes precedence, no observation occurs, and no valid result is returned
+- **THEN** the stable invalid caller-lifecycle category takes precedence, no observation occurs, and no valid result is returned
 
 #### Scenario: Cancellation coincides with observer failure
 
@@ -319,7 +319,7 @@ A reconciliation caller MUST be able to distinguish unavailable external facts, 
 - **WHEN** the caller cancels before reconciliation returns
 - **THEN** reconciliation returns the caller lifecycle outcome, performs no observation, and returns no valid result
 
-#### Scenario: Observer returns an unrelated context error
+#### Scenario: Observer reports unrelated lifecycle termination
 
 - **GIVEN** the caller lifecycle remains active
 - **WHEN** the observation source reports cancellation or deadline expiration
