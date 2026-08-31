@@ -8,7 +8,7 @@ context: |
   - ARCHITECTURE.md defines system boundaries, Component responsibilities, ownership, and dependency rules.
   - openspec/specs/ defines accepted detailed product behavior.
   - docs/DEVELOPMENT.md governs product design, implementation, testing, and review.
-  Repository administration and development-environment maintenance do not require OpenSpec unless they change product behavior or structure.
+  OpenSpec changes are limited to changes in accepted detailed product behavior.
 
   Knowledge index:
   - Specification rules and publication protocol: openspec/specs/README.md

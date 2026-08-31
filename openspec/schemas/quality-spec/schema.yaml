@@ -19,12 +19,8 @@ artifacts:
       Record decisions required to begin modeling when they can change scope, behavior,
       or acceptance. Do not guess.
 
-      Do not create an OpenSpec Change for repository administration, development
-      tooling, CI, formatting, wording-only maintenance, or an implementation refactor
-      that changes no product behavior or structure. When a product Change alters a
-      Concept, responsibility, state owner, Component boundary, or public contract but
-      leaves detailed observable behavior unchanged, declare no capabilities and set
-      skip_specs: true in .openspec.yaml.
+      If no accepted detailed product behavior changes, stop because the work does
+      not belong in OpenSpec. Do not invent a requirement to satisfy the workflow.
 
       Keep technical implementation choices out of this artifact.
     requires: []
@@ -55,8 +51,7 @@ artifacts:
       If an unresolved decision changes a requirement's meaning, scope, or observable
       result, stop before specs and obtain a decision. An empty Unresolved Decisions
       section means that no blocking ambiguity remains; it does not mean assumptions
-      may be hidden. For skip_specs changes, identify the changed product structure and
-      explain why no accepted detailed observable behavior changes.
+      may be hidden.
     requires:
       - proposal
 

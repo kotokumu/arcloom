@@ -35,5 +35,12 @@ jobs:
       - name: Install static analysis tools
         run: npm ci
 
+      - name: Reject specification-less changes
+        run: |
+          if grep -R -n --include='.openspec.yaml' 'skip_specs' openspec/changes; then
+            echo 'OpenSpec changes must include changes to accepted detailed product behavior.' >&2
+            exit 1
+          fi
+
       - name: Analyze Markdown and OpenSpec
         run: npm run lint

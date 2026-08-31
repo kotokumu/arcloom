@@ -16,13 +16,13 @@ This document does not prescribe a specific programming language, framework, or 
 
 Before starting product design, review this document. Review `PRODUCT.md` when the Change affects the product concept, scope, value, capabilities, or product principles. Review `ARCHITECTURE.md` when the Change affects system boundaries, Component responsibilities, ownership, dependency rules, Ports, or external Contexts. Design takes as input the rules in the documents selected for the Change.
 
-During product design, create or update an OpenSpec change for each product Change. Its `design.md` is the DesignDoc required by this document. Do not start product implementation until the DesignDoc review is complete.
+Create or update an OpenSpec change only when accepted detailed product behavior changes. Its `design.md` records the design required to realize that behavior. Do not start product implementation until the DesignDoc review is complete.
 
-Do not omit `design.md` even for a small product Change that follows an existing design. Record `N/A` with a reason for sections that do not apply. An OpenSpec change is not required for work outside this document's scope or for Changes that do not involve product implementation, such as wording corrections.
+Do not omit `design.md` even for a small change to accepted detailed product behavior that follows an existing design. Record `N/A` with a reason for sections that do not apply.
 
 ### 1.3 Responsibility of a DesignDoc
 
-The OpenSpec change's `design.md` records the design needed to implement one product Change and reach a state where its functional and non-functional aspects can be verified. It includes applicable content among the Change purpose, out of scope, behavior, conceptual model, responsibility assignment, Package design, Interface design, test specification, and design decisions specific to the Change.
+The OpenSpec change's `design.md` records the design needed to implement one change to accepted detailed product behavior and reach a state where its functional and non-functional aspects can be verified. It includes applicable content among the Change purpose, out of scope, behavior, conceptual model, responsibility assignment, Package design, Interface design, test specification, and design decisions specific to the Change.
 
 When a Change affects Architecture principles, system boundaries, Component responsibilities, ownership relationships, or dependency rules, record the decision and impact in the DesignDoc and update the Architecture document at the same time.
 
