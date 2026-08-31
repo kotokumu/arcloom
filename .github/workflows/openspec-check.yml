@@ -9,6 +9,7 @@ on:
       - "openspec/**"
       - ".remarkignore"
       - ".remarkrc.mjs"
+      - "remark-rules/**"
       - "package.json"
       - "package-lock.json"
   push:
