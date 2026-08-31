@@ -5,13 +5,20 @@
   "scripts": {
     "lint": "npm run lint:markdown && npm run lint:openspec",
     "lint:markdown": "remark . --quiet --frail",
-    "lint:openspec": "openspec schema validate quality-spec && openspec validate --specs --strict --no-interactive && openspec validate --changes --strict --no-interactive && openspec validate --archived --strict --no-interactive"
+    "lint:openspec": "openspec schema validate quality-spec && openspec validate --specs --strict --no-interactive && openspec validate --changes --strict --no-interactive && openspec validate --archived --strict --no-interactive",
+    "test": "node --test remark-rules/arcloom-main-specification/*.test.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "1.11.0",
+    "mdast-util-to-string": "4.0.0",
     "remark-cli": "12.0.1",
     "remark-gfm": "4.0.1",
     "remark-lint-no-undefined-references": "5.0.2",
-    "remark-preset-lint-recommended": "7.0.1"
+    "remark-preset-lint-recommended": "7.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5",
+    "unified-lint-rule": "3.0.1",
+    "unist-util-visit": "5.1.0",
+    "vfile": "6.0.3"
   }
 }

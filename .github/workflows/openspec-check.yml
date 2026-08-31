@@ -9,6 +9,7 @@ on:
       - "openspec/**"
       - ".remarkignore"
       - ".remarkrc.mjs"
+      - "remark-rules/**"
       - "package.json"
       - "package-lock.json"
   push:
@@ -44,3 +45,6 @@ jobs:
 
       - name: Analyze Markdown and OpenSpec
         run: npm run lint
+
+      - name: Test Arcloom Markdown rules
+        run: npm test
