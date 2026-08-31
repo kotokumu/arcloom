@@ -44,3 +44,6 @@ jobs:
 
       - name: Analyze Markdown and OpenSpec
         run: npm run lint
+
+      - name: Test Arcloom Markdown rules
+        run: npm test

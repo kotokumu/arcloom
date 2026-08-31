@@ -94,6 +94,8 @@ The subject MUST <core normative guarantee>.
 
 The code above is an original example that demonstrates the writing format. Use only the necessary blocks and preserve the order shown in the example. Items in the same block use the same classification axis.
 
+The [Arcloom main-specification remark rule](https://github.com/kotokumu/arcloom/blob/main/remark-rules/arcloom-main-specification/index.mjs) verifies the machine-checkable Requirement heading, block, and Scenario-tag constraints from this document against the parsed Markdown tree.
+
 Separate Requirements when their guarantees change or can be verified independently. Do not separate them when only the entry point or technical path differs and the consumer observes the same guarantee.
 
 Write a non-functional Requirement only when its subject, conditions, measurement method, threshold, and failure guarantee are settled. Do not make unquantified adjectives such as "fast," "secure," or "high-volume" normative by themselves.
@@ -200,6 +202,7 @@ Git commits and PR review keep the Conceptual Model update, implementation, and 
 - No Scenario adds a norm absent from its Requirement or substitutes for a normative representation.
 - Norms contain no implementation detail, incidental detail of the current implementation, defect, or unresolved matter.
 - Related Requirements and other SSOTs are traceable from each Requirement's `References` block.
+- `npm run lint:markdown` succeeds.
 - `openspec validate <change-name> --strict --no-interactive` succeeds before archive.
 - All P0 and P1 findings from `REVIEW.md` are resolved.
 - `npm run lint:openspec` succeeds after the official archive command.
