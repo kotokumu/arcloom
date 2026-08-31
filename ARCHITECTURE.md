@@ -33,7 +33,7 @@ Do not fix the way Delivery and Development Improvement proceed to a single work
 
 ### 2.4 Leave No External Dependency on Arcloom
 
-Even if Arcloom stops or is removed, do not impair the meaning or availability of facts owned by external systems.
+External facts remain meaningful and observable without Arcloom; external systems do not retain Arcloom-owned representations for Arcloom to observe them.
 
 ### 2.5 Define Boundaries by Responsibility and Ownership
 
