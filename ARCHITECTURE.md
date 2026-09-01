@@ -315,37 +315,32 @@ Feedback Controllers are independent by default. A real dependency between them 
 
 ## 7. Package Namespace
 
-The required Package namespace makes ownership explicit. The repository name and the product namespace are intentionally both `arcloom`.
+The required top-level Package namespace follows ownership boundaries. The repository and its Core Domain Package are intentionally both named `arcloom`.
 
 ```text
-github.com/kotokumu/arcloom/arcloom
-├── reconciliationcontrol
-├── authorization
+github.com/kotokumu/arcloom
+├── arcloom
+│   ├── feedbackloop
+│   ├── reconciliation
+│   ├── authorization
+│   └── controlruntime
 ├── controllers
-│   └── plan
-│       ├── attempt
-│       ├── control
-│       ├── snapshot
-│       └── representation
-├── externalrequests
-│   └── plan
-└── contexts
-    ├── aiagent
-    │   └── codex
-    │       └── plancontrol
-    └── planning
-        └── github
-            └── plan
+│   ├── plan
+│   ├── tokenoptimization
+│   └── cidurationoptimization
+└── providers
+    ├── github
+    └── codex
 ```
 
 The namespace follows these rules:
 
-- `arcloom/reconciliationcontrol` and `arcloom/authorization` implement Core Domain Component responsibilities without representing the entire Core Domain as one Package.
-- `arcloom/controllers/<controller>` owns the target-specific meaning of one Feedback Controller. The root Package may implement cohesive Concepts such as Plan; child Packages exist only for independently protected Component boundaries.
-- `arcloom/externalrequests/<target>` owns target-specific request meaning, Authorization association, and request-interaction uncertainty that remain outside Feedback Controllers and External Context Adapters.
-- `arcloom/contexts/<external-context>/<provider>/<consumer-purpose>` contains External Context Adapters. Provider-specific details do not enter `arcloom/reconciliationcontrol`, `arcloom/authorization`, or `arcloom/controllers`.
-- A new Feedback Controller is added beneath `arcloom/controllers`; its internal Package structure follows its own accepted responsibilities rather than copying the Plan Controller structure.
+- `arcloom/` is the Core Domain boundary. Its Packages implement cohesive Feedback Loop Control responsibilities without depending on Feedback Controllers or Providers.
+- `controllers/` contains Feedback subdomains. Each `controllers/<controller>` directory is one Feedback Controller that owns the target-specific meaning required to solve one feedback problem and may contain multiple Components and Packages.
+- A new Feedback Controller is added beneath `controllers/`. Its internal Package structure follows its own accepted responsibilities rather than copying another Controller structure.
+- `providers/<provider>` contains Provider-specific External Context Adapters. Provider directories do not define a Provider-wide Interface or move consumer-owned decisions into adapter Packages.
+- Provider-specific details do not enter `arcloom/` or `controllers/`.
 - Capability names and technical responsibility categories such as `reconciliation`, `observation`, or `application` do not become repository-wide top-level directories.
-- A Composition Root remains outside reusable domain Packages and may depend on all implementations it wires.
+- A Composition Root may depend on all implementations it wires. The architecture does not assign it a fixed top-level Package.
 
 This namespace does not require one Package per Component. A Package split requires a real consumer and a constraint that the boundary protects. A Component may use multiple Packages, and one Package may implement multiple cohesive responsibilities that change for the same reason.
