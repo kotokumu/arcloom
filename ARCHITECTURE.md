@@ -33,7 +33,7 @@ The architecture models the following Core Domain elements without making them p
 
 | Term | Meaning |
 |---|---|
-| Reconciliation Result | The immutable target-specific outcome established by one Reconciliation. It is handed over carrying the expectation version, the Observations it used (with their source and observation time), and the identity of whoever established the judgment — the Component itself, or a delegated external AI whose judgment is not required to be reproducible — so its receiver can verify it on its own. It is an invocation-local value; whether to keep it is the receiver's choice. Its concrete meaning belongs to the Reconciliation Component inside the applicable Feedback Controller. |
+| Reconciliation Result | The immutable target-specific outcome established by one Reconciliation. Its concrete meaning belongs to the Reconciliation Component inside the applicable Feedback Controller. |
 | Semantic Result Destination | The subsequent decision or improvement for which a Reconciliation Result is intended. It does not prescribe the mechanism that routes the Result. |
 
 The architecture uses the following structural terms.
@@ -46,21 +46,13 @@ The architecture uses the following structural terms.
 | External Context | A boundary outside Arcloom that owns the meaning, authority, permissions, or lifecycle of external facts and actions. |
 | External Context Adapter | A Component that implements consumer-owned Ports using one Provider-specific contract without taking ownership of consumer decisions. |
 | Composition Root | The outermost code that selects implementations and wires Components. It owns no domain decision or control policy. |
-| Host | An external system that embeds Arcloom and invokes its composed Capabilities. It carries the user's declarations and decisions into Arcloom and owns no domain decision — neither the content of an expectation nor the decision to apply. It is distinct from the Composition Root, which is the code that selects and wires implementations. |
+| Host | An external system that embeds Arcloom and invokes its composed Capabilities. It carries externally made declarations and decisions into Arcloom and owns no domain decision — neither the content of an expectation nor the decision to apply. It is distinct from the Composition Root, which is the code that selects and wires implementations. |
 
 `Module` is not an architectural level or a top-level classification in this document. Reconciliation, observation, application request, and external adaptation describe responsibilities. Those labels alone do not justify a Component or Package boundary.
 
 ---
 
 ## 3. Design Principles
-
-Arcloom is defined as follows. Every principle in this section defends a part of this definition.
-
-> Arcloom is a system for AI-assisted software development. It exists for exactly one reason: to keep answering — honestly, and serving no one's interest — the question "Do the declared expectation and the observed reality match right now?". An expectation is an "ought" declared by a user, such as a plan and its acceptance conditions. Reality is the facts held by external systems such as planning tools and CI. Matching is a judgment about meaning, not a mechanical diff, and the judgment itself may be delegated to an external AI.
->
-> Arcloom's decisions live in three separated parts: judgment, which produces the answers; authorization, which checks only whether one exact request may be issued; and application parts, which apply a confirmed change externally. Judgment can create neither the expectation nor the reality, and cannot touch authorization or application. Proposals for how to close a gap are produced by external AIs or humans; Arcloom only carries, as a fact, who proposed what on what evidence. An answer is handed over carrying the evidence it used, so its receiver can verify it on the spot; whether to keep it is the receiver's choice.
->
-> Closing the gap between expectation and reality is always the work of actors: humans, AIs, and external systems. When an application part of Arcloom applies a change, it is treated as one of those actors. It acts only when the user has decided to apply and authorization has allowed the exact request; no path lets a judgment trigger application. A report that a change was applied is not the result. What actually happened is established only by observing external facts again — and Arcloom keeps answering.
 
 ### 3.1 Organize by Ownership
 
@@ -72,7 +64,7 @@ Core Domain Components do not depend on a Feedback Controller, Provider, Framewo
 
 ### 3.3 Separate Reconciliation, Authorization, and External Action
 
-The definition above states this separation. In addition, an External Actor owns action-time interpretation, conflict handling, and mutation, and a later Observation establishes the resulting target state.
+A target-specific Reconciliation establishes one Result without changing external state. Authorization decides only whether Arcloom may issue one exact proposed external request. An External Actor owns action-time interpretation, conflict handling, and mutation. A later Observation establishes the resulting target state.
 
 ### 3.4 Keep Target-specific Meaning with Its Feedback Controller
 
@@ -198,7 +190,7 @@ The diagram groups Components by ownership. It does not assert that each boundar
 
 | Component | Responsibilities and owned decisions | Contracts provided | Responsibilities excluded |
 |---|---|---|---|
-| Reconciliation Control | Owns caller-scoped target identity, request eligibility, one active Attempt per target, bounded concurrency, explicit reevaluation directives, report publication, and cancellation lifecycle. Its state is disposable. | Accepts identity-only requests, invokes a target-specific Attempt Port, publishes target-bound reports, and terminates with the caller lifecycle. | Does not own semantic Targets, Observation, Reconciliation, target-specific Result or Failure meaning, Result Destination routing, Authorization, Provider integration, durable scheduling, or request generation — the composition owns request supply, including periodic re-observation. |
+| Reconciliation Control | Owns caller-scoped target identity, request eligibility, one active Attempt per target, bounded concurrency, explicit reevaluation directives, report publication, and cancellation lifecycle. Its state is disposable. | Accepts identity-only requests, invokes a target-specific Attempt Port, publishes target-bound reports, and terminates with the caller lifecycle. | Does not own semantic Targets, Observation, Reconciliation, target-specific Result or Failure meaning, Result Destination routing, Authorization, Provider integration, durable scheduling, or request generation — request supply, including periodic re-observation, is owned by the Host. |
 | Authorization | Owns Policy validity, typed Rule conclusions, deny-overrides and all-permit aggregation, and the association between an exact subject and Authorized, Denied, or Undecidable. | Provides a recalculable Authorization Evaluation for the exact subject supplied by a consumer. | Does not interpret Plan or another subject, grant external permission, apply a proposal, persist a decision, or establish target state. |
 
 Reconciliation is part of the Core Domain without requiring one generic Reconciliation Component. Each target-specific Reconciliation Component owns its concrete judgment and Result inside its Feedback Controller.
@@ -221,7 +213,7 @@ The Plan Controller boundary owns the Plan-specific meaning and decisions requir
 |---|---|---|---|
 | Plan Application Request | Owns one exact target-bound Plan revision, its Authorization subject, request-receipt uncertainty, and the invariant that possible transmission is not blindly retried. | Provides AuthorizationDenied, AuthorizationUndecidable, or request-receipt evidence without claiming target state. | Does not generate a proposal, perform Plan Control, interpret Authorization facts, mutate a Provider directly, observe resulting state, or own repeated-loop lifecycle. |
 
-Plan Application Request is an independent Component inside the Plan Controller boundary. It owns Plan-specific request meaning without owning Authorization or external mutation. A proposed Plan reaches this Component only through the user's separate decision to apply it; the Host carries that decision and does not make it. Plan Control does not invoke it.
+Plan Application Request is an independent Component inside the Plan Controller boundary. It owns Plan-specific request meaning without owning Authorization or external mutation. A proposed Plan reaches this Component only through a decision made separately from Plan Control; the Host carries that decision and does not make it. Plan Control does not invoke it.
 
 ### 5.5 External Context Adapters
 
