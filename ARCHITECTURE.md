@@ -46,6 +46,7 @@ The architecture uses the following structural terms.
 | External Context | A boundary outside Arcloom that owns the meaning, authority, permissions, or lifecycle of external facts and actions. |
 | External Context Adapter | A Component that implements consumer-owned Ports using one Provider-specific contract without taking ownership of consumer decisions. |
 | Composition Root | The outermost code that selects implementations and wires Components. It owns no domain decision or control policy. |
+| Host | An external system that embeds Arcloom and invokes its composed Capabilities. It carries externally made declarations and decisions into Arcloom and owns no domain decision — neither the content of an expectation nor the decision to apply. It is distinct from the Composition Root, which is the code that selects and wires implementations. |
 
 `Module` is not an architectural level or a top-level classification in this document. Reconciliation, observation, application request, and external adaptation describe responsibilities. Those labels alone do not justify a Component or Package boundary.
 
@@ -189,7 +190,7 @@ The diagram groups Components by ownership. It does not assert that each boundar
 
 | Component | Responsibilities and owned decisions | Contracts provided | Responsibilities excluded |
 |---|---|---|---|
-| Reconciliation Control | Owns caller-scoped target identity, request eligibility, one active Attempt per target, bounded concurrency, explicit reevaluation directives, report publication, and cancellation lifecycle. Its state is disposable. | Accepts identity-only requests, invokes a target-specific Attempt Port, publishes target-bound reports, and terminates with the caller lifecycle. | Does not own semantic Targets, Observation, Reconciliation, target-specific Result or Failure meaning, Result Destination routing, Authorization, Provider integration, or durable scheduling. |
+| Reconciliation Control | Owns caller-scoped target identity, request eligibility, one active Attempt per target, bounded concurrency, explicit reevaluation directives, report publication, and cancellation lifecycle. Its state is disposable. | Accepts identity-only requests, invokes a target-specific Attempt Port, publishes target-bound reports, and terminates with the caller lifecycle. | Does not own semantic Targets, Observation, Reconciliation, target-specific Result or Failure meaning, Result Destination routing, Authorization, Provider integration, durable scheduling, or request generation — request supply, including periodic re-observation, is owned by the Host. |
 | Authorization | Owns Policy validity, typed Rule conclusions, deny-overrides and all-permit aggregation, and the association between an exact subject and Authorized, Denied, or Undecidable. | Provides a recalculable Authorization Evaluation for the exact subject supplied by a consumer. | Does not interpret Plan or another subject, grant external permission, apply a proposal, persist a decision, or establish target state. |
 
 Reconciliation is part of the Core Domain without requiring one generic Reconciliation Component. Each target-specific Reconciliation Component owns its concrete judgment and Result inside its Feedback Controller.
@@ -212,7 +213,7 @@ The Plan Controller boundary owns the Plan-specific meaning and decisions requir
 |---|---|---|---|
 | Plan Application Request | Owns one exact target-bound Plan revision, its Authorization subject, request-receipt uncertainty, and the invariant that possible transmission is not blindly retried. | Provides AuthorizationDenied, AuthorizationUndecidable, or request-receipt evidence without claiming target state. | Does not generate a proposal, perform Plan Control, interpret Authorization facts, mutate a Provider directly, observe resulting state, or own repeated-loop lifecycle. |
 
-Plan Application Request is an independent Component inside the Plan Controller boundary. It owns Plan-specific request meaning without owning Authorization or external mutation. A Host may route a proposed Plan from a Reconciliation Result to this Component only as a separate decision. Plan Control does not invoke it.
+Plan Application Request is an independent Component inside the Plan Controller boundary. It owns Plan-specific request meaning without owning Authorization or external mutation. A proposed Plan reaches this Component only through a decision made separately from Plan Control; the Host carries that decision and does not make it. Plan Control does not invoke it.
 
 ### 5.5 External Context Adapters
 
