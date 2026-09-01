@@ -153,15 +153,12 @@ C4Component
             Component(plan_control, "Plan Control Reconciliation", "Component", "Establishes one Plan-specific assessment")
             Component(plan_snapshot, "Plan Snapshot Observation", "Component", "Establishes one current Plan and representation progress")
             Component(plan_representation, "Plan Representation Reconciliation", "Component", "Relates expected Plan meaning to an observed external representation")
-        }
-
-        Boundary(plan_external_request, "Plan External Request") {
-            Component(plan_application, "Plan Application Request", "Component", "Preserves, authorizes, and may issue one exact proposed Plan revision request without becoming part of Plan Control")
+            Component(plan_application, "Plan Application Request", "Component", "Preserves and may issue one exact proposed Plan revision after separate Authorization without becoming part of Plan Control")
         }
 
         Boundary(adapters, "External Context Adapters") {
             Component(codex_plan, "Codex Plan Control Adapter", "Adapter", "Adapts Codex interaction to the Plan Control judgment Port")
-            Component(github_plan, "GitHub Plan Adapter", "Adapter", "Adapts GitHub planning contracts to Plan-owned observation contracts")
+            Component(github_plan, "GitHub Plan Adapter", "Adapter", "Adapts GitHub planning contracts to Plan-owned observation contracts and non-mutating creation request plans")
         }
     }
 
@@ -209,13 +206,13 @@ Reconciliation is part of the Core Domain without requiring one generic Reconcil
 
 The Plan Controller boundary owns the Plan-specific meaning and decisions required to control a Plan even when one Capability composes multiple Components. A Component inside the boundary may depend on another Plan Component only when it uses that Component's public contract and does not take ownership of its decisions.
 
-### 5.4 Plan External Request Component
+### 5.4 Plan Application Request Component
 
 | Component | Responsibilities and owned decisions | Contracts provided | Responsibilities excluded |
 |---|---|---|---|
 | Plan Application Request | Owns one exact target-bound Plan revision, its Authorization subject, request-receipt uncertainty, and the invariant that possible transmission is not blindly retried. | Provides AuthorizationDenied, AuthorizationUndecidable, or request-receipt evidence without claiming target state. | Does not generate a proposal, perform Plan Control, interpret Authorization facts, mutate a Provider directly, observe resulting state, or own repeated-loop lifecycle. |
 
-Plan Application Request uses Plan meaning but is outside the Plan Controller boundary. A Host may route a proposed Plan from a Reconciliation Result to this Component only as a separate decision. Plan Control does not invoke it.
+Plan Application Request is an independent Component inside the Plan Controller boundary. It owns Plan-specific request meaning without owning Authorization or external mutation. A Host may route a proposed Plan from a Reconciliation Result to this Component only as a separate decision. Plan Control does not invoke it.
 
 ### 5.5 External Context Adapters
 
@@ -225,6 +222,8 @@ Plan Application Request uses Plan meaning but is outside the Plan Controller bo
 | GitHub Plan Adapter | Observation Ports owned by Plan Snapshot Observation and Plan Representation Reconciliation | GitHub repository and resource identity, Milestone and Issue APIs, pagination, payload versions, request and response DTOs, and Provider errors | Plan meaning, Snapshot eligibility, Reconciliation Result, Authorization, and external mutation |
 
 An adapter exists for a specific consumer contract and External Context. Do not create a Provider-wide interface that exposes every operation supported by a Provider.
+
+The GitHub Plan Adapter also provides a pure transformation from a provider-independent Plan to an ordered GitHub creation request plan. It owns GitHub-specific request shapes, references, and dependency order without sending requests or establishing external state.
 
 ---
 
@@ -243,9 +242,8 @@ flowchart BT
         PCR[Plan Control Reconciliation]
         PSO[Plan Snapshot Observation]
         PRR[Plan Representation Reconciliation]
+        PAR[Plan Application Request]
     end
-
-    PAR[Plan Application Request]
 
     CODEX[Codex Plan Control Adapter]
     GITHUB[GitHub Plan Adapter]
@@ -315,7 +313,7 @@ Feedback Controllers are independent by default. A real dependency between them 
 
 ## 7. Package Namespace
 
-The required top-level Package namespace follows ownership boundaries. The repository and its Core Domain Package are intentionally both named `arcloom`.
+The required top-level Package namespace follows ownership boundaries. The repository and its Core Domain directory are intentionally both named `arcloom`.
 
 ```text
 github.com/kotokumu/arcloom
@@ -326,11 +324,19 @@ github.com/kotokumu/arcloom
 │   └── controlruntime
 ├── controllers
 │   ├── plan
+│   │   ├── application
+│   │   ├── attempt
+│   │   ├── control
+│   │   ├── representation
+│   │   └── snapshot
 │   ├── tokenoptimization
 │   └── cidurationoptimization
 └── providers
     ├── github
+    │   └── plan
     └── codex
+        ├── appserver
+        └── plancontrol
 ```
 
 The namespace follows these rules:
@@ -343,4 +349,4 @@ The namespace follows these rules:
 - Capability names and technical responsibility categories such as `reconciliation`, `observation`, or `application` do not become repository-wide top-level directories.
 - A Composition Root may depend on all implementations it wires. The architecture does not assign it a fixed top-level Package.
 
-This namespace does not require one Package per Component. A Package split requires a real consumer and a constraint that the boundary protects. A Component may use multiple Packages, and one Package may implement multiple cohesive responsibilities that change for the same reason.
+The namespace does not require an empty Package for a listed responsibility that has no implementation. It also does not require one Package per Component. A Package split requires a real consumer and a constraint that the boundary protects. A Component may use multiple Packages, and one Package may implement multiple cohesive responsibilities that change for the same reason.

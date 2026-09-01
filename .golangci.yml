@@ -7,10 +7,18 @@ linters:
   settings:
     depguard:
       rules:
-        reconciliation-control-boundary:
+        authorization-boundary:
           list-mode: strict
           files:
-            - "**/reconciliationcontrol/*.go"
+            - "**/arcloom/authorization/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+        control-runtime-boundary:
+          list-mode: strict
+          files:
+            - "**/arcloom/controlruntime/*.go"
             - "!$test"
           allow:
             - "context$"
@@ -18,26 +26,124 @@ linters:
             - "fmt$"
             - "strings$"
             - "time$"
-        plan-reconciliation-boundary:
+        plan-boundary:
           list-mode: strict
           files:
-            - "**/planreconciliation/*.go"
+            - "**/controllers/plan/*.go"
+            - "!$test"
+          allow:
+            - "fmt$"
+            - "strings$"
+            - "unicode$"
+            - "unicode/utf8$"
+        plan-application-boundary:
+          list-mode: strict
+          files:
+            - "**/controllers/plan/application/*.go"
             - "!$test"
           allow:
             - "context$"
             - "errors$"
             - "fmt$"
-            - "github.com/kotokumu/arcloom/plancontrol$"
-            - "github.com/kotokumu/arcloom/plansnapshot$"
-            - "github.com/kotokumu/arcloom/reconciliationcontrol$"
+            - "strings$"
+            - "github.com/kotokumu/arcloom/arcloom/authorization$"
+            - "github.com/kotokumu/arcloom/controllers/plan$"
+        plan-attempt-boundary:
+          list-mode: strict
+          files:
+            - "**/controllers/plan/attempt/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "fmt$"
+            - "github.com/kotokumu/arcloom/arcloom/controlruntime$"
+            - "github.com/kotokumu/arcloom/controllers/plan/control$"
+            - "github.com/kotokumu/arcloom/controllers/plan/snapshot$"
+        plan-control-boundary:
+          list-mode: strict
+          files:
+            - "**/controllers/plan/control/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "fmt$"
+            - "github.com/kotokumu/arcloom/controllers/plan$"
         plan-representation-boundary:
           list-mode: strict
           files:
-            - "**/planrepresentation/*.go"
+            - "**/controllers/plan/representation/*.go"
             - "!$test"
           allow:
             - "context$"
             - "errors$"
             - "fmt$"
             - "sort$"
-            - "github.com/kotokumu/arcloom/plan$"
+            - "github.com/kotokumu/arcloom/controllers/plan$"
+        plan-snapshot-boundary:
+          list-mode: strict
+          files:
+            - "**/controllers/plan/snapshot/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "github.com/kotokumu/arcloom/controllers/plan$"
+        codex-appserver-boundary:
+          list-mode: strict
+          files:
+            - "**/providers/codex/appserver/*.go"
+            - "!$test"
+          allow:
+            - "bytes$"
+            - "context$"
+            - "encoding/json$"
+            - "errors$"
+            - "io$"
+            - "os$"
+            - "os/exec$"
+            - "path/filepath$"
+            - "strings$"
+            - "sync$"
+            - "time$"
+        codex-plan-control-boundary:
+          list-mode: strict
+          files:
+            - "**/providers/codex/plancontrol/*.go"
+            - "!$test"
+          allow:
+            - "bytes$"
+            - "context$"
+            - "encoding/json$"
+            - "errors$"
+            - "io$"
+            - "os$"
+            - "path/filepath$"
+            - "reflect$"
+            - "strings$"
+            - "github.com/kotokumu/arcloom/controllers/plan$"
+            - "github.com/kotokumu/arcloom/controllers/plan/control$"
+            - "github.com/kotokumu/arcloom/providers/codex/appserver$"
+        github-plan-boundary:
+          list-mode: strict
+          files:
+            - "**/providers/github/plan/*.go"
+            - "!$test"
+          allow:
+            - "bytes$"
+            - "context$"
+            - "encoding/base64$"
+            - "encoding/json$"
+            - "fmt$"
+            - "io$"
+            - "net/http$"
+            - "net/url$"
+            - "sort$"
+            - "strconv$"
+            - "strings$"
+            - "unicode$"
+            - "unicode/utf8$"
+            - "github.com/kotokumu/arcloom/controllers/plan$"
+            - "github.com/kotokumu/arcloom/controllers/plan/representation$"
+            - "github.com/kotokumu/arcloom/controllers/plan/snapshot$"
