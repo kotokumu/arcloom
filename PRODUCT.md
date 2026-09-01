@@ -2,130 +2,179 @@
 
 ## 1. Product Concept
 
-Arcloom is a platform that establishes continuous Feedback Loops for AI-assisted development. A Feedback Loop reconciles the expected state with the observed state and returns the result to the next decision or improvement.
-
-Delivery Reconciliation controls the Feedback Loop from a Change initiated by a user or AI through development and Delivery. It reconciles the expected outcome with actual progress and feeds the result into the next work item or plan revision. It also provides information for deciding whether to accept the deliverable. Development Improvement Reconciliation controls the Feedback Loop that improves the development system by deriving an Improvement Intent for Delivery with fewer tokens while maintaining the required quality, based on results accumulated through repeated Delivery.
+Arcloom is a platform that controls continuous Feedback Loops for AI-assisted development. Its Core Domain is Feedback Loop Control. Arcloom applies that Core Domain through Feedback Controllers that address feedback problems without owning the external activities or authoritative facts involved in their loops.
 
 ```mermaid
 flowchart TB
-    subgraph Delivery["Delivery Feedback Loop"]
-        A[Change from a user or AI] --> B["Develop the Change<br/>External Agent, development tool, or human"]
-        B --> C["Observation such as Test or CI"]
-        C --> E["Arcloom<br/>Delivery Reconciliation"]
-        E -->|Next work| B
-        E -->|Acceptance| D[Delivery]
+    Core["Core Domain<br/>Feedback Loop Control"]
+
+    subgraph Controllers["Feedback Controllers"]
+        Plan["Plan Controller<br/>Controls a Plan toward completion"]
+        Token["Token Optimization Controller<br/>Improves token usage while maintaining quality"]
     end
 
-    subgraph Improvement["Development Improvement Feedback Loop"]
-        F[Observations accumulated through Delivery] --> G["Arcloom<br/>Development Improvement Reconciliation"]
-        G --> H[Improvement Intent]
-        H --> I["Change the development system<br/>External Agent, development tool, or human"]
-    end
-
-    D --> F
-    I -. Fed into the next Delivery .-> B
+    Core --> Plan
+    Core --> Token
 ```
 
 ---
 
-## 2. Product Scope
+## 2. Ubiquitous Language
 
-### 2.1 Responsibilities of the Product
+This glossary defines terms whose meaning must remain consistent across Arcloom product documents. Terms that belong only to one Feedback Controller are defined in that controller's section rather than repeated here.
 
-Arcloom establishes Feedback Loops in two scopes: Delivery and Development Improvement.
-
-- In Delivery, it controls the Feedback Loop from a Change initiated by a user or AI through development and Delivery. It reconciles the expected outcome with the in-progress state based on Observations and feeds the result into the next work item or plan revision. It also provides information for deciding whether to accept the deliverable.
-- In Development Improvement, it performs Reconciliation using Observations accumulated through repeated Delivery and returns the result to the development system as an Improvement Intent for Delivery with fewer tokens while maintaining the required quality.
-
-The two Feedback Loops share Observation, Plan, and Authorization. External Actors such as humans, AI agents, or external systems perform Tasks and own action-time changes to external targets.
-
-### 2.2 Out of Scope
-
-- Arcloom is not a platform that generates and collects all telemetry used for Reconciliation.
-- Arcloom is not an AI model or agent runtime.
-- Arcloom does not replace existing development tools such as issue management, work management, Git, Test, or CI/CD.
-- Arcloom does not enforce a fixed development process for Changes.
-
----
-
-## 3. Value Provided
-
-Arcloom controls the Feedback Loop from a Change initiated by a user or AI through development and Delivery. It connects the gap between the expected outcome for Delivery and actual progress to the next work item or plan revision. It enables acceptance of the deliverable to be decided based on Observations obtained from Delivery.
-
-It feeds Observations accumulated through repeated Delivery back into improvement of the development system. It reduces the token usage required for Delivery that meets the required quality and enables continuous improvement.
-
-### 3.1 Difference from Existing Alternatives
-
-AI coding agents support execution of Changes, while development tools such as issue management, Test, CI, and PR provide individual Observations about Delivery. Retrospectives are activities for considering improvements to development based on those results.
-
-Arcloom does not replace these means. It uses existing means to control the process from development of a Change through Delivery. It establishes a Feedback Loop by performing Reconciliation with the Observations obtained during that process and continuously returning the result to each stage of Delivery and to the development system.
-
----
-
-## 4. Capabilities
-
-### 4.1 Capability Map
-
-Capabilities are classified into Feedback Loops for each Reconciliation target and capabilities shared by both Feedback Loops.
-
-| Type | Capability | Responsibility |
-|---|---|---|
-| Feedback Loop | Delivery Reconciliation | Controls the Feedback Loop from a Change initiated by a user or AI through development and Delivery |
-| Feedback Loop | Development Improvement Reconciliation | Reconciles Observations accumulated through repeated Delivery and controls the Feedback Loop that improves the development system |
-| Common | Observation | Makes Observations existing outside Arcloom available to Feedback Loops |
-| Common | Plan | Represents the plan required for Delivery or improvement of the development system through a Goal, acceptance conditions, Tasks, and an optional target date |
-| Common | Plan Control | Establishes an external AI assessment that controls one current Plan toward completion without applying the result |
-| Common | Authorization | Decides whether Arcloom may issue one proposed external application request for an exact consumer-supplied subject |
-
-This capability classification does not prescribe a one-to-one correspondence with Arcloom Components. Delivery Reconciliation and Development Improvement Reconciliation are Feedback Loops established by combining shared capabilities with external Actors.
-
-Delivery Reconciliation and Development Improvement Reconciliation here are names for the Feedback Loops as a whole. Reconciliation used by each Feedback Loop means reconciling an expected state with an observed state.
-
-The Observations used and outcomes returned by each Reconciliation are not fixed. Adding new Observations or outcomes does not redefine a capability.
-
-The following are concrete examples of Observations. No Reconciliation requires every example, and Observations not listed here can also be handled.
-
-| Capability | Example Observations |
+| Term | Meaning |
 |---|---|
-| Delivery Reconciliation | Issue, specification changes when specifications are used, Source Code changes, Test results, CI status, PR, Acceptance status |
-| Development Improvement Reconciliation | Results accumulated through repeated Delivery, Agent/Subagent activity, token usage, failures, rework, quality evaluation results |
-
-### 4.2 Boundaries between Capabilities
-
-- Delivery Reconciliation targets one Change from development through Delivery.
-- Development Improvement Reconciliation targets the development system using Observations accumulated through repeated Delivery.
-- Observation makes Observations available. It does not decide the difference from the expected state or the next work item.
-- Plan represents Tasks and an optional target date for a Goal and its acceptance conditions. Provider-native resources such as Milestones or Issues can represent a Plan but are not Plan elements. A Plan does not perform Tasks or authorize external application requests.
-- Plan Control uses one current Plan and supplied Observations to obtain an external AI assessment that identifies the Plan as complete, retains it, proposes a revision, or identifies insufficient information. It does not apply the assessment or own the authoritative Plan.
-- Authorization applies Policies and Rules to an exact subject supplied by its consumer. It decides only whether Arcloom may issue the proposed external application request. It does not grant permissions in an external system, interpret every possible subject, or apply the proposal externally.
-- External Actors such as humans, AI agents, or external systems perform Tasks and own action-time interpretation, conflict handling, and changes to external targets. Arcloom does not replace these Actors.
-- The same Observation can be used by both capabilities.
-- The boundary between the two Reconciliations is determined by the Reconciliation target and where the result is returned, not by the type of Observation or outcome.
+| Core Domain | The central problem domain that produces Arcloom's core value. Its meaning is not defined by any one Feedback Controller. |
+| Feedback Loop Control | Arcloom's Core Domain. It relates expected and observed meaning through Reconciliation, keeps Authorization separate from Reconciliation and external action, returns the judgment to a subsequent decision or improvement, and closes the loop through a later Observation. |
+| Feedback Loop | A cycle in which a judgment derived from Observation is returned to a subsequent decision or improvement and the resulting state is observed again. |
+| Feedback Controller | An extensible product boundary that applies the Core Domain to one feedback problem and owns the domain concepts and Capabilities required to solve it. A Feedback Controller may own multiple Feedback Loops and Reconciliations and does not prescribe its implementation structure or a fixed end-to-end workflow. |
+| Capability | A coherent guarantee provided to a consumer. Its boundary can be explained by its consumer, trigger, accepted input, observable outcome, and failure guarantees. A Capability does not prescribe a Feedback Controller or implementation boundary. |
+| Target | The semantic subject of one Reconciliation. |
+| Observation | Evidence made available to a Feedback Loop from externally authoritative facts. An Observation does not decide the difference from expected meaning or the subsequent response. |
+| Reconciliation | One read-only judgment that relates expected and observed meaning for one Target and establishes one target-specific outcome. |
+| Authorization | A decision about whether Arcloom may issue one exact proposed external request. Authorization does not establish external permission, apply the request, or establish resulting target state. |
+| External Actor | A human, AI agent, or external system that owns action-time interpretation, conflict handling, work execution, or changes to an external target. |
 
 ---
 
-## 5. Product Principles
+## 3. Core Domain
 
-### 5.1 Improvement Closes through Observation
+### 3.1 Feedback Loop Control
 
-Applying a Change or performing a Task alone does not constitute improvement. Observe the subsequent state and reconcile it with the expected state again.
+Feedback Loop Control is Arcloom's Core Domain. It defines the product rules that remain independent of any one feedback problem:
 
-### 5.2 Do Not Improve Efficiency at the Expense of Quality
+- Reconciliation concerns one semantic Target and establishes one target-specific judgment from expected and observed meaning.
+- A Feedback Controller owns the domain concepts and Capabilities required to solve its feedback problem. Each Reconciliation within it retains its own Target, expected and observed meaning, judgment, and guarantees.
+- A Reconciliation judgment is returned to a subsequent decision or improvement. It does not perform that decision or improvement by itself.
+- A Change or external action does not close a Feedback Loop. A later Observation of externally authoritative facts supplies the basis for another Reconciliation.
+- Reconciliation, Authorization, and external action are separate decisions and responsibilities.
+- Missing or unavailable facts do not become inferred facts. A judgment that requires them remains undecidable.
 
-Reducing token usage is considered an improvement only when the required quality is maintained.
+```mermaid
+flowchart LR
+    Expected[Expected Meaning] --> Reconciliation
+    Observed[Observation] --> Reconciliation
+    Reconciliation --> Judgment
+    Judgment --> Next[Next Decision or Improvement]
+    Next --> Actor[External Actor]
+    Actor --> Later[Later Observation]
+    Later --> Reconciliation
 
-### 5.3 Base Decisions on Observations
+    Request[Proposed External Request] --> Authorization
+    Authorization -->|May issue exact request| Actor
+```
 
-Reconciliation and Authorization are performed based on available Observations and externally authoritative facts. If necessary information cannot be observed, do not fill the gap with speculation; treat the state as undecidable.
+### 3.2 Core Domain Boundaries
 
-### 5.4 Separate Plan Control from Authorization
+Arcloom does not own every activity or fact that participates in a Feedback Loop.
 
-A Plan Control assessment does not make a proposed Plan revision externally effective. Authorization decides only whether Arcloom may issue the exact proposed request. An external Actor owns action-time target mutation, and a later Observation establishes the resulting state.
+- External systems retain authority over the facts supplied as Observations.
+- External Actors perform work and own action-time changes to external targets.
+- Arcloom does not generate or collect every item of telemetry used by a Feedback Controller.
+- Arcloom does not replace an AI model, agent runtime, issue-management system, work-management system, Git, Test, or CI/CD.
+- Arcloom does not impose one universal Target, Observation, judgment model, or development process on Feedback Controllers.
 
-### 5.5 Do Not Fix the Development Method
+---
 
-Do not assume a specific development process, AI model, agent runtime, or development tool. Preserve the ability to add Observations, Changes, and reconciliation results.
+## 4. Feedback Controllers
 
-### 5.6 Do Not Own the Source of Truth for External Information
+A Feedback Controller applies Feedback Loop Control to one feedback problem. The boundary between Feedback Controllers is determined by the problem they solve, not by the number of Capabilities, Feedback Loops, or Reconciliations used to solve it. Reuse of the same Observation, external system, or domain concept does not by itself place responsibilities in the same Feedback Controller.
 
-Arcloom does not newly own the authoritative source of external information about development. The meaning, permissions, and lifecycle of each item remain with the external system that manages it.
+Feedback Controllers use the Core Domain without redefining it or the target-specific meaning of another Feedback Controller.
+
+### 4.1 Plan Controller
+
+The Plan Controller owns the feedback problem of controlling a Plan toward completion while preserving the relationship between provider-independent Plan meaning and its external representation.
+
+A Plan is provider-independent. It represents one Goal, the Acceptance Conditions for that Goal, named Tasks performed outside Arcloom, and an optional Target Date.
+
+| Concern | Definition |
+|---|---|
+| Feedback Problem | Control a Plan toward completion using available Delivery evidence while keeping its provider-independent meaning related to externally authoritative representations. |
+| Product Role | Support decisions about Plan completion, continued suitability, revision, and consistency with an external representation. |
+| Owned Meaning | Provider-independent Plan meaning and the Plan-specific meaning required by its Capabilities and Reconciliations. |
+| Capabilities | Plan Control evaluates a current Plan using Delivery observations. Plan Representation Reconciliation evaluates whether an externally observed representation matches expected Plan meaning. |
+
+The Plan Controller does not perform Tasks, own the authoritative external Plan, authorize a proposed revision, apply a revision, or establish that external Plan state changed.
+
+### 4.2 Token Optimization Controller
+
+The Token Optimization Controller improves the token usage required for Delivery while maintaining the required quality.
+
+| Concern | Definition |
+|---|---|
+| Feedback Problem | Improve token usage in the development system without reducing required Delivery quality. |
+| Product Role | Use Delivery observations to identify opportunities for improving the development system used by subsequent Delivery. |
+| Owned Meaning | The relationship between token usage and required quality and the Improvement Intent derived when an improvement opportunity is identified. |
+| Capabilities | Evaluate development activity, token usage, failure, rework, and quality evidence and derive an Improvement Intent without applying it. |
+
+The Token Optimization Controller does not generate telemetry, establish authoritative quality facts, apply changes to the development system, or treat reduced token usage as improvement when required quality is not maintained.
+
+---
+
+## 5. Product Scope
+
+### 5.1 Delivery
+
+Delivery develops a Change and delivers its expected outcome. A Change is one proposed change to external state and its relationship with one change target.
+
+Arcloom controls Feedback Loops from a Change initiated by a user or AI through development and Delivery. It relates the expected Delivery outcome to observed progress and returns judgments to subsequent work, revision consideration, or acceptance consideration.
+
+### 5.2 Development Improvement
+
+Development Improvement improves the development system using observations accumulated through Delivery. Arcloom controls Feedback Loops that derive Improvement Intents for that development system. An improvement reduces the resources required for Delivery only while maintaining the required quality.
+
+### 5.3 Out of Scope
+
+- Generating or collecting all telemetry used by Feedback Controllers.
+- Acting as an AI model or agent runtime.
+- Replacing development tools or external systems that own authoritative facts and state.
+- Performing work or applying changes to external targets.
+- Enforcing one fixed development process for Changes.
+
+---
+
+## 6. Value Provided
+
+Arcloom connects the difference between expected Delivery outcomes and observed progress to the next decision. It enables Delivery work, Plan revision consideration, and acceptance consideration to be based on available Observations rather than speculation.
+
+Arcloom returns results accumulated through Delivery to improvement of the development system. It enables resource efficiency to improve continuously without treating reduced quality as improvement.
+
+### 6.1 Difference from Existing Alternatives
+
+AI coding agents execute Changes. Development tools such as issue management, Test, CI, and review systems provide individual facts about Delivery. Retrospectives consider improvements from those results.
+
+Arcloom does not replace these means. It establishes Feedback Loops by relating expected and observed meaning, returning judgments to subsequent decisions or improvements, and using later Observations to evaluate the resulting state again.
+
+---
+
+## 7. Product Principles
+
+### 7.1 Improvement Closes through Observation
+
+Applying a Change or performing work alone does not constitute improvement. Observe the subsequent state and reconcile it with expected meaning again.
+
+### 7.2 Do Not Improve Efficiency at the Expense of Quality
+
+Reduced resource usage constitutes improvement only when the required quality is maintained.
+
+### 7.3 Base Decisions on Observations
+
+Reconciliation and Authorization use available Observations and externally authoritative facts. Do not fill unavailable information with speculation. Treat a judgment that requires unavailable information as undecidable.
+
+### 7.4 Separate Reconciliation from Authorization
+
+A Reconciliation judgment does not make a proposal externally effective. Authorization decides only whether Arcloom may issue the exact proposed request. An External Actor owns action-time target mutation, and a later Observation establishes the resulting state.
+
+### 7.5 Do Not Fix the Development Method
+
+Do not assume a specific development process, AI model, agent runtime, or development tool.
+
+### 7.6 Keep Feedback Controllers Independent
+
+Each Feedback Controller owns the domain concepts and Capabilities required by its feedback problem. Adding a Feedback Controller does not impose a universal Target, Observation, judgment model, or development process on existing Feedback Controllers and does not redefine the Core Domain.
+
+### 7.7 Do Not Own External Sources of Truth
+
+Arcloom does not own the authoritative source of external development information. The external system that manages each fact retains authority over its meaning, permissions, and lifecycle.
