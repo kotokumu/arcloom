@@ -60,6 +60,29 @@ linters:
             - "github.com/kotokumu/arcloom/arcloom/controlruntime$"
             - "github.com/kotokumu/arcloom/controllers/plan/control$"
             - "github.com/kotokumu/arcloom/controllers/plan/snapshot$"
+        plan-assessment-delivery-boundary:
+          list-mode: strict
+          files:
+            - "**/controllers/plan/assessmentdelivery/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "github.com/kotokumu/arcloom/arcloom/controlruntime$"
+            - "github.com/kotokumu/arcloom/controllers/plan/attempt$"
+            - "github.com/kotokumu/arcloom/controllers/plan/control$"
+        plan-host-boundary:
+          list-mode: strict
+          files:
+            - "**/internal/planhost/*.go"
+            - "!$test"
+          allow:
+            - "context$"
+            - "errors$"
+            - "sync$"
+            - "github.com/kotokumu/arcloom/arcloom/controlruntime$"
+            - "github.com/kotokumu/arcloom/controllers/plan/attempt$"
+            - "github.com/kotokumu/arcloom/controllers/plan/assessmentdelivery$"
         plan-control-boundary:
           list-mode: strict
           files:

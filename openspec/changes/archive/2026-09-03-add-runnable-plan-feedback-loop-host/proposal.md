@@ -1,0 +1,84 @@
+## Why
+
+Arcloom can control one Plan Attempt through public contracts, but it does not provide an operable Plan Feedback Loop that receives external wake-ups and delivers Plan-specific Results to the next decision or work owner. Consumers must assemble that behavior themselves, and the repository has no deterministic environment that proves repeated fresh observation and externally applied progress converge a Plan to completion.
+
+Milestone #2 requires an accepted operating contract before a reference Host, local integration environment, and real GitHub/Codex proof can be implemented without moving Reconciliation, Control, Result Destination, or External Actor responsibilities into a Composition Root.
+
+## Intended Outcomes
+
+- An operator can run a caller-scoped Plan Feedback Loop through explicit target wake-ups.
+- Every later evaluation reacquires current Plan and delivery facts through the existing Plan Attempt contract.
+- A Plan-specific Result reaches its configured Result Destination only after the corresponding Controller Report is published.
+- Observation-only success, Attempt Failure, destination failure, and caller termination remain distinguishable.
+- The same operating contract supports deterministic local verification and real GitHub/Codex operation.
+
+## Success Criteria
+
+- SC-1: An initial Request and at least two later ordinary Requests can be accepted for one target without passing trigger payloads or prior outcomes as current facts.
+- SC-2: Every Current Plan Assessed completion delivers its exact Plan Control Assessment to one configured Plan-specific Result Destination after Report publication and no more than once for that qualifying Report.
+- SC-3: Current Plan Not Established and Attempt Failure produce no semantic Result delivery.
+- SC-4: Result Destination failure is observable and creates no implicit retry, Authorization, application, Task execution, or external mutation.
+- SC-5: Caller cancellation stops intake and reaches bounded shutdown after active boundaries return.
+- SC-6: A deterministic local verification completes multiple fresh-observation cycles without network access, credentials, manual changes, or wall-clock sleeps and ends with a Complete Assessment.
+- SC-7: The reference Host provides GitHub observation and Codex Plan Control bindings for one exact GitHub Milestone Plan, with deterministic boundary tests and a reproducible invocation for post-merge verification.
+
+## Scope
+
+### In Scope
+
+- Caller-scoped operation of repeated identity-only Plan Requests.
+- Consumption of target-bound Controller Reports.
+- Delivery of Current Plan Assessed Results to a Plan-specific Result Destination.
+- Observable treatment of non-Reconciliation success, Attempt Failure, destination failure, and caller termination.
+- Deterministic multi-cycle verification of the accepted behavior.
+- GitHub and Codex bindings, their deterministic boundary tests, and the invocation and evidence requirements for post-merge verification.
+
+### Out of Scope
+
+- Authorization, Plan application, Task execution, Delivery Acceptance, or external mutation.
+- Durable queues, persistent Controller state, distributed exclusion, automatic retries, polling, or inferred scheduling.
+- A universal Reconciliation, Observation, Result, Failure, outcome, Result Destination, or workflow contract shared across targets.
+- Replacement of the Codex app-server SDK's process lifecycle or JSON-RPC responsibilities.
+- Executing the real GitHub baseline, repeated Attempts after native Task-progress changes, and final Complete verification; these remain Milestone #2 work after the implementation PR is merged.
+- Final Reconciliation remodelling, refactoring, or module and interface finalization owned by Milestone #3.
+
+### Delivery Boundary
+
+| Delivery | Completion boundary |
+|---|---|
+| This change, delivered in [PR #59](https://github.com/kotokumu/arcloom/pull/59) | Complete the reference Host, GitHub/Codex bindings, deterministic environment and convergence tests, applicable documentation, and review in one implementation PR before merging. This covers implementation issues #51–#56. |
+| Post-merge Milestone #2 verification | Run [#44](https://github.com/kotokumu/arcloom/issues/44) only after #51, #52, and #53 are complete; then run [#45](https://github.com/kotokumu/arcloom/issues/45) after real external changes. Finish [#46](https://github.com/kotokumu/arcloom/issues/46) only after every other Milestone Task is complete, using a later fresh observation and evidence for every Acceptance Condition. |
+
+Merging this change does not complete the post-merge verification tasks or Milestone #2. Their live evidence is not a pre-merge completion condition for this change.
+
+## Capabilities
+
+### New Capabilities
+
+- `plan-feedback-loop-operation`: Accepts explicit Plan target wake-ups, consumes Plan Attempt Reports, and delivers exact assessed Plan Results to their configured destination while preserving existing Reconciliation, Control, Observation, and External Actor boundaries.
+
+### Modified Capabilities
+
+None.
+
+## Affected Concepts
+
+| Concept | Candidate owner capability | Change |
+|---|---|---|
+| Plan Feedback Loop Operation | `plan-feedback-loop-operation` | Add the caller-scoped relationship among Request, Plan Attempt Report, and Plan Result Destination delivery. |
+| Plan Result Destination | `plan-feedback-loop-operation`, inside the Plan Controller | Define the Plan-specific relationship to subsequent continuation, revision, or acceptance consideration. Reference the Architecture's Semantic Result Destination meaning; do not equate that meaning with a transport callback or grant authority to apply a revision. |
+| Request | `reconciliation-control-loop` | Reference its existing identity-only wake-up meaning unchanged. |
+| Plan Attempt Result | `plan-reconciliation-loop` | Reference its existing Current Plan Not Established and Current Plan Assessed classifications unchanged. |
+| Report | `reconciliation-control-loop` | Reference its existing in-process publication meaning unchanged and keep it distinct from semantic Result delivery. |
+
+## Decisions Required
+
+- Decide which Plan Attempt Result branches constitute a deliverable semantic Result.
+- Separate the Plan-owned semantic destination and delivery eligibility from Host-owned transport and operational lifecycle.
+- Decide the delivery cardinality and observable behavior when the Plan Result Destination rejects or cannot establish delivery.
+- Decide the caller-scoped relationship between repeated Request intake, Report consumption, Result delivery, and termination without prescribing durable scheduling.
+- Distinguish destination success from processed Report publication when cancellation competes with a stopped Report reader.
+
+## Impact
+
+Operators and Host integrations gain one accepted way to operate Plan Feedback Loops and observe delivery failures. Existing Reconciliation Controller, Plan Attempt, GitHub observation, Codex Plan Control, and Codex app-server contracts remain authoritative for their current responsibilities. No external data migration is introduced. PRODUCT.md is unchanged because this work realizes the existing Plan Controller's feedback problem. ARCHITECTURE.md records any added Component or Port while preserving Plan-owned semantic decisions and the Host's non-decision boundary.
