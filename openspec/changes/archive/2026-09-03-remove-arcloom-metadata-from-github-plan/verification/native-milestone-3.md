@@ -129,27 +129,41 @@ changes to the dated archive directory.
 | Complete Task-page response | HTTP 200; SHA-256 `e8fe8738eb0bd0789cf947a31c6fa2026402cfec5ae2e3883f685cd85987d8b5` |
 | Source authority | Marker absent in the same fetched root; public Snapshot matches native facts |
 | Drift | None against the frozen Plan and progress expectation |
-| Freshness | Captured after the implementation commit; human review must occur within 24 hours, otherwise rerun |
-| Human reviewer and approval | Pending task-owner review; task 6.4 remains incomplete until approval |
+| Freshness | Captured after the implementation commit; approval is recorded at `2026-09-03T05:26:08Z`, within the required 24 hours |
+| Human reviewer and approval | The task owner, acting as the human reviewer in this Codex conversation, explicitly approves the presented evidence with `承認します` on 2026-09-03 |
+
+The JSON preserves the execution-time verdict. The approval above completes
+task 6.4; it does not alter the captured response or observation data.
 
 ---
 
 ## 5. Completion Metadata-Dependency Inventory
 
-Task 5.2 remains pending until official OpenSpec publication. The
-pre-publication search on 2026-09-02 found no production `payloadFor` or
-`decodePayload` definition or call. Its only runtime-test matches are the
-intentional black-box compatibility inputs in:
+The frozen command from section 2 returns exactly these three files after
+official publication on 2026-09-03:
 
-- `providers/github/plan/native_narrative_observation_test.go`
-- `providers/github/plan/snapshot_observation_test.go`
+```text
+openspec/specs/github-plan-representation-observation/spec.md
+providers/github/plan/native_narrative_observation_test.go
+providers/github/plan/snapshot_observation_test.go
+```
 
-The other matches are this approved change's migration-control records and the
-two owning main specifications' accepted payload Requirements. The main
-Requirement matches must disappear only through task 6.7's official archive
-command; manually removing them during implementation would bypass the
-publication workflow. After publication, rerun the frozen command and replace
-this pre-publication audit with the final result and reviewer decision.
+The occurrence-level audit uses
+`rg -n 'arcloom-plan:v1|decodePayload|payloadFor' --glob '!openspec/changes/archive/**'`.
+
+| Allowlisted file and line | Occurrences | Role and authority |
+|---|---|---|
+| `openspec/specs/github-plan-representation-observation/spec.md:259` | 1 | Black-box compatibility input in `native-narrative-meaning`; explicitly ignored, not a reconstruction authority |
+| `providers/github/plan/native_narrative_observation_test.go:97` and `:98` | 2 | Legacy and dated legacy inputs that verify native-only authority |
+| `providers/github/plan/snapshot_observation_test.go:111` | 1 | Legacy Snapshot input that verifies native-only authority |
+
+There are zero production producer or decoder references. Every remaining
+non-archive occurrence describes an intentional compatibility input, and no
+current fixture or specification treats metadata as authoritative. Migration
+records and the operator's marker-absence assertion remain only in archived
+history. Independent reviewer `final_implementation_review` approves this
+inventory on 2026-09-03 and confirms no remaining authoritative metadata
+Requirement or production reference.
 
 ---
 
@@ -194,3 +208,32 @@ live evidence.
 | `npm run lint` | Pass |
 | `npm test` | Pass, 30 tests |
 | `git diff --check` | Pass |
+
+---
+
+## 7. Requirement Publication
+
+Publication uses the official command:
+
+```sh
+openspec archive remove-arcloom-metadata-from-github-plan --yes
+```
+
+The creation delta groups all four modified Requirements under one
+`MODIFIED Requirements` section. This preserves every approved Requirement
+verbatim and prevents the CLI from omitting an earlier duplicate section.
+The generated main specifications contain two additions, seven modifications,
+and two removals. An exact Requirement-body comparison verifies all eleven
+operations, all six untouched Requirements, and unchanged Conceptual Models.
+No Requirement is manually merged into a main specification.
+
+The added Requirements are `github-plan-narrative` and
+`native-narrative-meaning`. The removed Requirements are
+`versioned-plan-narrative` and `versioned-payload-meaning`. The generic proposal
+heading warning is non-blocking for the validated `quality-spec` schema.
+Independent publication review approves the exact delta publication and
+retention checks. Post-publication `npm run lint:openspec` passes on
+2026-09-03: all eleven main specifications and all seven archived changes
+validate, with all twenty-two tasks complete. Markdown lint, the thirty
+Markdown-rule tests, `git diff --check`, and all eleven Go packages under the
+race detector also pass after publication.

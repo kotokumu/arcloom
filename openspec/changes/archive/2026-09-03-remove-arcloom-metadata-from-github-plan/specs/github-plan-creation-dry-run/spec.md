@@ -1,41 +1,3 @@
-## MODIFIED Requirements
-
-### Requirement: explicit-github-target-and-representation
-
-A GitHub creation planner MUST accept a dry-run only for one valid and representable Plan, one valid GitHub Repository Target, and one explicitly selected GitHub Plan Representation.
-
-- **Input and Acceptance**: The Repository target and representation satisfy their Conceptual Model definitions. The Plan satisfies the `plan` capability and the selected representation's native-narrative acceptance rules. Representation is never inferred from Plan content.
-- **Behavioral Rules**:
-
-  | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
-  |---|---|---|---|---|
-  | Milestone representation | Plan and Repository Target are valid and representable | Milestone is explicitly selected | Milestone Creation Request Plan | None |
-  | Issue representation | Plan and Repository Target are valid and representable | Issue is explicitly selected | Issue Creation Request Plan | None |
-  | Representation absent or unsupported | Plan and Repository Target are valid | No supported representation is selected | Stable invalid-representation result and no Creation Request Plan | None |
-  | Plan is not natively representable | Plan and Repository Target are valid | Exact Plan Text collides with the selected representation's structural lines | Stable unsupported-representation result identifying the representation input and no Creation Request Plan | None |
-
-- **Invariants**: Accepted Repository segments retain their exact values, Plan validity remains provider-independent, and representation is never inferred from Plan content.
-- **Failure Handling**: An absent or invalid target or representation produces a stable validation result and no Creation Request Plan. A valid but unrepresentable Plan produces `UnsupportedRepresentation` for `RepresentationField` and no Creation Request Plan. Local validation makes no claim about remote Repository naming, field limits, existence, access, permissions, or acceptance.
-- **References**: [related] `plan` Conceptual Model for Plan validity and exact Plan Text.
-
-#### Scenario: Milestone representation selected [happy]
-
-- **GIVEN** a valid natively representable Plan and GitHub Repository Target with Milestone explicitly selected
-- **WHEN** the planner requests a creation dry-run
-- **THEN** it returns a Milestone Creation Request Plan
-
-#### Scenario: Representation is absent [error]
-
-- **GIVEN** a valid Plan and GitHub Repository Target but no supported representation
-- **WHEN** the planner requests a creation dry-run
-- **THEN** it returns no Creation Request Plan and identifies the representation input as invalid
-
-#### Scenario: Plan Text collides with native structure [error]
-
-- **GIVEN** a valid Plan whose exact Goal or Acceptance Condition contains a reserved structural line for the selected GitHub representation
-- **WHEN** the planner requests a creation dry-run
-- **THEN** it returns no Creation Request Plan and identifies the representation input as unsupported
-
 ## ADDED Requirements
 
 ### Requirement: github-plan-narrative
@@ -93,6 +55,42 @@ A GitHub creation planner MUST represent every accepted Plan through one determi
 - **THEN** both contain the same exact GitHub Plan Narrative
 
 ## MODIFIED Requirements
+
+### Requirement: explicit-github-target-and-representation
+
+A GitHub creation planner MUST accept a dry-run only for one valid and representable Plan, one valid GitHub Repository Target, and one explicitly selected GitHub Plan Representation.
+
+- **Input and Acceptance**: The Repository target and representation satisfy their Conceptual Model definitions. The Plan satisfies the `plan` capability and the selected representation's native-narrative acceptance rules. Representation is never inferred from Plan content.
+- **Behavioral Rules**:
+
+  | Rule | Preconditions or state | Input or event condition | Output or response | Side Effects |
+  |---|---|---|---|---|
+  | Milestone representation | Plan and Repository Target are valid and representable | Milestone is explicitly selected | Milestone Creation Request Plan | None |
+  | Issue representation | Plan and Repository Target are valid and representable | Issue is explicitly selected | Issue Creation Request Plan | None |
+  | Representation absent or unsupported | Plan and Repository Target are valid | No supported representation is selected | Stable invalid-representation result and no Creation Request Plan | None |
+  | Plan is not natively representable | Plan and Repository Target are valid | Exact Plan Text collides with the selected representation's structural lines | Stable unsupported-representation result identifying the representation input and no Creation Request Plan | None |
+
+- **Invariants**: Accepted Repository segments retain their exact values, Plan validity remains provider-independent, and representation is never inferred from Plan content.
+- **Failure Handling**: An absent or invalid target or representation produces a stable validation result and no Creation Request Plan. A valid but unrepresentable Plan produces `UnsupportedRepresentation` for `RepresentationField` and no Creation Request Plan. Local validation makes no claim about remote Repository naming, field limits, existence, access, permissions, or acceptance.
+- **References**: [related] `plan` Conceptual Model for Plan validity and exact Plan Text.
+
+#### Scenario: Milestone representation selected [happy]
+
+- **GIVEN** a valid natively representable Plan and GitHub Repository Target with Milestone explicitly selected
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns a Milestone Creation Request Plan
+
+#### Scenario: Representation is absent [error]
+
+- **GIVEN** a valid Plan and GitHub Repository Target but no supported representation
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns no Creation Request Plan and identifies the representation input as invalid
+
+#### Scenario: Plan Text collides with native structure [error]
+
+- **GIVEN** a valid Plan whose exact Goal or Acceptance Condition contains a reserved structural line for the selected GitHub representation
+- **WHEN** the planner requests a creation dry-run
+- **THEN** it returns no Creation Request Plan and identifies the representation input as unsupported
 
 ### Requirement: milestone-creation-request-plan
 
