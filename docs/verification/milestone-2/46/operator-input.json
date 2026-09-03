@@ -1,0 +1,68 @@
+{
+  "evidenceKind": "Current operator verification facts. Historical verification events establish acceptance evidence, not current Plan or Task state.",
+  "verifiedAt": "2026-09-03T16:08:32Z",
+  "verifiedRuntimeRevision": "0a2fcb254a55cf47aef6915522a8012609eba7e9",
+  "verifiedRepositoryRevision": "aefb5d5b6b8b2472ac08149dd1987f367a0d12af",
+  "runtimeEquivalence": "The current repository revision and the immutable live Host revision have no differences in Go sources, go.mod or go.sum.",
+  "acceptanceConditionEvidence": [
+    {
+      "condition": 1,
+      "requirement": "A repository-owned reference Host accepts explicit Plan Request triggers and routes target-specific semantic Results without taking ownership of Reconciliation, scheduling, or external mutation decisions.",
+      "facts": "internal/planhost.Start starts no Attempt before Trigger; Trigger sends only its bound TargetIdentity to the existing Controller. assessmentdelivery.Deliver qualifies and preserves the exact Plan-owned assessment. Host owns invocation intake, report consumption, result handoff and cancellation, not reconciliation policy, a scheduler, authorization or external mutation. Tests cover idle lifecycle, pending triggers, exact identity and all assessment occurrences.",
+      "sources": [
+        "internal/planhost/host.go",
+        "controllers/plan/assessmentdelivery/delivery.go",
+        "TestHostZeroAndIdleLifecycle",
+        "TestHostPendingTriggersCoalesceDuringActiveAttempt",
+        "TestDeliverPreservesEveryAssessmentOccurrence"
+      ]
+    },
+    {
+      "condition": 2,
+      "requirement": "A deterministic local environment exercises the Plan Feedback Loop without credentials, external services, wall-clock sleeps, or manual state changes.",
+      "facts": "The repository-owned Host integration environment in internal/planhost/host_test.go uses a test-owned Planning Context, current-facts assessor, channels and testing/synctest. It uses no external credential, service, process or time.Sleep, and Actor changes are performed by the test. This scope is the deterministic local Host environment; real GitHub/Codex verification and SDK process-boundary tests are separate.",
+      "sources": [
+        "internal/planhost/host_test.go",
+        "TestHostConvergesOnlyAfterActorChangesAndAcceptance"
+      ]
+    },
+    {
+      "condition": 3,
+      "requirement": "A multi-cycle integration test proves that fresh Observations, Result Destination delivery, and externally applied Task progress converge one Plan to Complete.",
+      "facts": "TestHostConvergesOnlyAfterActorChangesAndAcceptance explicitly applies two Actor changes to source-owned Task state outside the Host, checks Snapshot and assessor revisions 0/1/2, preserves the exact target-specific Result, and observes Retain/Retain/Complete. It checks successful handoff before processed evidence. TestHostCurrentFactsDetermineAllOutcomes returns InsufficientInformation for closed Tasks without acceptance and Complete only with acceptance. These tests and the full Go/race suites pass.",
+      "sources": [
+        "internal/planhost/host_test.go",
+        "TestHostConvergesOnlyAfterActorChangesAndAcceptance",
+        "TestHostCurrentFactsDetermineAllOutcomes",
+        "arcloom/controlruntime/controller_directive_test.go"
+      ]
+    },
+    {
+      "condition": 4,
+      "requirement": "The same public contracts complete one real GitHub Plan Attempt and at least two later Attempts after real external state changes.",
+      "facts": "Three historical real Attempts use the same immutable Host and Codex 0.149.1 through public Controller/Plan Attempt/SDK contracts, with fresh Snapshot then Delivery acquisitions. Baseline completes at 2026-09-03T14:21:32.720Z (7 closed/3 open). PR63 merges at 14:29:29Z and Issue44 closes at 14:29:30Z; the first later Attempt completes at 14:33:25.993Z (8 closed/2 open, only Issue44 changes). The operator removes only the obsolete milestone metadata comment at 14:34:34Z, preserving readable Goal/AC exactly; the second later Attempt completes at 14:34:51.696Z (same exact Plan/progress, empty progress difference). Each produces its own Retain, assessed Report, await_request directive, exit 0 and two complete raw records. Issue45's accidental close/reopen is excluded from these deliberate changes. Baseline evidence is reviewed and merged in PR63; repeated evidence is independently reviewed, CI verified and merged in PR64 at 16:07:40Z.",
+      "sources": [
+        "https://github.com/kotokumu/arcloom/pull/63",
+        "https://github.com/kotokumu/arcloom/pull/64",
+        "docs/verification/milestone-2/44/README.md",
+        "docs/verification/milestone-2/45/README.md",
+        "docs/verification/milestone-2/evidence.test.mjs"
+      ]
+    },
+    {
+      "condition": 5,
+      "requirement": "The resulting commands, tests, and evidence provide the development environment required for evidence-driven remodelling and refactoring in Milestone #3.",
+      "facts": "The repository includes the runnable cmd/arcloom-plan command, exact-target/FIFO/cancellation tests, deterministic Host environment and multi-cycle tests, docs/PLAN_FEEDBACK_LOOP.md operator reproduction and authority guidance, immutable runtime provenance, and retained baseline/repeated real records, manifests, inputs and integrity checks. PR59/63/64 are merged. Full Go tests, full race tests and golangci-lint pass on unchanged product sources; all three captured-evidence tests pass and PR64 CI explicitly executes them. Independent AC1/2/3/5 audit passes, including a ten-run race check of Host, command, assessmentdelivery and attempt packages. This is an available development environment for Milestone3; Milestone3 work itself is not claimed complete.",
+      "sources": [
+        "cmd/arcloom-plan",
+        "internal/planhost/host_test.go",
+        "docs/PLAN_FEEDBACK_LOOP.md",
+        "docs/verification/milestone-2",
+        "https://github.com/kotokumu/arcloom/pull/59",
+        "https://github.com/kotokumu/arcloom/actions/runs/33768042322"
+      ]
+    }
+  ],
+  "stateAuthority": "This invocation must reacquire the current Plan and complete Task progress from GitHub. No earlier Snapshot, Report or assessment is supplied as current state. The operator verifies the other nine Issues are completed; the final coordination Issue closure is a separate administrative precondition, not evidence of semantic Goal completion.",
+  "verificationBoundary": "The result of this final ordinary Request is not preselected. Issue closure, earlier Retain results and process exit 0 alone do not establish Complete. Final raw evidence still requires independent review and a dedicated Issue46 PR before the Milestone is administratively closed."
+}
