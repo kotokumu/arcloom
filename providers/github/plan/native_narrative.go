@@ -26,6 +26,7 @@ type narrativeConditionsBoundary uint8
 const (
 	narrativeEndBoundary narrativeConditionsBoundary = iota + 1
 	narrativeTargetBoundary
+	narrativeIncompleteBoundary
 )
 
 type narrativeTextFact struct {
@@ -141,7 +142,10 @@ func (s scheme) establishNarrativeFacts(content textFact) narrativeFacts {
 	}
 	boundary := narrativeEndBoundary
 	if hasTarget {
-		boundary = narrativeTargetBoundary
+		boundary = narrativeIncompleteBoundary
+		if strings.HasPrefix(source[conditionsEnd:], narrativeTargetDateHeading+"\n\n") {
+			boundary = narrativeTargetBoundary
+		}
 	}
 	facts.conditions = establishNarrativeConditions(source[conditionsStart:conditionsEnd], boundary)
 
@@ -154,7 +158,7 @@ func (s scheme) establishNarrativeFacts(content textFact) narrativeFacts {
 	}
 	target := targetLines[0]
 	if !strings.HasSuffix(source[:target.start], "\n\n") ||
-		!strings.HasPrefix(source[target.start:], narrativeTargetDateHeading+"\n\n") ||
+		boundary != narrativeTargetBoundary ||
 		!strings.HasSuffix(source, "\n") {
 		return facts
 	}
@@ -176,7 +180,7 @@ func establishNarrativeConditions(section string, boundary narrativeConditionsBo
 		zeroForm = "\n\n"
 		closing = "\n\n"
 	}
-	if section == zeroForm {
+	if boundary != narrativeIncompleteBoundary && section == zeroForm {
 		return narrativeConditionsFacts{complete: true}
 	}
 	markers := narrativeMemberLines(section)
@@ -195,6 +199,8 @@ func establishNarrativeConditions(section string, boundary narrativeConditionsBo
 		if index+1 < len(markers) {
 			memberEnd = markers[index+1].start
 			memberClosing = "\n\n"
+		} else if boundary == narrativeIncompleteBoundary {
+			return narrativeConditionsFacts{members: members}
 		}
 		framed := section[memberStart:memberEnd]
 		if !strings.HasSuffix(framed, memberClosing) {

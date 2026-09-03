@@ -129,9 +129,8 @@ this pre-publication audit with the final result and reviewer decision.
 ## 6. Post-implementation Review
 
 Architecture, SOLID responsibility, interface, procedural-code, code-quality,
-and Go test-specification reviewers examined the implementation. The reviews
-found no remaining Blocking, High, or Medium implementation issue. Review
-findings led to these changes before approval:
+and Go test-specification reviews cover the implementation. The pre-PR review
+findings are addressed by these changes:
 
 - Add Snapshot coverage for invalid and duplicate Acceptance Conditions.
 - Add Issue-specific legacy Target Date conflict coverage and ordinal
@@ -140,3 +139,30 @@ findings led to these changes before approval:
   interpretation.
 - Treat a Target Date opening without a value/final frame as Unavailable rather
   than panicking.
+
+The final review's Medium Target Date boundary finding is resolved after the
+task owner's approval on 2026-09-03. Conditions remain Incomplete until the full
+date opening is established; earlier fully framed members remain observable.
+Five public regression cases cover missing post-heading framing, truncation at
+the heading, truncation after one LF, a malformed empty-collection boundary,
+and preservation of only earlier fully framed members. All five fail against
+`ab008de0548a64da93984e374b120721b5c94eed` and pass with the correction:
+
+```sh
+GOCACHE=/private/tmp/arcloom-live-proof-go-cache go test ./providers/github/plan -run '^TestNativeNarrativeObservationIssueTargetDateStates$' -count=1
+```
+
+Independent reviewer `final_implementation_review` approves the correction and
+operator proof code with no remaining actionable findings on 2026-09-03. The
+operator proof rejects untracked product files and resolves the supplied
+revision to its full commit SHA. This agent verdict is not human approval of
+live evidence.
+
+| Verification after correction | Result |
+|---|---|
+| `go test -race ./...` | Pass, all 11 packages |
+| `go vet ./...` | Pass |
+| `golangci-lint run` | Pass, 0 issues |
+| `npm run lint` | Pass |
+| `npm test` | Pass, 30 tests |
+| `git diff --check` | Pass |
