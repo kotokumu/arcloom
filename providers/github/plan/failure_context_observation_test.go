@@ -126,9 +126,9 @@ func TestGitHubHTTPFailuresAtCollectionLocalizeTaskCollection(t *testing.T) {
 				if tt.status == http.StatusFound {
 					response.Header.Set("Location", "https://elsewhere.example/rebind")
 				}
-				root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+				root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				if representation == githubplan.IssueRepresentation {
-					root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+					root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				}
 				transport := &failureObservationRoundTripper{responses: []*http.Response{
 					{StatusCode: http.StatusOK, Header: make(http.Header), Body: &failureObservationBody{data: []byte(root), closed: &rootClosed}},
@@ -185,9 +185,9 @@ func TestGitHubMalformedJSONAndTransportFailuresLocalizeKnowledge(t *testing.T) 
 		})
 		t.Run(string(representation)+"/malformed collection", func(t *testing.T) {
 			rootClosed, collectionClosed := false, false
-			root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+			root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 			if representation == githubplan.IssueRepresentation {
-				root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+				root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 			}
 			transport := &failureObservationRoundTripper{responses: []*http.Response{
 				{StatusCode: http.StatusOK, Header: make(http.Header), Body: &failureObservationBody{data: []byte(root), closed: &rootClosed}},
@@ -232,9 +232,9 @@ func TestGitHubMalformedJSONAndTransportFailuresLocalizeKnowledge(t *testing.T) 
 			}
 		})
 		t.Run(string(representation)+"/transport collection", func(t *testing.T) {
-			root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+			root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 			if representation == githubplan.IssueRepresentation {
-				root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+				root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 			}
 			transport := &errorAfterRootRoundTripper{root: root, err: providerSentinel}
 			var observer planrepresentation.Observer
@@ -416,9 +416,9 @@ func TestGitHubContextCancellationAfterRootSuccessStopsBeforeCollection(t *testi
 		for _, representation := range []githubplan.Representation{githubplan.MilestoneRepresentation, githubplan.IssueRepresentation} {
 			t.Run(string(representation)+"/"+wanted.Error(), func(t *testing.T) {
 				ctx := &synchronizableContext{base: context.Background(), done: make(chan struct{})}
-				root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+				root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				if representation == githubplan.IssueRepresentation {
-					root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+					root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				}
 				body := &callbackBody{data: []byte(root), close: func() { ctx.trigger(wanted) }}
 				transport := &singleBodyRoundTripper{body: body}
@@ -450,9 +450,9 @@ func TestGitHubContextCancellationAndDeadlineDuringLaterPage(t *testing.T) {
 		for _, representation := range []githubplan.Representation{githubplan.MilestoneRepresentation, githubplan.IssueRepresentation} {
 			t.Run(string(representation)+"/"+wanted.Error(), func(t *testing.T) {
 				ctx := &synchronizableContext{base: context.Background(), done: make(chan struct{})}
-				root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+				root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				if representation == githubplan.IssueRepresentation {
-					root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+					root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				}
 				transport := &blockingAfterPagesRoundTripper{representation: representation, root: root, started: make(chan struct{})}
 				var observer planrepresentation.Observer
@@ -498,9 +498,9 @@ func TestGitHubContextCancellationAtFinalCompletionCheckIgnoresObservation(t *te
 			t.Run(string(representation)+"/"+wanted.Error(), func(t *testing.T) {
 				ctx := &synchronizableContext{base: context.Background(), done: make(chan struct{})}
 				rootClosed, collectionClosed := false, false
-				root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+				root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				if representation == githubplan.IssueRepresentation {
-					root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+					root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 				}
 				transport := &failureObservationRoundTripper{responses: []*http.Response{
 					{StatusCode: http.StatusOK, Header: make(http.Header), Body: &failureObservationBody{data: []byte(root), closed: &rootClosed}},

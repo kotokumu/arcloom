@@ -95,9 +95,9 @@ func TestPaginationPublicResultAndRequestMatrix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			root := `{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`
+			root := `{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 			if tt.representation == githubplan.IssueRepresentation {
-				root = `{"number":42,"title":"Plan","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`
+				root = `{"number":42,"title":"Plan","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`
 			}
 			closed := make([]bool, 1+len(tt.pageBodies))
 			responses := []*http.Response{{StatusCode: http.StatusOK, Header: make(http.Header), Body: &paginationObservationBody{data: []byte(root), closed: &closed[0]}}}
@@ -183,7 +183,7 @@ func TestPagination101ResourcesIncludesLaterPage(t *testing.T) {
 	expectedTasks = append(expectedTasks, must(plan.NewTask("Task 101")))
 	rootClosed, firstClosed, secondClosed := false, false, false
 	transport := &paginationObservationRoundTripper{responses: []*http.Response{
-		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &paginationObservationBody{data: []byte(`{"number":42,"title":"Plan","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`), closed: &rootClosed}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &paginationObservationBody{data: []byte(`{"number":42,"title":"Plan","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`), closed: &rootClosed}},
 		{StatusCode: http.StatusOK, Header: http.Header{"Link": []string{`<https://api.github.com/repos/owner/repo/issues?milestone=42&page=2&per_page=100&state=all>; rel="next"`}}, Body: &paginationObservationBody{data: []byte("[" + strings.Join(firstItems, ",") + "]"), closed: &firstClosed}},
 		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &paginationObservationBody{data: []byte(`[{"id":101,"title":"Task 101"}]`), closed: &secondClosed}},
 	}}

@@ -2,7 +2,6 @@ package githubplan_test
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -216,8 +215,8 @@ func (t *correlationTransport) RoundTrip(request *http.Request) (*http.Response,
 	headers := make(http.Header)
 	switch page {
 	case "":
-		content := `{"goal":"Goal-` + label + `","acceptance_conditions":["A-` + label + `"],"target_date":null}`
-		encoded := must(json.Marshal("<!-- arcloom-plan:v1\n" + base64.RawURLEncoding.EncodeToString([]byte(content)) + "\n-->\n\n## Human narrative\nThis suffix is not machine data.\n"))
+		content := "## Goal\n\nGoal-" + label + "\n\n## Acceptance Conditions\n\n### 1\n\nA-" + label + "\n"
+		encoded := must(json.Marshal(content))
 		title := must(json.Marshal("Plan-" + label))
 		body = `{"number":42,"title":` + string(title) + `,"body":` + string(encoded) + `}`
 	case "1":
@@ -228,8 +227,8 @@ func (t *correlationTransport) RoundTrip(request *http.Request) (*http.Response,
 		body = fmt.Sprintf(`[{"id":101,"number":101,"node_id":"node-101","title":%q}]`, "Task-"+label+"-2")
 	}
 	if strings.Contains(request.URL.Path, "/milestones/") {
-		content := `{"goal":"Goal-` + label + `","acceptance_conditions":["A-` + label + `"]}`
-		encoded := must(json.Marshal("<!-- arcloom-plan:v1\n" + base64.RawURLEncoding.EncodeToString([]byte(content)) + "\n-->\n\n## Human narrative\nThis suffix is not machine data.\n"))
+		content := "## Goal\n\nGoal-" + label + "\n\n## Acceptance Conditions\n\n### 1\n\nA-" + label + "\n"
+		encoded := must(json.Marshal(content))
 		title := must(json.Marshal("Plan-" + label))
 		body = `{"number":42,"title":` + string(title) + `,"description":` + string(encoded) + `}`
 	}
@@ -267,8 +266,8 @@ func (t *changingFactsTransport) RoundTrip(request *http.Request) (*http.Respons
 	}
 	t.mu.Unlock()
 	if strings.Contains(request.URL.Path, "/milestones/") {
-		content := `{"goal":"Goal-` + label + `","acceptance_conditions":["A-` + label + `"]}`
-		encoded := must(json.Marshal("<!-- arcloom-plan:v1\n" + base64.RawURLEncoding.EncodeToString([]byte(content)) + "\n-->\n\n## Human narrative\nThis suffix is not machine data.\n"))
+		content := "## Goal\n\nGoal-" + label + "\n\n## Acceptance Conditions\n\n### 1\n\nA-" + label + "\n"
+		encoded := must(json.Marshal(content))
 		title := must(json.Marshal("Plan-" + label))
 		body := `{"number":42,"title":` + string(title) + `,"description":` + string(encoded) + `}`
 		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
@@ -283,8 +282,8 @@ type fixedFactsTransport struct {
 
 func (t *fixedFactsTransport) RoundTrip(request *http.Request) (*http.Response, error) {
 	if strings.Contains(request.URL.Path, "/milestones/") {
-		content := `{"goal":"Goal-` + t.label + `","acceptance_conditions":["A-` + t.label + `"]}`
-		encoded := must(json.Marshal("<!-- arcloom-plan:v1\n" + base64.RawURLEncoding.EncodeToString([]byte(content)) + "\n-->\n\n## Human narrative\nThis suffix is not machine data.\n"))
+		content := "## Goal\n\nGoal-" + t.label + "\n\n## Acceptance Conditions\n\n### 1\n\nA-" + t.label + "\n"
+		encoded := must(json.Marshal(content))
 		title := must(json.Marshal("Plan-" + t.label))
 		body := `{"number":42,"title":` + string(title) + `,"description":` + string(encoded) + `}`
 		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil

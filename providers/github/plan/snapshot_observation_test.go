@@ -2,6 +2,7 @@ package githubplan_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sort"
@@ -17,7 +18,7 @@ import (
 
 func TestMilestoneSnapshotObserverReconstructsCurrentPlanAndProgress(t *testing.T) {
 	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
-		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"closed","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`), closed: new(bool)}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"closed","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`), closed: new(bool)}},
 		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[{"id":1,"title":"A","state":"open"},{"id":2,"title":"B","state":"closed"}]`), closed: new(bool)}},
 	}}
 	target := must(githubplan.NewMilestoneTarget(must(githubplan.NewRepository("owner", "repo")), must(githubplan.NewResourceNumber(42))))
@@ -52,9 +53,122 @@ func TestMilestoneSnapshotObserverReconstructsCurrentPlanAndProgress(t *testing.
 	}
 }
 
+func TestMilestoneSnapshotObserverReconstructsCapturedMilestoneThree(t *testing.T) {
+	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":3,"title":"Arcloom Reconciliation Model and Module Finalization","state":"open","due_on":null,"description":"## Goal\n\nUse the deterministic and real Plan Feedback Loop evidence from Milestone #2 to remodel and refactor Reconciliation, then finalize only the modules and interfaces required by verified behavior.\n\n## Acceptance Conditions\n\n### 1\n\nMilestone #2 provides a runnable reference Host, deterministic local test environment, multi-cycle convergence test, and real GitHub Plan evidence.\n\n### 2\n\nThe responsibilities of Reconciliation, Control, Feedback Loop composition, Result Destination, External Actor, and Observation are re-audited against that evidence.\n\n### 3\n\nThe accepted conceptual model, specifications, and Architecture contain no unresolved responsibility or boundary decision required by implementation.\n\n### 4\n\nThe implementation is refactored to the accepted model while the deterministic and real-loop verification remains green.\n\n### 5\n\nOnly evidence-backed module responsibilities, boundaries, and consumer-owned interfaces remain.\n"}`), closed: new(bool)}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[{"id":1047,"number":47,"title":"Re-audit Reconciliation, Control, Feedback Loop, Result Destination, External Actor, and Observation responsibilities.","state":"open"},{"id":1048,"number":48,"title":"Finalize the modules and interfaces required for Controller development.","state":"open"},{"id":1057,"number":57,"title":"Remodel Reconciliation from verified Feedback Loop evidence.","state":"open"},{"id":1058,"number":58,"title":"Refactor Reconciliation to the accepted model without weakening loop behavior.","state":"open"}]`), closed: new(bool)}},
+	}}
+	target := must(githubplan.NewMilestoneTarget(must(githubplan.NewRepository("kotokumu", "arcloom")), must(githubplan.NewResourceNumber(3))))
+	observer := must(githubplan.NewMilestoneSnapshotObserver(&http.Client{Transport: transport}, target))
+	got := must(plansnapshot.Observe(context.Background(), observer))
+
+	tasks := []plan.Task{
+		must(plan.NewTask("Re-audit Reconciliation, Control, Feedback Loop, Result Destination, External Actor, and Observation responsibilities.")),
+		must(plan.NewTask("Finalize the modules and interfaces required for Controller development.")),
+		must(plan.NewTask("Remodel Reconciliation from verified Feedback Loop evidence.")),
+		must(plan.NewTask("Refactor Reconciliation to the accepted model without weakening loop behavior.")),
+	}
+	expected := must(plan.New(
+		"Arcloom Reconciliation Model and Module Finalization",
+		must(plan.NewGoal("Use the deterministic and real Plan Feedback Loop evidence from Milestone #2 to remodel and refactor Reconciliation, then finalize only the modules and interfaces required by verified behavior.")),
+		[]plan.AcceptanceCondition{
+			must(plan.NewAcceptanceCondition("Milestone #2 provides a runnable reference Host, deterministic local test environment, multi-cycle convergence test, and real GitHub Plan evidence.")),
+			must(plan.NewAcceptanceCondition("The responsibilities of Reconciliation, Control, Feedback Loop composition, Result Destination, External Actor, and Observation are re-audited against that evidence.")),
+			must(plan.NewAcceptanceCondition("The accepted conceptual model, specifications, and Architecture contain no unresolved responsibility or boundary decision required by implementation.")),
+			must(plan.NewAcceptanceCondition("The implementation is refactored to the accepted model while the deterministic and real-loop verification remains green.")),
+			must(plan.NewAcceptanceCondition("Only evidence-backed module responsibilities, boundaries, and consumer-owned interfaces remain.")),
+		},
+		tasks,
+		nil,
+	))
+	current, hasCurrent := got.CurrentPlan()
+	if !hasCurrent {
+		t.Fatal("Observe() did not establish the captured current Plan")
+	}
+	if diff := cmp.Diff(true, current.Equal(expected)); diff != "" {
+		t.Errorf("captured current Plan mismatch (-want +got):\n%s", diff)
+	}
+	progress, hasProgress := got.Progress()
+	if !hasProgress {
+		t.Fatal("Observe() did not establish captured progress")
+	}
+	if diff := cmp.Diff(plansnapshot.Open, progress.OverallState()); diff != "" {
+		t.Errorf("captured overall state mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(true, progress.MembershipComplete()); diff != "" {
+		t.Errorf("captured progress completeness mismatch (-want +got):\n%s", diff)
+	}
+	progressTasks := progress.Tasks()
+	if diff := cmp.Diff(4, len(progressTasks)); diff != "" {
+		t.Fatalf("captured task count mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]plansnapshot.ProgressState{plansnapshot.Open, plansnapshot.Open, plansnapshot.Open, plansnapshot.Open}, []plansnapshot.ProgressState{progressTasks[0].State(), progressTasks[1].State(), progressTasks[2].State(), progressTasks[3].State()}); diff != "" {
+		t.Errorf("captured task states mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestMilestoneSnapshotObserverNativeNarrativeAuthority(t *testing.T) {
+	legacy := "<!-- arcloom-plan:v1\neyJnb2FsIjoiTGVnYWN5IiwiYWNjZXB0YW5jZV9jb25kaXRpb25zIjpbIkxlZ2FjeSJdfQ\n-->\n\n"
+	native := "## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"
+	tests := []struct {
+		name        string
+		content     string
+		dueOn       string
+		wantCurrent bool
+	}{
+		{name: "native", content: native, wantCurrent: true},
+		{name: "malformed required heading", content: "## Goal\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"},
+		{name: "incomplete ordinal prefix", content: "## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n\n### 3\n\nLater\n"},
+		{name: "invalid goal", content: "## Goal\n\n \u2003\n\n## Acceptance Conditions\n\n### 1\n\nA\n"},
+		{name: "blank acceptance condition", content: "## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\n\n"},
+		{name: "unicode whitespace acceptance condition", content: "## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\n \u2003\n"},
+		{name: "duplicate acceptance conditions", content: "## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n\n### 2\n\nA\n"},
+		{name: "mixed valid and invalid acceptance conditions", content: "## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n\n### 2\n\n \u2003\n\n### 3\n\nB\n"},
+		{name: "arbitrary preamble", content: "plain preamble\n\n" + native, wantCurrent: true},
+		{name: "conflicting legacy preamble", content: legacy + native, wantCurrent: true},
+		{name: "marker only", content: legacy},
+		{name: "removed marker", content: native, wantCurrent: true},
+		{name: "milestone narrative target date", content: native + "\n## Target Date\n\n2028-03-01\n", dueOn: "2028-02-29T00:00:00Z"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := `{"number":42,"title":"Plan","state":"open","description":` + string(must(json.Marshal(tt.content)))
+			if tt.dueOn == "" {
+				root += `,"due_on":null}`
+			} else {
+				root += `,"due_on":` + string(must(json.Marshal(tt.dueOn))) + `}`
+			}
+			transport := &milestoneObservationRoundTripper{responses: []*http.Response{
+				{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(root), closed: new(bool)}},
+				{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[]`), closed: new(bool)}},
+			}}
+			target := must(githubplan.NewMilestoneTarget(must(githubplan.NewRepository("owner", "repo")), must(githubplan.NewResourceNumber(42))))
+			observer := must(githubplan.NewMilestoneSnapshotObserver(&http.Client{Transport: transport}, target))
+			got := must(plansnapshot.Observe(context.Background(), observer))
+			current, hasCurrent := got.CurrentPlan()
+			if diff := cmp.Diff(tt.wantCurrent, hasCurrent); diff != "" {
+				t.Fatalf("current Plan presence mismatch (-want +got):\n%s", diff)
+			}
+			if tt.wantCurrent {
+				expected := must(plan.New("Plan", must(plan.NewGoal("Goal")), []plan.AcceptanceCondition{must(plan.NewAcceptanceCondition("A"))}, nil, nil))
+				if diff := cmp.Diff(true, current.Equal(expected)); diff != "" {
+					t.Errorf("current Plan mismatch (-want +got):\n%s", diff)
+				}
+			}
+			progress, hasProgress := got.Progress()
+			if diff := cmp.Diff(true, hasProgress); diff != "" {
+				t.Fatalf("progress presence mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(true, progress.MembershipComplete()); diff != "" {
+				t.Errorf("progress completeness mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestMilestoneSnapshotObserverUsesAscendingNativeIdentityForTaskOrder(t *testing.T) {
 	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
-		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`), closed: new(bool)}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`), closed: new(bool)}},
 		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[{"id":30,"title":"Third","state":"closed"},{"id":20,"title":"Second","state":"open"},{"id":10,"title":"First","state":"closed"}]`), closed: new(bool)}},
 	}}
 	target := must(githubplan.NewMilestoneTarget(must(githubplan.NewRepository("owner", "repo")), must(githubplan.NewResourceNumber(42))))
@@ -115,7 +229,7 @@ func TestMilestoneSnapshotObserverPreservesUnknownDuplicateAndIncompleteProgress
 
 func TestMilestoneSnapshotObserverUsesCompletePagination(t *testing.T) {
 	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
-		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`), closed: new(bool)}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`), closed: new(bool)}},
 		{StatusCode: http.StatusOK, Header: http.Header{"Link": []string{`<https://api.github.com/repos/owner/repo/issues?milestone=42&page=2&per_page=100&state=all>; rel="next"`}}, Body: &milestoneObservationBody{data: []byte(`[{"id":1,"title":"A","state":"open"}]`), closed: new(bool)}},
 		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[{"id":2,"title":"B","state":"closed"}]`), closed: new(bool)}},
 	}}
@@ -312,7 +426,7 @@ func TestMilestoneSnapshotObserverRootFailuresAreStable(t *testing.T) {
 
 func TestMilestoneSnapshotObserverReconstructsValidDueOn(t *testing.T) {
 	transport := &milestoneObservationRoundTripper{responses: []*http.Response{
-		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","due_on":"2028-02-29T00:00:00Z","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`), closed: new(bool)}},
+		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`{"number":42,"title":"Plan","state":"open","due_on":"2028-02-29T00:00:00Z","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`), closed: new(bool)}},
 		{StatusCode: http.StatusOK, Header: make(http.Header), Body: &milestoneObservationBody{data: []byte(`[{"id":1,"title":"A","state":"open"}]`), closed: new(bool)}},
 	}}
 	target := must(githubplan.NewMilestoneTarget(must(githubplan.NewRepository("owner", "repo")), must(githubplan.NewResourceNumber(42))))
@@ -340,8 +454,8 @@ func TestMilestoneSnapshotObserverInvalidOrUnavailableDueOnKeepsProgressOnly(t *
 		name string
 		root string
 	}{
-		{name: "invalid", root: `{"number":42,"title":"Plan","state":"open","due_on":"2028-02-30T00:00:00Z","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`},
-		{name: "unavailable", root: `{"number":42,"title":"Plan","state":"open","due_on":123,"description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`},
+		{name: "invalid", root: `{"number":42,"title":"Plan","state":"open","due_on":"2028-02-30T00:00:00Z","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`},
+		{name: "unavailable", root: `{"number":42,"title":"Plan","state":"open","due_on":123,"description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
