@@ -1,0 +1,10 @@
+{
+  "closed_issues": 8,
+  "description": "## Goal\n\nMake Plan feedback loops runnable and safe to evolve by providing a reference Host, a deterministic local integration environment, repeated-cycle convergence verification, and real GitHub Plan evidence.\n\n## Acceptance Conditions\n\n### 1\n\nA repository-owned reference Host accepts explicit Plan Request triggers and routes target-specific semantic Results without taking ownership of Reconciliation, scheduling, or external mutation decisions.\n\n### 2\n\nA deterministic local environment exercises the Plan Feedback Loop without credentials, external services, wall-clock sleeps, or manual state changes.\n\n### 3\n\nA multi-cycle integration test proves that fresh Observations, Result Destination delivery, and externally applied Task progress converge one Plan to Complete.\n\n### 4\n\nThe same public contracts complete one real GitHub Plan Attempt and at least two later Attempts after real external state changes.\n\n### 5\n\nThe resulting commands, tests, and evidence provide the development environment required for evidence-driven remodelling and refactoring in Milestone #3.\n",
+  "html_url": "https://github.com/kotokumu/arcloom/milestone/2",
+  "number": 2,
+  "open_issues": 2,
+  "state": "open",
+  "title": "Arcloom Sustained Reconciliation Proof",
+  "updated_at": "2026-09-03T14:34:34Z"
+}
