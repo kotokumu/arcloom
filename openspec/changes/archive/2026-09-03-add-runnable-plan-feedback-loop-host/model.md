@@ -113,9 +113,7 @@ Deterministic local verification, real Provider bindings, and reproducible post-
 
 ---
 
-## 5. Unresolved Decisions
-
-None.
+## 5. Resolved Decisions
 
 The proposal decisions are resolved as follows:
 
@@ -129,7 +127,13 @@ These are proposed resolved design choices, not a record of human approval. Cons
 
 ---
 
-## 6. Sources
+## 6. Unresolved Decisions
+
+None.
+
+---
+
+## 7. Sources
 
 - `PRODUCT.md`
 - `ARCHITECTURE.md`
@@ -139,7 +143,7 @@ These are proposed resolved design choices, not a record of human approval. Cons
 - `openspec/specs/codex-plan-control-assessment/spec.md`
 - Evidence packet `M2-HOST-REQ-v2`, frozen from commit `e22f0f0de3b6efad7520cd4a863c2da61b5572e7`, GitHub Milestone #2, and issue bodies #44–#56 read on 2026-09-03.
 
-### 6-1. Frozen Requirements and Evidence
+### 7-1. Frozen Requirements and Evidence
 
 The same solution-neutral packet was supplied to `host_initial_model` and `host_independent_scenarios`. Neither author received the existing change's model, design, proposed packages, interfaces, or preferred finding. Scenario content was revealed only after the initial minimality PASS.
 

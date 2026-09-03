@@ -34,9 +34,9 @@ type commandDependencies struct {
 }
 
 type commandOptions struct {
-	owner, repository, executable, model, effort, workdir, evidencePath string
-	milestone                                                           int64
-	shutdown                                                            time.Duration
+	owner, repository, executable, model, effort, workdir, evidencePath, outputPath string
+	milestone                                                                       int64
+	shutdown                                                                        time.Duration
 }
 
 func parseOptions(arguments []string) (commandOptions, error) {
@@ -52,6 +52,7 @@ func parseOptions(arguments []string) (commandOptions, error) {
 	flags.StringVar(&options.effort, "effort", "", "Codex reasoning effort")
 	flags.StringVar(&options.workdir, "workdir", "", "existing absolute working directory")
 	flags.StringVar(&options.evidencePath, "delivery-evidence", "", "optional current UTF-8 operator evidence")
+	flags.StringVar(&options.outputPath, "output-fifo", "", "existing output FIFO with an operator-owned reader")
 	if err := flags.Parse(arguments); err != nil || flags.NArg() != 0 {
 		return commandOptions{}, errors.New("invalid command options")
 	}
