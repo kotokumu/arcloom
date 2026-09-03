@@ -22,6 +22,8 @@ The existing SDK owns executable compatibility, read-only policy, process lifecy
 
 The command's HTTP credential transport authorizes only HTTPS GET requests to `api.github.com`. Codex runs in the operator's environment; that HTTP restriction is not an environment-secret isolation boundary. Use a dedicated read-only credential and assessment directory, and keep secrets out of operator evidence. Treat output as potentially sensitive planning material.
 
+When the operator configuration contains MCP servers or Apps, supply an executable launcher that disables each configured name explicitly, disables plugin/App features and Web Search for this process, and uses `exec` to start the real Codex executable with the SDK's arguments unchanged. The launcher can unset `GITHUB_TOKEN` and `GH_TOKEN` before Codex starts. It must not edit global configuration. The SDK verifies effective configuration and preserves named denials in its Thread override without forwarding connection settings or secrets. An empty `mcp_servers` table is not a substitute for explicit per-name denials.
+
 ---
 
 ## 2. Build and Invoke
@@ -92,7 +94,7 @@ Implementation issues [#51](https://github.com/kotokumu/arcloom/issues/51)–[#5
 
 | Ticket | Required action and evidence |
 |---|---|
-| [#44](https://github.com/kotokumu/arcloom/issues/44) | After the implementation is merged, build the merged revision and capture a baseline run against milestone 2. Retain complete records, exit status, acquisition times, target identity, configuration, exact executable version output, and build revision. |
+| [#44](https://github.com/kotokumu/arcloom/issues/44) | After the Host implementation is merged, build an immutable reviewed revision and capture a baseline run against milestone 2. Include any required operational correction in the #44 PR and identify its exact build revision. Retain complete records, exit status, acquisition times, target identity, configuration, exact executable version output, and build revision. |
 | [#45](https://github.com/kotokumu/arcloom/issues/45) | Make at least two explicitly authorized real Actor changes to GitHub state. For each, retain the Actor action and source revision, refresh current evidence, start a new reader, and run a fresh evaluation. Record the observed progress difference; do not use request count or a previous assessment as current facts. |
 | [#46](https://github.com/kotokumu/arcloom/issues/46) | After every other milestone Task is complete and its evidence is ready, close this final coordination Issue. Then run a later ordinary Request with a fresh Snapshot showing every Task closed and current evidence for each Acceptance Condition. Verify outcome `complete` for the exact final Plan and retain the result; coordination Issue closure or exit 0 alone is insufficient. |
 
