@@ -100,10 +100,37 @@ the exact current Plan plus complete open progress.
 
 ## 4. Live Milestone 3 Evidence
 
-Pending task 6.4. Authenticated GitHub CLI access succeeds from an approved
-execution context on 2026-09-03. The public Snapshot proof must run against the
-implementation commit and receive human review. Browser and connector reads
-used to capture the deterministic fixture do not satisfy this live proof.
+The authenticated public Snapshot proof passes against implementation commit
+`fab5efe4c2caa3ca3a5461360c9bc6d05ed1c5c9`. The exact observed Plan, progress,
+native Task identities, and response evidence are recorded in
+`live-milestone-3-result.json`. Goal, all five ordered Acceptance Conditions,
+and all four ordered Task names equal the captured values in section 3 byte
+for byte. Target Date is absent, root and all Tasks are open, and membership is
+Complete. No GitHub resource is changed.
+
+The executed secret-free command is:
+
+```sh
+GOWORK=off GOFLAGS= GOCACHE=/private/tmp/arcloom-live-proof-go-cache go run openspec/changes/remove-arcloom-metadata-from-github-plan/verification/live_milestone_3.go --live --implementation-commit fab5efe4c2caa3ca3a5461360c9bc6d05ed1c5c9
+```
+
+The operator program uses a no-cookie client, obtains the existing GitHub CLI
+credential in memory, makes only target-bound GET requests, and captures each
+response body before returning the same bytes to the public Observer. The
+command runs from the repository root; after archival, only its source path
+changes to the dated archive directory.
+
+| Evidence | Result |
+|---|---|
+| UTC observation interval | `2026-09-03T04:06:51.893103Z` through `2026-09-03T04:06:52.714904Z` |
+| Go runtime | `go1.27.0` |
+| GitHub API version, requested and selected | `2022-11-28` |
+| Root response | HTTP 200; SHA-256 `0b0ba3a9af5523ba557c7cc355d1a51ef87e84a0d984fdf42a14d7843adc4529` |
+| Complete Task-page response | HTTP 200; SHA-256 `e8fe8738eb0bd0789cf947a31c6fa2026402cfec5ae2e3883f685cd85987d8b5` |
+| Source authority | Marker absent in the same fetched root; public Snapshot matches native facts |
+| Drift | None against the frozen Plan and progress expectation |
+| Freshness | Captured after the implementation commit; human review must occur within 24 hours, otherwise rerun |
+| Human reviewer and approval | Pending task-owner review; task 6.4 remains incomplete until approval |
 
 ---
 
@@ -160,6 +187,7 @@ live evidence.
 
 | Verification after correction | Result |
 |---|---|
+| `go mod tidy -diff` | Pass in a clean archive of `fab5efe4c2caa3ca3a5461360c9bc6d05ed1c5c9`, excluding local `node_modules` |
 | `go test -race ./...` | Pass, all 11 packages |
 | `go vet ./...` | Pass |
 | `golangci-lint run` | Pass, 0 issues |
