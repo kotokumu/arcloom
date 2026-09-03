@@ -1,0 +1,176 @@
+{
+  "kind": "Selected native GitHub Issue fields acquired before and after the final coordination closure; these operator GETs are separate from the later Plan Attempt Snapshot.",
+  "prerequisitePR": {
+    "number": 64,
+    "url": "https://github.com/kotokumu/arcloom/pull/64",
+    "head": "8e7da464ac81a7d703a6da5bafa3ed2ffc2dead4",
+    "mergedAt": "2026-09-03T16:07:40Z",
+    "mergeCommit": "aefb5d5b6b8b2472ac08149dd1987f367a0d12af",
+    "reviewRecord": "https://github.com/kotokumu/arcloom/pull/64#issuecomment-5528538902",
+    "ci": "https://github.com/kotokumu/arcloom/actions/runs/33768042322"
+  },
+  "before": [
+    {
+      "closed_at": "2026-09-03T12:56:52Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/56",
+      "number": 56,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Provide Request-source and Result-Destination routing in the reference Host."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:52Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/55",
+      "number": 55,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Bind Codex Plan Control into the reference Host through the Go SDK."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:51Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/54",
+      "number": 54,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Bind real GitHub Plan observations into the reference Host."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:51Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/53",
+      "number": 53,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Provide a reference Host composition for Plan feedback loops."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:50Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/52",
+      "number": 52,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Prove multi-cycle Plan convergence with a deterministic integration test."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:50Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/51",
+      "number": 51,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Provide a deterministic local Plan feedback-loop test environment."
+    },
+    {
+      "closed_at": "2026-09-03T05:34:36Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/50",
+      "number": 50,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Remove Arcloom metadata dependency from GitHub Plan representation and observation."
+    },
+    {
+      "closed_at": null,
+      "html_url": "https://github.com/kotokumu/arcloom/issues/46",
+      "number": 46,
+      "state": "open",
+      "state_reason": null,
+      "title": "Drive this Plan's Tasks to completion and obtain a Complete assessment."
+    },
+    {
+      "closed_at": "2026-09-03T16:07:41Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/45",
+      "number": 45,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Run repeated Attempts after real GitHub state changes and record feedback."
+    },
+    {
+      "closed_at": "2026-09-03T14:29:30Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/44",
+      "number": 44,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Run one end-to-end Plan Attempt for this Milestone."
+    }
+  ],
+  "after": [
+    {
+      "closed_at": "2026-09-03T12:56:52Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/56",
+      "number": 56,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Provide Request-source and Result-Destination routing in the reference Host."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:52Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/55",
+      "number": 55,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Bind Codex Plan Control into the reference Host through the Go SDK."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:51Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/54",
+      "number": 54,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Bind real GitHub Plan observations into the reference Host."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:51Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/53",
+      "number": 53,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Provide a reference Host composition for Plan feedback loops."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:50Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/52",
+      "number": 52,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Prove multi-cycle Plan convergence with a deterministic integration test."
+    },
+    {
+      "closed_at": "2026-09-03T12:56:50Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/51",
+      "number": 51,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Provide a deterministic local Plan feedback-loop test environment."
+    },
+    {
+      "closed_at": "2026-09-03T05:34:36Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/50",
+      "number": 50,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Remove Arcloom metadata dependency from GitHub Plan representation and observation."
+    },
+    {
+      "closed_at": "2026-09-03T16:09:20Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/46",
+      "number": 46,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Drive this Plan's Tasks to completion and obtain a Complete assessment."
+    },
+    {
+      "closed_at": "2026-09-03T16:07:41Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/45",
+      "number": 45,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Run repeated Attempts after real GitHub state changes and record feedback."
+    },
+    {
+      "closed_at": "2026-09-03T14:29:30Z",
+      "html_url": "https://github.com/kotokumu/arcloom/issues/44",
+      "number": 44,
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "Run one end-to-end Plan Attempt for this Milestone."
+    }
+  ]
+}

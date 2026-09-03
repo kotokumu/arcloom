@@ -6,6 +6,77 @@ import test from 'node:test';
 const read = name => readFileSync(new URL(name, import.meta.url));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
+test('issue 46 obtains exact Complete after every Task closes and separate acceptance evidence is ready', () => {
+  const bytes = read('46/final-records.ndjson');
+  const manifest = JSON.parse(read('46/final-manifest.json'));
+  const input = JSON.parse(read('46/operator-input.json'));
+  const closure = JSON.parse(read('46/task-closure.json'));
+  const baselineManifest = JSON.parse(read('44/baseline-manifest.json'));
+  const previous = read('45/attempt-2-records.ndjson').toString().trim().split('\n').map(JSON.parse)[1];
+  const records = bytes.toString().trim().split('\n').map(JSON.parse);
+  assert.equal(records.length, 2);
+  assert.equal(manifest.records, 2);
+  assert.equal(manifest.exitCode, 0);
+  assert.equal(manifest.signal, null);
+  assert.equal(manifest.stdoutBytes, 0);
+  assert.equal(manifest.stderrBytes, 0);
+  assert.equal(manifest.outputSHA256, hash(bytes));
+  assert.equal(manifest.operatorInputSHA256, hash(read('46/operator-input.json')));
+  assert.equal(manifest.wrapperSHA256, baselineManifest.wrapperSHA256);
+  assert.equal(manifest.binarySHA256, baselineManifest.binarySHA256);
+  assert.equal(manifest.observedCodexVersion, baselineManifest.observedCodexVersion);
+  const [assessment, report] = records;
+  assert.equal(assessment.type, 'assessment');
+  assert.equal(report.type, 'processed_report');
+  assert.equal(report.classification, 'assessed');
+  assert.equal(report.failure, '');
+  assert.equal(report.directive, 'await_request');
+  assert.equal(report.assessment.outcome, 'complete');
+  assert.equal(report.assessment.proposedPlan, null);
+  assert.deepEqual(assessment.assessment, report.assessment);
+  assert.deepEqual(assessment.target, report.target);
+  assert.deepEqual(report.target, previous.target);
+  assert.deepEqual(assessment.provenance, report.provenance);
+  assert.deepEqual(report.assessment.assessedPlan, report.currentPlan);
+  assert.deepEqual(report.currentPlan, previous.currentPlan);
+  assert.deepEqual(report.provenance.build, previous.provenance.build);
+  assert.equal(input.verifiedRuntimeRevision, report.provenance.build.revision);
+  assert.equal(input.verifiedRepositoryRevision, closure.prerequisitePR.mergeCommit);
+  assert.equal(report.progress.membershipComplete, true);
+  assert.equal(report.progress.tasks.length, 10);
+  assert.ok(report.progress.tasks.every(task => task.state === 'closed'));
+  assert.deepEqual(report.currentPlan.tasks, report.progress.tasks.map(task => task.name));
+  assert.deepEqual(input.acceptanceConditionEvidence.map(item => item.condition), [1, 2, 3, 4, 5]);
+  assert.deepEqual(input.acceptanceConditionEvidence.map(item => item.requirement), report.currentPlan.acceptanceConditions);
+  assert.ok(input.acceptanceConditionEvidence.every(item => item.facts.length > 0 && item.sources.length > 0));
+  assert.equal(closure.before.length, 10);
+  assert.equal(closure.after.length, 10);
+  assert.deepEqual(closure.before.filter(task => task.state !== 'closed').map(task => task.number), [46]);
+  const finalIssue = closure.after.find(task => task.number === 46);
+  const orderedTasks = [...closure.after].sort((a, b) => a.number - b.number);
+  assert.deepEqual(orderedTasks.map(task => task.number), [44, 45, 46, 50, 51, 52, 53, 54, 55, 56]);
+  assert.deepEqual(orderedTasks.map(task => ({ name: task.title, state: task.state })), report.progress.tasks);
+  for (const before of closure.before) {
+    const after = closure.after.find(task => task.number === before.number);
+    assert.equal(after.title, before.title);
+    assert.equal(after.state, 'closed');
+    assert.equal(after.state_reason, 'completed');
+    if (before.number !== 46) {
+      assert.deepEqual(after, before);
+      assert.ok(Date.parse(after.closed_at) < Date.parse(finalIssue.closed_at));
+    }
+  }
+  const times = [closure.prerequisitePR.mergedAt,
+    closure.before.find(task => task.number === 45).closed_at,
+    input.verifiedAt, finalIssue.closed_at, manifest.startedAt,
+    report.provenance.snapshotAcquisition.startedAt, report.provenance.snapshotAcquisition.completedAt,
+    report.provenance.deliveryAcquisition.startedAt, report.provenance.deliveryAcquisition.completedAt,
+    manifest.completedAt].map(Date.parse);
+  assert.ok(times.every(Number.isFinite));
+  assert.deepEqual(times, [...times].sort((a, b) => a - b));
+  assert.ok(Date.parse(manifest.startedAt) > Date.parse(finalIssue.closed_at));
+});
+
 test('issue 44 retains an exact, fresh real baseline and its captured inputs', () => {
   const bytes = read('44/baseline-records.ndjson');
   const manifest = JSON.parse(read('44/baseline-manifest.json'));
