@@ -1,0 +1,28 @@
+{
+  "kind": "operator-recorded GitHub action timeline; timestamps are GitHub responses",
+  "firstChange": {
+    "action": "merge reviewed baseline PR63 and complete Issue44",
+    "pullRequest": "https://github.com/kotokumu/arcloom/pull/63",
+    "mergeCommit": "b66dadd95b45099a2863ab820164742a6b0f8c6a",
+    "mergedAt": "2026-09-03T14:29:29Z",
+    "issue": "https://github.com/kotokumu/arcloom/issues/44",
+    "closedAt": "2026-09-03T14:29:30Z",
+    "progressDifference": [{"name": "Run one end-to-end Plan Attempt for this Milestone.", "before": "open", "after": "closed"}]
+  },
+  "stateCorrectionExcludedFromProof": {
+    "issue": "https://github.com/kotokumu/arcloom/issues/45",
+    "accidentallyClosedAt": "2026-09-03T14:29:31Z",
+    "reopenedAt": "2026-09-03T14:32:01Z",
+    "reason": "GitHub interprets a negated closing-keyword phrase in PR63 as an automatic closure reference. The body is corrected and incomplete Issue45 is reopened before the first later Request. This closure/reopening is not counted as a planned proof change."
+  },
+  "secondChange": {
+    "action": "PATCH only Milestone2 description to remove the obsolete leading arcloom-plan:v1 comment",
+    "target": "https://github.com/kotokumu/arcloom/milestone/2",
+    "beforeUpdatedAt": "2026-09-03T14:32:01Z",
+    "afterUpdatedAt": "2026-09-03T14:34:34Z",
+    "descriptionBeforeSHA256": "0183943c94cb56364819f2bb8280b5efc5f6dd842da46423697aebed3e5abb43",
+    "descriptionAfterSHA256": "5abee05eaf45bdf0fad3331f43e5048e8a5418383d57a81c69b52152b79d67ec",
+    "readableNarrativeByteIdentical": true,
+    "progressDifference": []
+  }
+}

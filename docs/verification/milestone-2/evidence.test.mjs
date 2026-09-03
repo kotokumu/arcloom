@@ -63,3 +63,69 @@ test('the pre-correction failure is not presented as successful evidence', () =>
   assert.equal(records[0].assessment, null);
   assert.equal(records[0].directive, '');
 });
+
+test('issue 45 reacquires facts after two real changes without inventing progress', () => {
+  const baseline = read('44/baseline-records.ndjson').toString().trim().split('\n').map(JSON.parse)[1];
+  const baselineManifest = JSON.parse(read('44/baseline-manifest.json'));
+  const operations = JSON.parse(read('45/operations.json'));
+  const before = JSON.parse(read('45/milestone-before.json'));
+  const after = JSON.parse(read('45/milestone-after.json'));
+  assert.notEqual(before.description, after.description);
+  assert.equal(before.description.replace(/^<!-- arcloom-plan:v1\n[A-Za-z0-9+/=\n]+-->\n\n/, ''), after.description);
+  assert.equal(hash(before.description), operations.secondChange.descriptionBeforeSHA256);
+  assert.equal(hash(after.description), operations.secondChange.descriptionAfterSHA256);
+  assert.equal(before.updated_at, operations.secondChange.beforeUpdatedAt);
+  assert.equal(after.updated_at, operations.secondChange.afterUpdatedAt);
+  assert.ok(Date.parse(after.updated_at) > Date.parse(before.updated_at));
+  let previousReport = baseline;
+  let previousCompletion = baselineManifest.completedAt;
+  for (const [number, changeTime, expectedDifference] of [
+    [1, operations.firstChange.closedAt, operations.firstChange.progressDifference],
+    [2, operations.secondChange.afterUpdatedAt, operations.secondChange.progressDifference],
+  ]) {
+    const bytes = read(`45/attempt-${number}-records.ndjson`);
+    const manifest = JSON.parse(read(`45/attempt-${number}-manifest.json`));
+    const records = bytes.toString().trim().split('\n').map(JSON.parse);
+    assert.equal(records.length, 2);
+    assert.equal(manifest.records, 2);
+    assert.equal(manifest.exitCode, 0);
+    assert.equal(manifest.signal, null);
+    assert.equal(manifest.outputSHA256, hash(bytes));
+    assert.equal(manifest.operatorInputSHA256, hash(read(`45/attempt-${number}-input.json`)));
+    assert.equal(manifest.wrapperSHA256, baselineManifest.wrapperSHA256);
+    assert.equal(manifest.binarySHA256, baselineManifest.binarySHA256);
+    const [assessment, report] = records;
+    assert.equal(assessment.type, 'assessment');
+    assert.equal(report.type, 'processed_report');
+    assert.equal(report.classification, 'assessed');
+    assert.equal(report.directive, 'await_request');
+    assert.equal(report.failure, '');
+    assert.equal(report.assessment.outcome, 'retain');
+    assert.deepEqual(assessment.assessment, report.assessment);
+    assert.deepEqual(report.assessment.assessedPlan, report.currentPlan);
+    assert.deepEqual(report.currentPlan, baseline.currentPlan);
+    assert.deepEqual(report.target, baseline.target);
+    assert.deepEqual(assessment.target, report.target);
+    assert.deepEqual(assessment.provenance, report.provenance);
+    assert.deepEqual(report.provenance.build, baseline.provenance.build);
+    assert.equal(report.progress.membershipComplete, true);
+    assert.equal(report.progress.tasks.length, 10);
+    assert.equal(report.progress.tasks.filter(task => task.state === 'closed').length, 8);
+    const difference = report.progress.tasks.flatMap((task, index) => {
+      const previous = previousReport.progress.tasks[index];
+      assert.equal(task.name, previous.name);
+      return task.state === previous.state ? [] : [{ name: task.name, before: previous.state, after: task.state }];
+    });
+    assert.deepEqual(difference, expectedDifference);
+    const times = [previousCompletion, changeTime, manifest.startedAt,
+      report.provenance.snapshotAcquisition.startedAt, report.provenance.snapshotAcquisition.completedAt,
+      report.provenance.deliveryAcquisition.startedAt, report.provenance.deliveryAcquisition.completedAt,
+      manifest.completedAt].map(Date.parse);
+    assert.ok(times.every(Number.isFinite));
+    assert.deepEqual(times, [...times].sort((a, b) => a - b));
+    assert.ok(Date.parse(manifest.startedAt) > Date.parse(operations.stateCorrectionExcludedFromProof.reopenedAt));
+    previousReport = report;
+    previousCompletion = manifest.completedAt;
+  }
+  assert.deepEqual(operations.secondChange.progressDifference, []);
+});

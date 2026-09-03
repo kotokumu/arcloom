@@ -1,0 +1,14 @@
+{
+  "evidenceKind": "current operator verification facts; historical verification events are not current Plan or Task state",
+  "verifiedRuntimeRevision": "0a2fcb254a55cf47aef6915522a8012609eba7e9",
+  "verificationDate": "2026-09-03",
+  "acceptanceConditionEvidence": [
+    {"condition": 1, "facts": "The reference Host and SDK correction are reviewed and merged in PR59 and PR63. Exact binding, identity-only requests, Plan-owned result delivery and cancellation pass full Go/race tests and dependency lint."},
+    {"condition": 2, "facts": "Merged deterministic integration tests run without external services, credentials, manual changes or wall-clock sleeps."},
+    {"condition": 3, "facts": "TestHostConvergesOnlyAfterActorChangesAndAcceptance verifies fresh S0/S1/S2 observations, two explicit Actor changes, exact delivery and Retain/Retain/Complete. Closed Tasks without acceptance evidence do not establish Complete."},
+    {"condition": 4, "facts": "The real baseline and first later Request both complete on the same verified runtime. The first later Request ends2026-09-03T14:33:25.993Z after Issue44 completion and freshly observes8closed/2open Tasks. The operator then removes only the obsolete arcloom-plan:v1 metadata comment from Milestone2, preserving its readable Goal and all5Acceptance Conditions exactly. This invocation is the second later ordinary Request after that real external change. It must reacquire current facts; metadata removal is not an additional Task completion."},
+    {"condition": 5, "facts": "Merged commands, tests, operating guidance, baseline evidence and integrity CI are available. The repeated-change proof is being captured for independent review in Issue45. Final all-Tasks-closed observation and Complete assessment for Issue46 remain pending."}
+  ],
+  "stateAuthority": "This invocation reacquires Plan and complete Task progress from GitHub. No earlier Snapshot, Report or assessment is supplied as current state.",
+  "remainingVerification": "Issue45 evidence review/PR and Issue46 final Complete verification remain incomplete."
+}

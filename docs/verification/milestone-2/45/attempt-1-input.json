@@ -1,0 +1,14 @@
+{
+  "evidenceKind": "current operator verification facts; historical verification events are not current Plan or Task state",
+  "verifiedRuntimeRevision": "0a2fcb254a55cf47aef6915522a8012609eba7e9",
+  "verificationDate": "2026-09-03",
+  "acceptanceConditionEvidence": [
+    {"condition": 1, "facts": "The reference Host implementation and its safe Codex SDK correction are reviewed and merged in PR59 and PR63. Exact target binding, identity-only requests, Plan-owned assessment qualification and delivery, and cancellation behavior pass full Go and race tests and dependency lint."},
+    {"condition": 2, "facts": "The merged deterministic Go integration tests use test-owned planning facts, explicit External Actor updates, a fact-derived assessor and a recording destination without external services, credentials, manual changes, or wall-clock sleeps."},
+    {"condition": 3, "facts": "TestHostConvergesOnlyAfterActorChangesAndAcceptance verifies S0,S1,S2 fresh acquisition, two Actor updates, exact delivery and Retain/Retain/Complete. Closed Tasks without Goal/Acceptance evidence do not establish completion."},
+    {"condition": 4, "facts": "The real baseline completes2026-09-03T14:21:32.720Z on the fixed runtime; exact evidence is merged with PR63. After PR63 merge and Issue44 completion, this invocation is the first later ordinary Request. The second later Request after another deliberate external change remains pending. The accidental automatic closure of Issue45 is corrected before this Request and is not counted as planned verification."},
+    {"condition": 5, "facts": "Commands, deterministic tests, SDK regression tests, operator instructions, raw baseline evidence and a CI artifact-integrity test are merged. Repeated-change evidence and final Complete assessment are still pending."}
+  ],
+  "stateAuthority": "This invocation reacquires Plan and complete Task progress from GitHub. Earlier Snapshots, Reports and assessments are not supplied as current state.",
+  "remainingVerification": "Issue45 repeated proof and Issue46 final Complete verification remain incomplete."
+}
