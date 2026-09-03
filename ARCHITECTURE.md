@@ -220,7 +220,7 @@ Plan Application Request is an independent Component inside the Plan Controller 
 | Adapter | Consumer-owned contracts implemented | External details confined | Decisions excluded |
 |---|---|---|---|
 | Codex Plan Control Adapter | The AI judgment Port owned by Plan Control Reconciliation | Codex process configuration, protocol, response syntax, lifecycle, and Provider errors | Plan Control Assessment meaning, Plan validity, Authorization, and Task execution |
-| GitHub Plan Adapter | Observation Ports owned by Plan Snapshot Observation and Plan Representation Reconciliation | GitHub repository and resource identity, Milestone and Issue APIs, pagination, payload versions, request and response DTOs, and Provider errors | Plan meaning, Snapshot eligibility, Reconciliation Result, Authorization, and external mutation |
+| GitHub Plan Adapter | Observation Ports owned by Plan Snapshot Observation and Plan Representation Reconciliation | GitHub repository and resource identity, Milestone and Issue APIs, pagination, native narrative grammar and framing, legacy-content compatibility, request and response DTOs, and Provider errors | Plan meaning, Snapshot eligibility, Reconciliation Result, Authorization, and external mutation |
 
 An adapter exists for a specific consumer contract and External Context. Do not create a Provider-wide interface that exposes every operation supported by a Provider.
 

@@ -10,11 +10,13 @@ A GitHub Repository Target identifies a GitHub.com repository locally without as
 
 ### GitHub Plan Representation
 
-A GitHub Plan Representation is exactly Milestone or Issue. It is selected explicitly and is never inferred from Plan content.
+A GitHub Plan Representation is exactly Milestone or Issue. It is selected explicitly and is never inferred from Plan content. A selected representation supports one valid Plan only when the exact Goal and Acceptance Condition text does not collide with the GitHub Plan Narrative structural lines. Unsupported GitHub representation identifies the representation input and returns no Creation Request Plan. Representability is a GitHub constraint and does not change provider-independent Plan validity.
 
-### Versioned Plan Narrative
+### GitHub Plan Narrative
 
-A Versioned Plan Narrative begins with a machine-readable `arcloom-plan:v1` block and is followed by a human-readable narrative. The block losslessly preserves the exact Plan values assigned to it. For Milestone representation these are Goal and ordered Acceptance Conditions. For Issue representation they are Goal, ordered Acceptance Conditions, and present or absent Target Date. Plan name and Tasks are represented natively in both representations, and a Milestone Target Date is also native. The human narrative presents Plan meaning but is never a reconstruction source.
+A GitHub Plan Narrative is the exact human-readable UTF-8 representation of Goal and ordered Acceptance Conditions in a Milestone description or parent Issue body, and of an optional Target Date in an Issue body. Creation emits no preamble or opaque block. It starts with `## Goal`, the exact Goal, `## Acceptance Conditions`, and contiguous `### 1` through `### n` members with exact Acceptance Condition values. A dated Issue then contains `## Target Date` and the canonical date. Structural lines and framing use the exact LF form defined by `[[github-plan-creation-dry-run/github-plan-narrative]]`; values remain exact and are not normalized.
+
+A Goal or Acceptance Condition collides when one full LF-delimited line equals `## Goal`, `## Acceptance Conditions`, or `## Target Date`; an Acceptance Condition also collides when one full line begins `### `. Colliding text is not represented through escaping or opaque metadata. It makes the selected GitHub Plan Representation unsupported without changing Plan validity.
 
 ### Creation Request Plan
 

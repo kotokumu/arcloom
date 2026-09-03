@@ -53,13 +53,13 @@ func TestNativeTitlesPreserveWhitespaceAndUnicodeExactly(t *testing.T) {
 		{
 			name:           "milestone",
 			representation: githubplan.MilestoneRepresentation,
-			root:           `{"number":42,"title":"  計画 😀  ","description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"}`,
+			root:           `{"number":42,"title":"  計画 😀  ","description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`,
 			collection:     `[{"id":7,"title":"  作業 ©  "}]`,
 		},
 		{
 			name:           "issue",
 			representation: githubplan.IssueRepresentation,
-			root:           `{"number":42,"title":"  計画 😀  ","body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"}`,
+			root:           `{"number":42,"title":"  計画 😀  ","body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"}`,
 			collection:     `[{"id":7,"title":"  作業 ©  "}]`,
 		},
 	}
@@ -119,9 +119,9 @@ func TestNativeBlankAndInvalidUTF8TitlesAreKnownPlanViolations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			contentField := `"description":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl19\n-->"`
+			contentField := `"description":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"`
 			if tt.representation == githubplan.IssueRepresentation {
-				contentField = `"body":"<!-- arcloom-plan:v1\neyJnb2FsIjoiR29hbCIsImFjY2VwdGFuY2VfY29uZGl0aW9ucyI6WyJBIl0sInRhcmdldF9kYXRlIjpudWxsfQ\n-->"`
+				contentField = `"body":"## Goal\n\nGoal\n\n## Acceptance Conditions\n\n### 1\n\nA\n"`
 			}
 			root := []byte(`{"number":42,"title":"Plan",` + contentField + `}`)
 			collection := []byte(`[]`)

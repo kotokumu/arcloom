@@ -1,11 +1,9 @@
 package githubplan
 
 import (
-	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/kotokumu/arcloom/controllers/plan"
 	"github.com/kotokumu/arcloom/controllers/plan/representation"
@@ -32,21 +30,18 @@ func schemeFor(representation Representation) (scheme, bool) {
 	}
 }
 
-func (s scheme) payloadShape() payloadShape {
-	if s == issueScheme {
-		return payloadWithTargetDate
-	}
-	return payloadWithoutTargetDate
-}
-
 func (s scheme) creationRequests(value plan.Plan) ([]Request, bool) {
 	tasks := value.Tasks()
+	narrative, representable := s.narrativeFor(value)
+	if !representable {
+		return nil, false
+	}
 	if s == issueScheme {
 		if len(tasks) > 100 {
 			return nil, false
 		}
 		construction := newRequestPlanConstruction(1 + len(tasks)*2)
-		parent := construction.addIssue(CreateIssueRequest{title: value.Name(), body: s.narrative(value), hasBody: true})
+		parent := construction.addIssue(CreateIssueRequest{title: value.Name(), body: narrative, hasBody: true})
 		for _, task := range tasks {
 			child := construction.addIssue(CreateIssueRequest{title: task.Name()})
 			construction.addSubIssue(parent.number, child.id)
@@ -55,7 +50,7 @@ func (s scheme) creationRequests(value plan.Plan) ([]Request, bool) {
 	}
 
 	construction := newRequestPlanConstruction(1 + len(tasks))
-	milestone := CreateMilestoneRequest{title: value.Name(), description: s.narrative(value)}
+	milestone := CreateMilestoneRequest{title: value.Name(), description: narrative}
 	if date, ok := value.TargetDate(); ok {
 		milestone.dueOn = date.String() + "T00:00:00Z"
 		milestone.hasDueOn = true
@@ -65,27 +60,6 @@ func (s scheme) creationRequests(value plan.Plan) ([]Request, bool) {
 		construction.addIssue(CreateIssueRequest{title: task.Name(), milestone: milestoneResult.reference(), hasMilestone: true})
 	}
 	return construction.snapshot(), true
-}
-
-func (s scheme) narrative(value plan.Plan) string {
-	var builder strings.Builder
-	builder.WriteString(payloadFor(value, s.payloadShape()))
-	builder.WriteString("## Goal\n\n")
-	builder.WriteString(value.Goal().Text())
-	builder.WriteString("\n\n## Acceptance Conditions")
-	for index, condition := range value.AcceptanceConditions() {
-		fmt.Fprintf(&builder, "\n\n### %d\n\n", index+1)
-		builder.WriteString(condition.Statement())
-	}
-	builder.WriteByte('\n')
-	if s == issueScheme {
-		if date, ok := value.TargetDate(); ok {
-			builder.WriteString("\n## Target Date\n\n")
-			builder.WriteString(date.String())
-			builder.WriteByte('\n')
-		}
-	}
-	return builder.String()
 }
 
 func (s scheme) rootURL(binding observerBinding) *url.URL {
@@ -131,11 +105,8 @@ func (s scheme) project(facts githubFactSet) (planrepresentation.Observation, er
 		name = planrepresentation.ClassifyPlanName(facts.root.fact.title.value)
 	}
 
-	payload := unavailablePayloadOutcome()
-	if facts.root.fact.content.available {
-		payload = decodePayload(facts.root.fact.content.value, s.payloadShape())
-	}
-	goal, conditions := payloadObservations(payload)
+	narrative := s.establishNarrativeFacts(facts.root.fact.content)
+	goal, conditions := narrativeObservations(narrative)
 	titles, complete := s.taskTitles(facts.tasks)
 	tasks := planrepresentation.IncompleteTasks(titles)
 	if complete {
@@ -144,18 +115,15 @@ func (s scheme) project(facts githubFactSet) (planrepresentation.Observation, er
 
 	targetDate := planrepresentation.UnavailableTargetDate()
 	if s == milestoneScheme {
-		switch facts.root.fact.date.state {
+		state, value := facts.root.fact.date.targetDateText()
+		switch state {
 		case dateAbsent:
 			targetDate = planrepresentation.AbsentTargetDate()
 		case datePresent:
-			value := facts.root.fact.date.value
-			if len(value) == len("2006-01-02T00:00:00Z") && strings.HasSuffix(value, "T00:00:00Z") {
-				value = value[:10]
-			}
 			targetDate = planrepresentation.ClassifyTargetDate(value)
 		}
 	} else {
-		targetDate = payloadTargetDateObservation(payload)
+		targetDate = narrativeTargetDateObservation(narrative)
 	}
 	return planrepresentation.NewPresentObservation(name, goal, conditions, tasks, targetDate)
 }
@@ -185,28 +153,24 @@ func (s scheme) taskMembersInPlanOrder(set taskFactSet) []taskItemFact {
 	return members
 }
 
-func payloadObservations(payload payloadOutcome) (planrepresentation.GoalObservation, planrepresentation.AcceptanceConditionsObservation) {
+func narrativeObservations(facts narrativeFacts) (planrepresentation.GoalObservation, planrepresentation.AcceptanceConditionsObservation) {
 	goal := planrepresentation.UnavailableGoal()
-	if payload.goal.available {
-		goal = planrepresentation.ClassifyGoal(payload.goal.value)
+	if facts.goal.available {
+		goal = planrepresentation.ClassifyGoal(facts.goal.value)
 	}
-	conditions := planrepresentation.IncompleteAcceptanceConditions(nil)
-	if payload.conditions.available {
-		if payload.conditions.complete {
-			conditions = planrepresentation.CompleteAcceptanceConditions(payload.conditions.members)
-		} else {
-			conditions = planrepresentation.IncompleteAcceptanceConditions(payload.conditions.members)
-		}
+	conditions := planrepresentation.IncompleteAcceptanceConditions(facts.conditions.members)
+	if facts.conditions.complete {
+		conditions = planrepresentation.CompleteAcceptanceConditions(facts.conditions.members)
 	}
 	return goal, conditions
 }
 
-func payloadTargetDateObservation(payload payloadOutcome) planrepresentation.TargetDateObservation {
-	switch payload.targetDate.state {
-	case payloadTargetAbsent:
+func narrativeTargetDateObservation(facts narrativeFacts) planrepresentation.TargetDateObservation {
+	switch facts.targetDate.state {
+	case narrativeTargetAbsent:
 		return planrepresentation.AbsentTargetDate()
-	case payloadTargetPresent:
-		return planrepresentation.ClassifyTargetDate(payload.targetDate.value)
+	case narrativeTargetPresent:
+		return planrepresentation.ClassifyTargetDate(facts.targetDate.value)
 	default:
 		return planrepresentation.UnavailableTargetDate()
 	}

@@ -2,7 +2,6 @@ package githubplan_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -181,9 +180,6 @@ func TestNewCreationRequestPlanMilestone(t *testing.T) {
 				t.Errorf("title mismatch (-want +got):\n%s", diff)
 			}
 			description := root.Description()
-			if index := strings.Index(description, "## Goal\n\n"); index >= 0 {
-				description = description[index:]
-			}
 			if diff := cmp.Diff(tt.wantDescription, description); diff != "" {
 				t.Errorf("description mismatch (-want +got):\n%s", diff)
 			}
@@ -261,9 +257,6 @@ func TestNewCreationRequestPlanIssue(t *testing.T) {
 				t.Errorf("root title mismatch (-want +got):\n%s", diff)
 			}
 			body, hasBody := root.Body()
-			if index := strings.Index(body, "## Goal\n\n"); index >= 0 {
-				body = body[index:]
-			}
 			if diff := cmp.Diff(tt.wantBody, body); diff != "" {
 				t.Errorf("body mismatch (-want +got):\n%s", diff)
 			}
@@ -317,9 +310,6 @@ func TestCanonicalNarrativeMilestoneWithoutDate(t *testing.T) {
 	got := must(githubplan.NewCreationRequestPlan(repository, githubplan.MilestoneRepresentation, value))
 	request := got.Requests()[0].(githubplan.CreateMilestoneRequest)
 	description := request.Description()
-	if index := strings.Index(description, "## Goal\n\n"); index >= 0 {
-		description = description[index:]
-	}
 	if diff := cmp.Diff("## Goal\n\ngoal\n\n## Acceptance Conditions\n\n### 1\n\naccept\n", description); diff != "" {
 		t.Errorf("narrative mismatch (-want +got):\n%s", diff)
 	}
@@ -340,9 +330,6 @@ func TestCanonicalNarrativeIssueWithoutDate(t *testing.T) {
 	got := must(githubplan.NewCreationRequestPlan(repository, githubplan.IssueRepresentation, value))
 	request := got.Requests()[0].(githubplan.CreateIssueRequest)
 	body, hasBody := request.Body()
-	if index := strings.Index(body, "## Goal\n\n"); index >= 0 {
-		body = body[index:]
-	}
 	if diff := cmp.Diff("## Goal\n\ngoal\n\n## Acceptance Conditions\n\n### 1\n\naccept\n", body); diff != "" {
 		t.Errorf("narrative mismatch (-want +got):\n%s", diff)
 	}
@@ -693,6 +680,131 @@ func TestNewCreationRequestPlanValidation(t *testing.T) {
 				t.Errorf("zero requests mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestNewCreationRequestPlanNativeNarrativeCollision(t *testing.T) {
+	tests := []struct {
+		name           string
+		representation githubplan.Representation
+		goal           string
+		condition      string
+	}{
+		{name: "milestone goal heading at start", representation: githubplan.MilestoneRepresentation, goal: "## Goal\ntext", condition: "accept"},
+		{name: "milestone goal heading in middle", representation: githubplan.MilestoneRepresentation, goal: "text\n## Acceptance Conditions\ntext", condition: "accept"},
+		{name: "milestone goal heading at end", representation: githubplan.MilestoneRepresentation, goal: "text\n## Target Date", condition: "accept"},
+		{name: "issue goal heading at start", representation: githubplan.IssueRepresentation, goal: "## Goal\ntext", condition: "accept"},
+		{name: "issue goal heading in middle", representation: githubplan.IssueRepresentation, goal: "text\n## Acceptance Conditions\ntext", condition: "accept"},
+		{name: "issue goal heading at end", representation: githubplan.IssueRepresentation, goal: "text\n## Target Date", condition: "accept"},
+		{name: "milestone condition heading at start", representation: githubplan.MilestoneRepresentation, goal: "goal", condition: "## Goal\ntext"},
+		{name: "milestone condition heading in middle", representation: githubplan.MilestoneRepresentation, goal: "goal", condition: "text\n## Acceptance Conditions\ntext"},
+		{name: "milestone condition heading at end", representation: githubplan.MilestoneRepresentation, goal: "goal", condition: "text\n## Target Date"},
+		{name: "issue condition heading at start", representation: githubplan.IssueRepresentation, goal: "goal", condition: "## Goal\ntext"},
+		{name: "issue condition heading in middle", representation: githubplan.IssueRepresentation, goal: "goal", condition: "text\n## Acceptance Conditions\ntext"},
+		{name: "issue condition heading at end", representation: githubplan.IssueRepresentation, goal: "goal", condition: "text\n## Target Date"},
+		{name: "milestone condition ordinal at start", representation: githubplan.MilestoneRepresentation, goal: "goal", condition: "### 1\ntext"},
+		{name: "milestone condition ordinal in middle", representation: githubplan.MilestoneRepresentation, goal: "goal", condition: "text\n### anything\ntext"},
+		{name: "milestone condition ordinal at end", representation: githubplan.MilestoneRepresentation, goal: "goal", condition: "text\n### "},
+		{name: "issue condition ordinal at start", representation: githubplan.IssueRepresentation, goal: "goal", condition: "### 1\ntext"},
+		{name: "issue condition ordinal in middle", representation: githubplan.IssueRepresentation, goal: "goal", condition: "text\n### anything\ntext"},
+		{name: "issue condition ordinal at end", representation: githubplan.IssueRepresentation, goal: "goal", condition: "text\n### "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value := must(plan.New(
+				"Plan",
+				must(plan.NewGoal(tt.goal)),
+				[]plan.AcceptanceCondition{must(plan.NewAcceptanceCondition(tt.condition))},
+				nil,
+				nil,
+			))
+			got, err := githubplan.NewCreationRequestPlan(
+				must(githubplan.NewRepository("owner", "repo")),
+				tt.representation,
+				value,
+			)
+			var validation *githubplan.ValidationError
+			if !errors.As(err, &validation) {
+				t.Fatalf("validation = %v", err)
+			}
+			if diff := cmp.Diff(githubplan.UnsupportedRepresentation, validation.Code()); diff != "" {
+				t.Errorf("code mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(githubplan.RepresentationField, validation.Field()); diff != "" {
+				t.Errorf("field mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff([]githubplan.Request(nil), got.Requests()); diff != "" {
+				t.Errorf("requests mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewCreationRequestPlanNativeNarrativeNearMiss(t *testing.T) {
+	tests := []struct {
+		name      string
+		goal      string
+		condition string
+	}{
+		{name: "goal ordinal-like line", goal: "### 1", condition: "accept"},
+		{name: "heading with trailing space", goal: "goal", condition: "## Goal "},
+		{name: "tab after ordinal marker", goal: "goal", condition: "###\t1"},
+		{name: "indented ordinal marker", goal: "goal", condition: " ### 1"},
+		{name: "embedded heading text", goal: "goal", condition: "text ## Acceptance Conditions text"},
+		{name: "reserved bytes on CRLF line", goal: "goal", condition: "before\r\n## Target Date\r\nafter"},
+		{name: "non-reserved heading", goal: "goal", condition: "## Notes\n###\tmember"},
+	}
+	representations := []struct {
+		name  string
+		value githubplan.Representation
+	}{
+		{name: "milestone", value: githubplan.MilestoneRepresentation},
+		{name: "issue", value: githubplan.IssueRepresentation},
+	}
+	for _, representation := range representations {
+		for _, tt := range tests {
+			t.Run(representation.name+"/"+tt.name, func(t *testing.T) {
+				value := must(plan.New(
+					"Plan",
+					must(plan.NewGoal(tt.goal)),
+					[]plan.AcceptanceCondition{must(plan.NewAcceptanceCondition(tt.condition))},
+					nil,
+					nil,
+				))
+				got := must(githubplan.NewCreationRequestPlan(
+					must(githubplan.NewRepository("owner", "repo")),
+					representation.value,
+					value,
+				))
+				var content string
+				if representation.value == githubplan.MilestoneRepresentation {
+					content = got.Requests()[0].(githubplan.CreateMilestoneRequest).Description()
+				} else {
+					content, _ = got.Requests()[0].(githubplan.CreateIssueRequest).Body()
+				}
+				want := "## Goal\n\n" + tt.goal + "\n\n## Acceptance Conditions\n\n### 1\n\n" + tt.condition + "\n"
+				if diff := cmp.Diff(want, content); diff != "" {
+					t.Errorf("content mismatch (-want +got):\n%s", diff)
+				}
+			})
+		}
+	}
+}
+
+func TestNewCreationRequestPlanSimultaneousInvalidInputsReturnNoPlan(t *testing.T) {
+	got, err := githubplan.NewCreationRequestPlan(githubplan.Repository{}, githubplan.Representation(99), plan.Plan{})
+	var validation *githubplan.ValidationError
+	if !errors.As(err, &validation) {
+		t.Fatalf("validation = %v", err)
+	}
+	allowed := validation.Code() == githubplan.InvalidRepository ||
+		validation.Code() == githubplan.InvalidRepresentation ||
+		validation.Code() == githubplan.InvalidPlan
+	if diff := cmp.Diff(true, allowed); diff != "" {
+		t.Errorf("allowed validation mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]githubplan.Request(nil), got.Requests()); diff != "" {
+		t.Errorf("requests mismatch (-want +got):\n%s", diff)
 	}
 }
 

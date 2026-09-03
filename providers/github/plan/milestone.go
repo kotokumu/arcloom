@@ -25,6 +25,16 @@ type dateFact struct {
 	value string
 }
 
+func (f dateFact) targetDateText() (dateFactState, string) {
+	if f.state != datePresent {
+		return f.state, ""
+	}
+	if len(f.value) == len("2006-01-02T00:00:00Z") && strings.HasSuffix(f.value, "T00:00:00Z") {
+		return datePresent, f.value[:10]
+	}
+	return datePresent, f.value
+}
+
 type nativeState uint8
 
 const (

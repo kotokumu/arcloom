@@ -3,7 +3,6 @@ package githubplan
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/kotokumu/arcloom/controllers/plan"
 	"github.com/kotokumu/arcloom/controllers/plan/snapshot"
@@ -115,20 +114,16 @@ func (s scheme) currentPlan(facts githubFactSet) (plan.Plan, bool) {
 	if !root.title.available {
 		return plan.Plan{}, false
 	}
-	payload := unavailablePayloadOutcome()
-	if !root.content.available {
+	narrative := s.establishNarrativeFacts(root.content)
+	if !narrative.goal.available || !narrative.conditions.complete {
 		return plan.Plan{}, false
 	}
-	payload = decodePayload(root.content.value, s.payloadShape())
-	if !payload.goal.available || !payload.conditions.available || !payload.conditions.complete {
-		return plan.Plan{}, false
-	}
-	goal, err := plan.NewGoal(payload.goal.value)
+	goal, err := plan.NewGoal(narrative.goal.value)
 	if err != nil {
 		return plan.Plan{}, false
 	}
-	conditions := make([]plan.AcceptanceCondition, 0, len(payload.conditions.members))
-	for _, member := range payload.conditions.members {
+	conditions := make([]plan.AcceptanceCondition, 0, len(narrative.conditions.members))
+	for _, member := range narrative.conditions.members {
 		condition, err := plan.NewAcceptanceCondition(member)
 		if err != nil {
 			return plan.Plan{}, false
@@ -149,13 +144,10 @@ func (s scheme) currentPlan(facts githubFactSet) (plan.Plan, bool) {
 	}
 	var targetDate *plan.TargetDate
 	if s == milestoneScheme {
-		switch root.date.state {
+		state, value := root.date.targetDateText()
+		switch state {
 		case dateAbsent:
 		case datePresent:
-			value := root.date.value
-			if len(value) == len("2006-01-02T00:00:00Z") && strings.HasSuffix(value, "T00:00:00Z") {
-				value = value[:10]
-			}
 			parsed, err := plan.ParseTargetDate(value)
 			if err != nil {
 				return plan.Plan{}, false

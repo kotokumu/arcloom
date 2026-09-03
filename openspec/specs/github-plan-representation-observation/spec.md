@@ -10,9 +10,13 @@ A GitHub Plan Target binds one GitHub Repository Target, one GitHub Plan Represe
 
 ### Observed GitHub Facts
 
-An Observed GitHub Fact is either native representation meaning or meaning recovered from the leading Versioned Plan Narrative block. Milestone native facts provide Plan name, Target Date, and Task membership; its payload provides Goal and Acceptance Conditions. Issue native facts provide Plan name and Task membership; its payload provides Goal, Acceptance Conditions, and Target Date. Human narrative content contributes no fact.
+An Observed GitHub Fact is meaning established from native GitHub fields, relationships, or the exact raw UTF-8 GitHub Plan Narrative grammar. Milestone native facts provide Plan name, Target Date, and Task membership; its native narrative provides Goal and Acceptance Conditions. Issue native facts provide Plan name and Task membership; its native narrative provides Goal, Acceptance Conditions, and Target Date. Legacy marker or payload text is generic nonfact preamble. It is neither authoritative nor a fallback, and conflicting payload content is ignored. Marker-only content leaves narrative-backed facts unavailable.
 
-A known value that violates Plan meaning becomes a Plan Validation Violation. A required fact that cannot be established becomes Unavailable Information at the narrowest affected Plan Location while independently established facts remain usable.
+Required Goal and Acceptance Conditions H2 inventory, order, and exact framing are global structural constraints. Their failure makes Goal Unavailable, Acceptance Conditions Incomplete and empty, and Issue Target Date Unavailable while independently established name, Tasks, and Milestone Target Date remain usable. With established global structure, exact values are classified under the `plan` capability. A known value that violates Plan meaning becomes a Plan Validation Violation. An Issue Target Date is Absent only when its section is authoritatively omitted, Present when exact framed text is valid, and Unavailable when its local boundary or final framing cannot be established.
+
+### Acceptance Condition Sequence Establishment
+
+Acceptance Condition Sequence Establishment preserves the longest fully framed contiguous sequence of exact `### 1` through `### n` members. Ordinals start at 1, have no leading zero, and remain contiguous in source order. The first wrong ordinal or member-framing defect ends establishment and makes membership Incomplete without discarding the preceding prefix or resuming later. Membership is Complete only when the declared EOF or Issue Target Date boundary establishes the end of the sequence; defined zero-member forms can therefore be Complete and empty. Each established member retains its exact text and is classified under `plan` rules.
 
 ### Task Collection Establishment
 
