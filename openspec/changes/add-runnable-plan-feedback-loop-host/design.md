@@ -365,7 +365,28 @@ The complete main-spec Conceptual Model is published during apply. Requirement d
 | Independent scenarios and responsibility/architecture stress test | S1–S16 reviewed; `host_design_readiness`: final Architecture and detailed-design PASS, no actionable P0/P1/P2 findings |
 | Detailed Interface review | `host_interface_review`: PASS; no actionable P0/P1/P2 findings |
 | Behavioral-test review | `host_test_design_review`: PASS after both P2 findings were resolved in T4/T8/T9 |
-| Human DesignDoc approval | Pending; earlier proposal scope approval and instruction to finish authorize preparation, not an invented review attestation |
-| Construction, implementation review, CI, merge | Not started for this feature; begin only after required design gates pass |
+| Human DesignDoc approval | User explicitly approved the revised design at commit `5313ddf23de44e178a4f87df328fa106ece0c6e3` on 2026-09-03: 「承認します」 |
+| Host, Binding, Assessment Delivery implementation | `host_design_readiness`: final PASS after intake/cancellation race coverage; target package race tests repeated 30 times pass |
+| Command composition and evidence encoding implementation | `host_test_design_review`: PASS after exact failure names, complete Assessment values, and SDK-constructor rejection tests; excludes OS output and final entry point |
+| OS output implementation, final CI, merge | Blocked on output realization decision below; remaining implementation and release verification incomplete |
 
-No unresolved product choice is deferred into coding. Public contracts, output cancellation, failure precedence, and evidence provenance are part of design review, not implementation improvisation.
+### 5-1. Output Realization Decision Pending
+
+The arbitrary-stdout realization does not satisfy the approved cancellation and isolation constraints on both Linux and macOS. A duplicated descriptor shares the original open file description and `O_NONBLOCK` flags; changing those flags can affect the parent process. Closing only the duplicate does not restore isolation. Regular-file output also does not uniformly support cancellable writes.
+
+The proposed command-only amendment accepts an operator-owned existing FIFO path, opened independently in nonblocking mode. It verifies FIFO identity and deadline support, cancels active writes with a deadline, joins the cancellation callback, and closes only its owned descriptor. The operator retains ownership of the reader. Partial output is failure, not a safe-to-replay handoff.
+
+This proposal is **not approved or implemented**. The user has been asked to approve the explicit output option and corresponding runbook. Host/Plan contracts and completed tests remain unchanged; command output, T15, final entry-point wiring, and release gates wait for that decision. No cancellation guarantee is silently weakened.
+
+### 5-2. Construction Evidence
+
+| Unit | Red evidence | Green / refactor evidence |
+|---|---|---|
+| Exact binding | External-package constructor/identity tests fail because the public binding is absent | Binding tests pass; no construction I/O and pre-observation mismatch rejection; existing Attempt behavior reused |
+| Assessment Delivery | Published-report tests fail because the package has no implementation | All four outcomes, no-current/failures, exact values, validation precedence, and cancel/error classification pass; no result reconstruction |
+| Host and deterministic environment | Public lifecycle/convergence tests fail because the Host is absent | Caller lifecycle, trigger races, bounded buffer, fail-stop/reentry, source-derived outcomes, and target isolation pass; no extra scheduler or semantic branch |
+| Command composition | Injected boundary tests fail because command/record contracts are absent | Fresh double observation, optional current evidence, SDK configuration, records/exit codes, failures, and independent concurrent targets pass |
+| Stable observation failure name | Exact failure expectation reproduces control-character output instead of `observation_unavailable` | Explicit safe mapping passes; all failure strings now have exact expectations |
+| Operator evidence file | File tests fail because reader is absent | Fresh UTF-8 regular-file reads, missing/invalid/nonregular input rejection, and cancellation-before-read pass |
+
+The working copy of the new main specification contains its Conceptual Model only. Its empty Requirements section remains a transitional validation failure until official archival publishes the six delta Requirements. This publication preparation stays out of the checkpoint commit and joins the same PR when the complete specification is ready; it is not a completed publication gate.
