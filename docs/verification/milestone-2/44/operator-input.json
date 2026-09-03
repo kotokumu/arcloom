@@ -1,0 +1,15 @@
+{
+  "evidenceKind": "current operator verification facts, not prior Plan state or prior assessment",
+  "mergedHostRevision": "6318ca9fbc4a53c29767c0c0ec6a59106ea17877",
+  "sdkCorrection": "The current branch adds an independently reviewed SDK correction preserving verified disabled MCP/Apps entries at Thread start. Full Go, race, static analysis, Markdown, and OpenSpec checks pass. Exact build revision is carried in the command output.",
+  "verificationDate": "2026-09-03",
+  "acceptanceConditionEvidence": [
+    {"condition": 1, "facts": "PR 59 is merged. The reference Host binds one target, accepts identity-only triggers, consumes Reports once, and delivers exact assessments through Plan-owned qualification. Start/cancellation/routing/target-isolation tests and dependency lint pass."},
+    {"condition": 2, "facts": "The normal Go tests include a test-owned Planning Context, External Actor, fact-derived assessor, and recording destination. They require no live GitHub/Codex access, credentials, manual changes, or wall-clock sleeps."},
+    {"condition": 3, "facts": "TestHostConvergesOnlyAfterActorChangesAndAcceptance passes. It verifies source-owned S0, S1, S2 with two explicit Actor changes, fresh Snapshot then Delivery Observations, Retain/Retain/Complete, exact handoff, and Goal/Acceptance Condition evidence. The all-Tasks-closed-without-acceptance-evidence case is also tested."},
+    {"condition": 4, "facts": "This invocation seeks the first successful post-merge live milestone-2 baseline. Earlier invocations fail at observation or AI boundaries and do not count as successful Attempts. No completed milestone-2 baseline or later repeated live Attempts are yet claimed. Issues 44 and 45 remain open."},
+    {"condition": 5, "facts": "Merged command, tests, architecture, and operator runbook are available. The live baseline, repeated real-change evidence, and final Complete verification remain to be completed before the milestone-3 evidence handoff."}
+  ],
+  "verificationCommands": ["go test ./...", "go test -race ./...", "golangci-lint run ./..."],
+  "currentLimitations": ["Issue 46 final coordination and later Complete verification are not complete.", "GitHub Task progress is acquired freshly by this invocation, not asserted by this file."]
+}

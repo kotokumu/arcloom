@@ -108,4 +108,4 @@ Evidence packet: `M2-44-CONFIG-v1`.
 - Red: disabled MCP and Apps process cases fail with `interaction failed` against the empty-map implementation. The absent-configuration case also detects missing Apps default denial.
 - Green and regression verification: SDK suite, `go test ./...`, `go test -race ./...`, `golangci-lint run ./...`, `npm run lint`, and `npm test` pass with the correction. The same Client processes the table cases without carrying names between calls.
 - Independent implementation review: PASS from `host_interface_review`, with no actionable P1/P2 finding. The review confirms unchanged rejection and public error contracts, secret non-forwarding, per-call isolation, and no new boundary or state owner; SDK normal/race tests and diff checks pass independently.
-- Live baseline: pending; failed invocations are not successful evidence.
+- Live baseline: source `0a2fcb254a55cf47aef6915522a8012609eba7e9`, invocation `2026-09-03T14:21:25.013Z`–`2026-09-03T14:21:32.720Z`, exit 0, exact Retain assessment plus assessed Report and Await Request directive. Failed invocations are not successful evidence.

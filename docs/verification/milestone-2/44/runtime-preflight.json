@@ -1,0 +1,33 @@
+{
+  "kind": "operator-recorded preflight observations; not a successful Plan Attempt",
+  "dateUTC": "2026-09-03",
+  "hostRevision": "0a2fcb254a55cf47aef6915522a8012609eba7e9",
+  "hostBuildModified": false,
+  "hostBinarySHA256": "941afe2cbb2292b0b303ce91dc216a0196cfb3b2b7e6655c6f24585d3d62b32e",
+  "codex": {
+    "versionOutput": "codex-cli 0.149.1",
+    "source": "https://github.com/openai/codex/releases/download/rust-v0.149.1/codex-aarch64-apple-darwin.tar.gz",
+    "archiveSHA256": "ed60f475c6dda6044c2c00fd7f33273cc3f3f98900ccd1204bfdf2fe935f3405",
+    "archiveMatchesPublishedGitHubDigest": true,
+    "executableSHA256": "f0d8762236594359b60cfbe17f4c7e945a3ce8d1c91e74778838c968d250fb6c",
+    "appServerUserAgent": "Codex Desktop/0.149.1 (Mac OS 26.5.2; arm64) dumb (arcloom-preflight; 1)"
+  },
+  "safeConfigReadSummary": {
+    "mcp": {},
+    "apps": {"_default": false},
+    "hooks": null,
+    "webSearch": "disabled",
+    "configError": false
+  },
+  "environment": {
+    "stateDirectory": "/private/tmp/arcloom-codex-state.32vhNJ",
+    "assessmentDirectory": "/private/tmp/arcloom-assessment.H6WpvR",
+    "parentEnvironmentChanged": false,
+    "globalConfigurationEdited": false,
+    "note": "CODEX_HOME retains its documented state-root meaning and is supplied only to the verification child. The preflight performs initialize/config/read, not thread/start or turn/start."
+  },
+  "operationalFindings": [
+    "The system Codex installation advances to 0.153.0 during verification; the dedicated executable pins the accepted 0.149.1 contract without changing the system installation.",
+    "The normal user configuration contains nonempty hook trust metadata. Empty CLI hook maps do not erase it. The SDK rejection remains unchanged; a separate empty state directory produces the safe configuration above."
+  ]
+}
