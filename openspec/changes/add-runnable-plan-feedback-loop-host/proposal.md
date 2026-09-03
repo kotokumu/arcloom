@@ -66,7 +66,7 @@ None.
 | Concept | Candidate owner capability | Change |
 |---|---|---|
 | Plan Feedback Loop Operation | `plan-feedback-loop-operation` | Add the caller-scoped relationship among Request, Plan Attempt Report, and Plan Result Destination delivery. |
-| Plan Result Destination | `plan-feedback-loop-operation` | Add the target-specific destination of the exact Plan Control Assessment contained by Current Plan Assessed without exposing the enclosing Snapshot or creating a shared Result abstraction. |
+| Plan Result Destination | `plan-feedback-loop-operation`, inside the Plan Controller | Define the Plan-specific relationship to subsequent continuation, revision, or acceptance consideration. Reference the Architecture's Semantic Result Destination meaning; do not equate that meaning with a transport callback or grant authority to apply a revision. |
 | Request | `reconciliation-control-loop` | Reference its existing identity-only wake-up meaning unchanged. |
 | Plan Attempt Result | `plan-reconciliation-loop` | Reference its existing Current Plan Not Established and Current Plan Assessed classifications unchanged. |
 | Report | `reconciliation-control-loop` | Reference its existing in-process publication meaning unchanged and keep it distinct from semantic Result delivery. |
@@ -74,9 +74,11 @@ None.
 ## Decisions Required
 
 - Decide which Plan Attempt Result branches constitute a deliverable semantic Result.
+- Separate the Plan-owned semantic destination and delivery eligibility from Host-owned transport and operational lifecycle.
 - Decide the delivery cardinality and observable behavior when the Plan Result Destination rejects or cannot establish delivery.
 - Decide the caller-scoped relationship between repeated Request intake, Report consumption, Result delivery, and termination without prescribing durable scheduling.
+- Distinguish destination success from processed Report publication when cancellation competes with a stopped Report reader.
 
 ## Impact
 
-Operators and Host integrations gain one accepted way to operate Plan Feedback Loops and observe delivery failures. Existing Reconciliation Controller, Plan Attempt, GitHub observation, Codex Plan Control, and Codex app-server contracts remain authoritative for their current responsibilities. No external data migration is introduced. PRODUCT.md is not changed because the existing Delivery Reconciliation, Observation, Plan, and Plan Control capabilities already own the product scope. ARCHITECTURE.md changes only if modeling discovers a responsibility or dependency rule not already represented by the Host, Composition Root, and Result Destination boundaries.
+Operators and Host integrations gain one accepted way to operate Plan Feedback Loops and observe delivery failures. Existing Reconciliation Controller, Plan Attempt, GitHub observation, Codex Plan Control, and Codex app-server contracts remain authoritative for their current responsibilities. No external data migration is introduced. PRODUCT.md is unchanged because this work realizes the existing Plan Controller's feedback problem. ARCHITECTURE.md records any added Component or Port while preserving Plan-owned semantic decisions and the Host's non-decision boundary.

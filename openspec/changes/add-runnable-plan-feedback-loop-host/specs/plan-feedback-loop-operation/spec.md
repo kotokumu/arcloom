@@ -72,13 +72,16 @@ A Plan Feedback Loop Operation MUST invoke its Plan Result Destination only for 
 
   | Report classification | Publication state | Delivery output | Side Effects |
   |---|---|---|---|
-  | Completion containing Current Plan Assessed | Publication committed | Invoke the configured destination once with the exact target association and exact Plan Control Assessment contained by that branch | Establish one In Flight Plan Result Delivery. |
+  | Completion containing Current Plan Assessed | Publication committed and caller lifecycle remains active | Invoke the configured destination once with the exact target association and exact Plan Control Assessment contained by that branch | Establish one In Flight Plan Result Delivery. |
+  | Completion containing Current Plan Assessed | Publication committed but cancellation has committed before delivery starts | No destination invocation | Follow caller termination without replay. |
   | Completion containing Current Plan Assessed | Publication not committed | No destination invocation | Preserve the prospective Report only under the Controller contract. |
   | Completion containing Current Plan Not Established | Publication committed | No destination invocation | Preserve observation-only success as the published Report. |
   | Attempt Failure | Publication committed | No destination invocation | Preserve the operational failure as the published Report. |
 
 - **Invariants**:
   - Report publication is not Plan Result Delivery, and delivery never begins before publication commits.
+  - Plan-specific delivery eligibility uses the existing Plan Attempt classification. Host transport does not interpret Assessment contents or decide the subsequent Plan action.
+  - Plan Result Destination denotes subsequent Plan consideration; the concrete delivery mechanism neither owns that meaning nor makes the downstream decision.
   - The operation neither reconstructs nor reinterprets the Plan Control Assessment and does not expose the enclosing Snapshot to the destination.
   - At most one destination invocation is made for each qualifying published Report.
 - **Side Effects**: Delivery grants no Authorization, Plan application, Delivery Acceptance, Task execution, External Actor contact, or target mutation authority.
@@ -102,6 +105,40 @@ A Plan Feedback Loop Operation MUST invoke its Plan Result Destination only for 
 - **GIVEN** the Controller has published an Attempt Failure
 - **WHEN** the operation classifies the published Report
 - **THEN** it makes no Plan Result Destination invocation and does not turn the failure into a semantic Result
+
+### Requirement: processed-plan-report-publication
+
+A Plan Feedback Loop Operation MUST expose exact processed Controller Reports in Controller order during normal operation, and an exposed assessed Report MUST imply that its one destination invocation returned success.
+
+- **Behavioral Rules**:
+
+  | Current publication state | Trigger or event | Guard | Next state | Output or Side Effects |
+  |---|---|---|---|---|
+  | Pending | Publish the handled Report | Caller lifecycle is active; assessed delivery has succeeded, or the Report requires no semantic delivery | Published | Expose the exact Controller Report once. |
+  | Pending | Caller cancellation or delivery failure commits | Publication has not committed | Discarded | Expose no processed Report for this pending occurrence; do not replay any Assessment. |
+  | Published | Caller cancellation commits | Publication committed first | Published | Already-published buffered Reports remain readable after the stream closes. |
+
+- **Invariants**:
+  - Destination success and processed Report publication are separate commits. A successful delivery may have its pending processed Report discarded; missing processed evidence does not prove that no destination effect occurred.
+  - A failed or cancelled delivery produces no successfully processed Report for that occurrence.
+  - No-current and Attempt Failure remain exact processed Reports without semantic delivery.
+  - Processed evidence is bounded, invocation-local, and disposable; no durable delivery ledger or exactly-once external effect is promised.
+- **Side Effects**: Discarding pending evidence does not undo a delivery effect, mutate external Plan facts, or authorize replay.
+- **Concurrency and Idempotency**: The operation does not wait for an evidence reader to resume after cancellation. Publication versus cancellation has one winner; already-published evidence is not published again.
+- **Failure Handling**: Stream closure without the expected processed Report is resolved through the operation's terminal lifecycle or delivery-failure outcome, not inferred as successful handling.
+- **References**: [[plan-feedback-loop-operation/assessed-plan-result-delivery]]; [[plan-feedback-loop-operation/caller-scoped-operation-lifecycle]]; [[reconciliation-control-loop/caller-lifecycle]]
+
+#### Scenario: Assessed processed Report is observed [happy]
+
+- **GIVEN** a published assessed Controller Report whose destination invocation has returned success under an active caller lifecycle
+- **WHEN** the evidence consumer receives its processed Report
+- **THEN** it receives that exact Report once after destination success
+
+#### Scenario: Cancellation follows delivery while evidence publication is blocked [concurrency]
+
+- **GIVEN** earlier published evidence fills the bounded buffer, a later Assessment delivery succeeds, and that later processed Report remains pending
+- **WHEN** the caller cancels without the evidence reader resuming
+- **THEN** the pending Report is discarded, the earlier published evidence remains readable, and termination neither waits for the reader nor undoes or replays the later delivery
 
 ### Requirement: delivery-failure-and-fresh-reentry
 
@@ -143,14 +180,14 @@ A Plan Feedback Loop Operation MUST stop trigger intake and terminate through it
   | Current state | Trigger or event | Guard | Next state | Output or Side Effects |
   |---|---|---|---|---|
   | Configured | Host starts operation | Configuration is accepted | Running | Begin trigger intake and Controller Report consumption. |
-  | Running | Caller cancellation commits | No delivery success has already committed | Stopping | Reject new triggers, cancel active Controller and delivery work, and establish no new delivery. |
+  | Running | Caller cancellation commits | Any delivery or processed-publication state | Stopping | Reject new triggers, cancel active Controller and delivery work, establish no new delivery, and discard unpublished processed evidence without undoing an established delivery. |
   | Running | Delivery failure commits | Caller cancellation has not committed | Stopping | Reject new triggers and preserve the distinct delivery failure. |
   | Stopping | Active Controller and delivery boundaries return | No active boundary remains | Stopped | End Report consumption and expose the committed lifecycle or delivery-failure outcome. |
   | Stopped | Any trigger | Always | Stopped | Reject the trigger and start no work. |
 
 - **Invariants**: Pending trigger occurrences, Controller eligibility, and operation delivery state are disposable and establish no authoritative target or durable scheduling state.
 - **Concurrency and Idempotency**: If cancellation and destination success compete, the event whose success or cancellation commit occurs first determines the delivery outcome. Repeated cancellation does not create another terminal outcome.
-- **Failure Handling**: After active boundaries return, Report backpressure, pending triggers, and disposable operation state cannot prevent Stopped. A dependency that violates its accepted cancellation bound remains observable as that dependency's failure and does not become successful termination.
+- **Failure Handling**: After active boundaries return, Report backpressure, pending triggers, and disposable operation state cannot prevent Stopped. The finite termination guarantee relies on the active boundaries honoring the stated cancellation precondition; their unfinished work is never reported as successful termination.
 - **References**: [[reconciliation-control-loop/caller-lifecycle]]; [[codex-plan-control-assessment/bounded-assessment-cancellation]]
 
 #### Scenario: Caller cancels during delivery [error]

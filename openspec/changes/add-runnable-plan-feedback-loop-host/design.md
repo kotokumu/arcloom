@@ -1,340 +1,371 @@
-## Context
+# Runnable Plan Feedback Loop Design
 
-The repository already provides the four behavior owners needed inside one Plan cycle:
+## 0. Document Boundary
 
-- `reconciliationcontrol.Controller[planreconciliation.AttemptResult]` owns identity-only Request scheduling, target exclusion, Report publication, and caller cancellation.
-- `planreconciliation.NewAttempt` owns target resolution, fresh Snapshot observation, later delivery observation, Plan Control assessment, and Plan Attempt Result classification.
-- `githubplan.NewMilestoneSnapshotObserver` implements fresh GitHub Plan observation.
-- `codexplancontrol.NewAssessor` uses `codexappserver.Client`, whose SDK owns process lifecycle, JSON-RPC, correlation, and bounded shutdown.
+| Information | Authority |
+|---|---|
+| Product scope and external authority | PRODUCT.md |
+| Component ownership, dependencies, Ports | ARCHITECTURE.md |
+| Change scope and release boundary | This change's proposal.md |
+| Concepts, frozen R1–R8 evidence packet, minimality | This change's model.md |
+| Observable guarantees | This change's plan-feedback-loop-operation delta spec |
+| Technical contracts, verification design, construction gate | This DesignDoc |
 
-There is no executable Composition Root, no repository-owned Host that consumes the Controller Report stream, and no Plan-specific Result Destination boundary. The existing integration test proves only two directly wired Controller cycles; it does not exercise a runnable Host, destination failure, or deterministic convergence through at least three fresh cycles.
+This design implements the accepted Plan Controller problem without remodelling generic Reconciliation. Risk is **High**: the Plan-specific handoff boundary and caller-scoped lifecycle introduce cross-package contracts. Human review is required before construction.
 
-This is a high-risk design because it adds a caller-scoped runtime owner across existing lifecycle boundaries. `cmd/arcloom-plan` and `internal/planhost` together form one reference Arcloom Host application outside the Arcloom Runtime Component graph defined by `ARCHITECTURE.md`; they do not add a Runtime Component. The design keeps this application boundary internal and provisional. Milestone #3, not this change, decides the final Module and public Package structure after operational evidence exists.
+---
 
-## Goals / Non-Goals
+## 1. Goal and Scope
 
-### Goals
+- Deliver the reference Host, GitHub/Codex bindings, deterministic environment, and convergence verification for #51–#56 as one complete implementation PR.
+- Preserve existing Controller policy, Plan Attempt freshness, exact Assessment meaning, Provider ownership, and external action authority.
+- Keep live baseline #44, later real-change verification #45, and final Complete verification #46 after merge.
+- Exclude generic Result contracts, polling, retry, replay, durable state, Authorization, application, and Task execution.
 
-- Add one repository-owned reference Host that can accept repeated explicit triggers for one exact Plan target.
-- Consume the existing Controller Report stream once and route only Current Plan Assessed to one Plan-specific destination.
-- Preserve Controller scheduling, Plan Attempt semantics, GitHub fact authority, Codex SDK lifecycle ownership, and External Actor mutation authority.
-- Provide a deterministic local integration environment that proves at least three fresh cycles converge to Complete after explicit external progress.
-- Provide an executable Composition Root for real GitHub observation and Codex assessment through the same Host contract.
+The existing public Assessment already preserves the exact assessed Plan and optional Proposed Plan. Delivery reuses it; neither a universal Result nor a second Plan Result wrapper is introduced.
 
-### Non-Goals
+---
 
-- Finalizing the Reconciliation Module taxonomy, public Host API, or Controller-development Interfaces.
-- Adding a universal Result, Result Destination, Observation, Failure, workflow, or trigger abstraction.
-- Moving process, stdio, JSON-RPC, correlation, or shutdown into the Host.
-- Authorization, Plan application, Task execution, GitHub mutation, automatic polling, retries, durable queues, or persisted loop history.
-- Making deterministic test collaborators production abstractions.
+## 2. Behavioral Design
 
-## Conceptual-Model-to-Implementation Mapping
+### 2-1. Functional Requirements
 
-| Specification concept / Requirement | Owning component | Physical representation | Notes |
+The requirement IDs below reference the normative delta; this table defines verification responsibility without restating its decision tables.
+
+| Requirement | Consumer-visible outcome | Verification owner |
+|---|---|---|
+| exact-plan-operation-configuration | Exact self-identifying binding; rejected startup causes no runtime or external work | Binding and Host startup tests |
+| explicit-plan-trigger | Initial/later requests preserve configured identity and existing Controller semantics | Host integration |
+| assessed-plan-result-delivery | Existing assessed branch reaches its recipient unchanged, after Controller publication | Assessment Delivery tests and Host integration |
+| processed-plan-report-publication | Exact processed evidence follows handling success; unpublished evidence may be discarded on stop | Host lifecycle tests |
+| delivery-failure-and-fresh-reentry | Distinct fail-stop; possible effect is not retried or treated as state | Delivery and restart tests |
+| caller-scoped-operation-lifecycle | Intake and work stop without evidence-consumer progress | Channel-controlled lifecycle and command tests |
+
+### 2-2. Runtime and Verification Constraints
+
+| Constraint | Measurable acceptance |
+|---|---|
+| Bounded evidence state | Host has one queued processed Report and at most one Report being handled; no growing list, replay ledger, or background retry. Existing Controller bounds remain unchanged. |
+| Cancellation | After cooperative Attempt/recipient boundaries return, Report reader progress is unnecessary for Reports closure and Wait completion. Codex process shutdown retains the SDK's positive configured bound. |
+| Determinism | Integration correctness uses explicit channels and source revisions, not wall-clock sleeps, network, credentials, or invocation-count-based outcomes. |
+| External authority | The only simulated S0→S1→S2 writes are two named External Actor operations. Observation, assessment, delivery, startup, and shutdown add no source revision. |
+| Safe real binding | SDK alone owns process/protocol/version/safety checks. No unsafe configuration starts an assessment Turn. |
+
+---
+
+## 3. Structural Design
+
+### 3-1. Concept-to-Implementation Mapping
+
+| Concept / responsibility | Component owner | Minimum representation |
+|---|---|---|
+| Exact identity and executable Attempt association | Plan Attempt | Immutable `PlanAttemptBinding` value constructed from one existing `PlanTarget` and assessor |
+| Existing assessed-result qualification and exact handoff | Plan Assessment Delivery, inside Plan Controller | Stateless `Deliver` function using the existing Report and AttemptResult contracts |
+| Concrete recipient boundary | Plan Assessment Delivery owns the Port; Host supplies transport | Plan-specific `Recipient` function |
+| Caller-scoped intake, sole consumption, fail-stop, processed evidence | Reference Host | Stateful `Host` with one disposable lifecycle and terminal outcome |
+| Destination failure distinct from Attempt Failure | Plan Assessment Delivery | Immutable unwrap-capable `DeliveryError` |
+| GitHub/Codex/terminal selection | Reference command's Composition Root | Construction and existing public Ports; no Plan qualification or SDK lifecycle code |
+| Deterministic facts and Actor changes | Test-owned Planning Context / External Actor | Specifically named fixtures in external-package tests, not production abstractions |
+
+The Host dispatches **every** published Report once to Plan Assessment Delivery. It does not branch on Plan outcome. Delivery uses `AttemptResult.Assessment()` and the existing no-current classification; it does not evaluate facts, rebuild an Assessment, or create eligibility. The Host's one dispatch per occurrence and Delivery's one handoff without retry jointly protect per-Report cardinality.
+
+### 3-2. Responsibility and Package Boundaries
+
+| Package | Responsibility and hidden implementation | Public contracts / allowed dependencies | Explicit exclusions |
 |---|---|---|---|
-| Plan Feedback Loop Operation | Reference Host application | A caller-scoped `Host` in `internal/planhost` | It is application code outside the Arcloom Runtime Component graph; internal placement avoids claiming the final Module boundary before Milestone #3. |
-| Explicit Plan Trigger / `explicit-plan-trigger` | Reference Plan Host | `Host.Trigger(context.Context) error` | The method has no payload or target parameter; it can submit only the configured identity. |
-| Deliverable Plan Result / `assessed-plan-result-delivery` | Plan Control plus Plan Feedback Loop Operation | Host classifies `AttemptResult.Kind()`, then extracts the existing exact `plancontrol.Assessment` | Plan Control owns Assessment meaning; no shared Result type or Snapshot exposure is introduced. |
-| Plan Result Destination | Plan Feedback Loop Operation | Plan-specific function type receiving exact Target Identity and exact `plancontrol.Assessment` | It is not an application or External Actor Port. |
-| Plan Result Delivery | Reference Plan Host | One synchronous destination invocation after the corresponding Controller Report is received; the processed Report becomes externally readable only after success | Delivery state remains invocation-local. |
-| Exact Plan operation configuration | Plan Attempt Module plus Reference Host | One immutable `planreconciliation.PlanAttemptBinding` contains the exact Target Identity and Attempt constructed from the same `PlanTarget`; destination and caller lifecycle are supplied separately | The Host cannot receive an independently paired identity and Attempt and does not construct the Attempt. |
-| Caller-scoped operation lifecycle | Reference Plan Host | Host-owned child context, Controller, report pump, terminal outcome, and `Wait` | All state is disposable. |
-| Deterministic local verification | External-package integration tests | Test-local controlled Planning Context, External Actor operations, assessor, trigger timing, and recording destination | These are specific fixtures in `_test.go`, not production Interfaces or a test-helper Package. |
-| Real GitHub/Codex operation | Reference Host application | A command-local GitHub binding adapter creates the Plan Target from existing provider-independent Snapshot values; the Composition Root wires it with the Codex assessor, Host, and terminal destination | GitHub HTTP and representation mapping remain in `githubplan`; the adapter only selects caller-owned `plansnapshot.ProgressEvidence`. |
+| `controllers/plan/attempt` | Existing fresh evaluation plus inseparable executable binding | Existing dependencies; `PlanAttemptBinding` constructor/accessors | No post-publication delivery, Host lifetime, or Provider details |
+| `controllers/plan/assessmentdelivery` | Plan-specific published-report qualification and exact recipient handoff | `Deliver`, `Recipient`, `DeliveryError`; standard context/errors/fmt plus controlruntime, attempt, control | No loop, scheduler, evidence stream, SDK, HTTP, persistence, or application |
+| `internal/planhost` | Caller lifecycle, identity-only Trigger, sole Report dispatch, bounded processed evidence, terminal arbitration | Host API; context/errors/sync plus controlruntime, attempt, assessmentdelivery | No Plan outcome classification, Assessment interpretation, or Provider dependencies |
+| `cmd/arcloom-plan` | Configuration and concrete adapters for one explicit cycle | Existing GitHub/Codex constructors; Host and Plan-owned public contracts | No business decision, semantic routing policy, JSON-RPC, process supervision, or native GitHub mapping |
+| External test packages | Controlled external authority, assessment boundary, recipient, and timing | Public contracts under test | No reusable production fake/framework |
 
-## Responsibility Assignment
+`ARCHITECTURE.md` adds Plan Assessment Delivery and its recipient Port under the Plan Controller. The dependency guard must enforce the new boundary. `internal/planhost` is reference Host application code outside the Runtime Component graph, not a new Core runtime.
 
-| Responsibility / decision | Owner | Information and authority used | State / invariant preserved | Candidate excluded and reason |
-|---|---|---|---|---|
-| Accept or reject a trigger and schedule Attempts | Reconciliation Controller | Exact Target Identity, lifecycle, eligibility, concurrency, Directive | Existing exclusion, coalescing, Report publication, and cancellation invariants | Reference Host does not add a scheduler, queue, timer, or retry policy. |
-| Acquire and classify one current Plan evaluation | Plan Attempt | Exact binding, fresh Snapshot, post-Snapshot observations, assessor | Current Plan Not Established differs from Current Plan Assessed and Failure | Host does not inspect external facts or perform Plan judgment. |
-| Decide whether a published Plan Attempt Result is deliverable | Plan Feedback Loop Operation | Existing Attempt Result kind from the exact published Report | Only Current Plan Assessed is semantically delivered | Controller remains result-opaque; Destination does not classify. |
-| Deliver one assessed Plan Result | Plan Result Destination | Exact target and exact Plan Control Assessment extracted from Current Plan Assessed | One invocation per qualifying Report at most; no Authorization or mutation authority | External Actor is not invoked and Plan application is not smuggled into delivery. |
-| Stop after delivery failure | Reference Plan Host | Destination return, caller lifecycle, Controller lifecycle | Failure is distinct, intake stops, no retry is created | Controller Failure and Directive do not represent destination failure. |
-| Change authoritative Task progress between cycles | External Actor acting on Planning Context | Provider-native facts and permissions | Arcloom remains read-only and external facts remain authoritative | Host and local destination cannot mutate production facts. |
-| Own GitHub HTTP and representation mapping | `githubplan` | GitHub target and REST contract | Fresh provider facts do not leak as DTOs | Host only wires the observer. |
-| Own Codex process and JSON-RPC lifecycle | `codexappserver` | Executable, protocol, process authority, shutdown bound | Isolated read-only Turn and bounded cancellation | `codexplancontrol` and Host receive only the SDK Client contract. |
-| Translate assessment material and Codex output | `codexplancontrol` | Exact Plan, caller-owned observations, completed Turn | Provider output cannot weaken Plan Control result semantics | SDK remains independent of Plan vocabulary. |
-| Adapt concrete GitHub observations into caller-owned progress vocabulary | Reference Host application's GitHub binding adapter | Existing `githubplan` Snapshot Observer and provider-independent `plansnapshot.ProgressEvidence` | Every call is fresh and no GitHub DTO crosses the adapter | Composition Root only calls the adapter constructor; `githubplan` retains HTTP and representation mapping. |
-| Parse deployment configuration and instantiate concrete dependencies | `cmd/arcloom-plan` Composition Root | Operator-supplied target, credentials, Codex configuration, output selection | No domain or scheduling decision is duplicated | Composition Root does not classify Results, map GitHub facts, construct JSON-RPC, or implement lifecycle rules. |
+```mermaid
+flowchart BT
+    Root[Command Composition Root] --> Host[Reference Host]
+    Root --> GH[GitHub Plan Adapter]
+    Root --> Codex[Codex Plan Control Adapter]
+    Codex --> SDK[Codex app-server SDK]
+    Host --> Control[Reconciliation Control]
+    Host --> Handoff[Plan Assessment Delivery]
+    Host --> Binding[Plan Attempt binding]
+    Handoff --> Binding
+    Handoff --> Assessment[Plan Control]
+    Handoff --> Control
+    Binding --> Control
+    Binding --> Assessment
+    Binding --> Snapshot[Plan Snapshot]
+    GH --> Snapshot
+```
 
-## Package and Dependency Design
+### 3-3. Interface Contracts
 
-| Package | Responsibilities implemented | Contracts published | Implementation hidden | Dependencies permitted |
-|---|---|---|---|---|
-| `internal/planhost` | Provisional external reference Host lifecycle, sole Controller Report consumption, exact Assessment routing, processed-Report observation, and destination-failure termination | Internal `Host`, `Start`, `Trigger`, `Reports`, `Wait`, `DeliveryError`, and Plan-specific destination function type | Controller construction, bounded processed-Report buffer, terminal race resolution, cancellation coordination | `context`, `errors`, `sync`, `plancontrol`, `planreconciliation`, `reconciliationcontrol` |
-| `planreconciliation` | Existing Plan Target and Attempt ownership plus exact single-target executable binding | Add immutable `PlanAttemptBinding` and its constructor/accessors | Target, resolver closure, identity/Attempt association, and validity remain private | Existing dependencies only |
-| `cmd/arcloom-plan` | Executable Reference Host application and Composition Root | Command invocation only; no reusable product contract | Flag/environment parsing, command-local GitHub binding adapter, credential transport, terminal representation, OS cancellation | `internal/planhost` and existing concrete Provider packages |
-| `internal/planhost` external tests | Deterministic local feedback-loop verification | No production contract | Controlled authoritative facts, explicit Actor changes, assessment calculation, destination recording | Public contracts of packages under test |
+The following are **design targets, not implemented code**. Private coordination helpers are not public abstractions and may emerge during TDD.
 
-| Source | Target | Contract used | Why | Details that must not cross |
-|---|---|---|---|---|
-| `internal/planhost` | `reconciliationcontrol` | `Controller`, `TargetIdentity`, `Report` | Delegate all scheduling and Report publication | Host destination state never enters Controller Result or Directive. |
-| `internal/planhost` | `planreconciliation` | `PlanAttemptBinding`, `AttemptResult` | Start control from one inseparable exact identity/Attempt association and classify only its public branch | Plan Target, Snapshot, assessor, and provider details are not interpreted by Host. |
-| `internal/planhost` | `plancontrol` | `Assessment` | Deliver the exact semantic Plan Control Result without the enclosing Attempt/Snapshot | Codex types never enter Host. |
-| `cmd/arcloom-plan` | `githubplan` | Milestone target and Snapshot Observer | Bind the real Planning Context | GitHub DTOs and errors remain inside `githubplan`. |
-| `cmd/arcloom-plan` | `codexplancontrol` / `codexappserver` | Assessor construction and SDK Client | Bind real Plan Control without owning Codex lifecycle | JSON-RPC, process, and protocol values remain in the SDK. |
-
-No package named `helper`, `util`, `shared`, `common`, `manager`, or `processor` is introduced. The internal Host is named for its exact integration responsibility and is intentionally not the final public module boundary.
-
-## Interface Design
-
-The following signatures are design targets, not a generic SDK contract.
+#### Exact executable binding
 
 ```go
-package planreconciliation
+package planattempt
 
 var ErrInvalidPlanAttemptBinding = errors.New("invalid Plan Attempt Binding")
 
-// PlanAttemptBinding is an immutable exact association between one valid Plan
-// Target Identity and the configured Attempt constructed from that same target.
-// Its zero value is invalid.
+// Zero is invalid. Only construction binds identity and the configured Attempt.
 type PlanAttemptBinding struct { /* private identity and attempt */ }
 
-// NewPlanAttemptBinding validates target and assessor, then constructs the
-// exact single-target resolver and Attempt without external I/O. Every invalid
-// input or internal construction invariant failure returns the zero Binding and
-// ErrInvalidPlanAttemptBinding. The returned Attempt admits only Identity().
+// Validates target, then assessor; constructs one exact-target resolver.
+// No observation, assessment, Controller, goroutine, or external I/O.
+// Every rejection returns zero and ErrInvalidPlanAttemptBinding.
+// The constructed Attempt rejects another identity before observing.
 func NewPlanAttemptBinding[O any](
-    PlanTarget[O],
-    plancontrol.Assessor[O],
+    target PlanTarget[O], assessor plancontrol.Assessor[O],
 ) (PlanAttemptBinding, error)
 
-func (b PlanAttemptBinding) Identity() reconciliationcontrol.TargetIdentity
-func (b PlanAttemptBinding) Attempt() reconciliationcontrol.Attempt[AttemptResult]
+func (b PlanAttemptBinding) Identity() controlruntime.TargetIdentity
+func (b PlanAttemptBinding) Attempt() controlruntime.Attempt[AttemptResult]
 ```
+
+#### Plan-specific published-report handoff
+
+```go
+package assessmentdelivery
+
+var (
+    ErrInvalidRecipient = errors.New("invalid Plan Assessment recipient")
+    ErrInvalidReport = errors.New("invalid published Plan Report")
+)
+
+// Concrete delivery for subsequent Plan consideration; not the downstream
+// decision itself. Return after ctx cancellation within the agreed finite bound.
+// A nil return establishes only completion of this handoff invocation.
+type Recipient func(context.Context, controlruntime.TargetIdentity, plancontrol.Assessment) error
+
+// Preserves caller-owned recipient cause; no claim about external effects.
+type DeliveryError struct { /* private cause */ }
+func (e *DeliveryError) Error() string
+func (e *DeliveryError) Unwrap() error
+
+// Preconditions: report was received from Controller.Reports for the bound
+// Plan Attempt. Identity comes from that Report, never a separate argument.
+// Validation: nil ctx -> controlruntime.ErrInvalidContext; ended ctx -> ctx.Err;
+// nil recipient -> ErrInvalidRecipient; zero/invalid Report -> ErrInvalidReport.
+// Failure and no-current Reports return nil without invoking recipient.
+// Assessed Report invokes recipient once with the existing exact Assessment.
+// Cancellation observed before/after handoff returns the caller context error;
+// another recipient error becomes DeliveryError. No retry, reconstruction,
+// observation, authorization, application, or child lifecycle is created.
+func Deliver(
+    ctx context.Context,
+    report controlruntime.Report[planattempt.AttemptResult],
+    recipient Recipient,
+) error
+```
+
+`Deliver` uses the existing successful-branch accessors, not another eligibility policy. Defensive Report validity excludes a zero Report and a Completion with an unknown/zero AttemptResult kind. A valid Failure is processed unchanged, including either Controller Failure kind. Returning nil for no-current/failure means handling completed, not that an Assessment was delivered.
+
+#### Reference Host lifecycle
 
 ```go
 package planhost
 
-var (
-    ErrHostNotStarted = errors.New("plan host not started")
-    ErrInvalidPlanResultDestination = errors.New("invalid Plan Result Destination")
-)
+var ErrHostNotStarted = errors.New("plan host not started")
 
-// DeliveryError identifies a Plan Result Destination failure. Unwrap returns
-// the caller-owned destination cause. It never represents Controller Failure
-// or caller lifecycle cancellation.
-type DeliveryError struct { /* private immutable cause */ }
-func (e *DeliveryError) Error() string
-func (e *DeliveryError) Unwrap() error
+// Do not copy after Start. Zero/nil Host is not started.
+type Host struct { /* disposable lifecycle, binding, stream, terminal state */ }
 
-// PlanResultDestination receives only the exact valid Assessment extracted
-// from CurrentPlanAssessed. Nil means this invocation completed its own
-// destination processing; it does not establish Authorization, application,
-// target mutation, or any other externally authoritative effect.
-type PlanResultDestination func(
-    context.Context,
-    reconciliationcontrol.TargetIdentity,
-    plancontrol.Assessment,
-) error
-
-// Start validates one exact Plan Attempt Binding, destination, and caller
-// lifecycle, then starts one caller-scoped Host.
+// Validation precedence: nil ctx, ended caller lifecycle, invalid binding,
+// nil recipient. Reuses the owning packages' stable errors. Rejection starts
+// no Controller, stream, goroutine, observation, assessment, or delivery.
 func Start(
-    context.Context,
-    planreconciliation.PlanAttemptBinding,
-    PlanResultDestination,
+    ctx context.Context,
+    binding planattempt.PlanAttemptBinding,
+    recipient assessmentdelivery.Recipient,
 ) (*Host, error)
 
-// Trigger submits an ordinary identity-only Request for the configured target.
+// No payload/target argument. The submission context bounds acceptance only.
+// Nil submission context returns ErrInvalidContext on a started Host.
+// A committed Host terminal outcome wins over submission/child cancellation.
 func (h *Host) Trigger(context.Context) error
 
-// Reports exposes exact target-bound Reports after their operation handling is
-// complete. For CurrentPlanAssessed, receipt therefore proves that its one
-// destination invocation returned nil. A failed or cancelled delivery exposes
-// no processed Report for that Controller Report and terminates the stream.
-func (h *Host) Reports() <-chan reconciliationcontrol.Report[planreconciliation.AttemptResult]
+// Stable stream in Controller order. One queued item plus one being handled.
+// Each Report is forwarded only after Deliver returns nil and publication wins.
+// Cancellation may discard pending evidence, including after delivery success.
+// Published buffered evidence remains readable after closure.
+func (h *Host) Reports() <-chan controlruntime.Report[planattempt.AttemptResult]
 
-// Wait returns the committed caller lifecycle error or a distinct Plan Result
-// delivery failure after Controller and delivery work have ended.
+// Waits for active boundaries and Controller exit, never reader progress.
+// Concurrent/repeated calls return one stable caller error or delivery failure.
 func (h *Host) Wait() error
 ```
 
-| Contract | Consumer | Owner | Inputs / preconditions | Output / postconditions | Error / side effects | Constraint protected |
-|---|---|---|---|---|---|---|
-| `PlanAttemptBinding` | Reference Host Composition Root and Host | Plan Attempt Module | Validate Plan Target first, then assessor | Valid input returns an immutable exact Target Identity plus Attempt association; its Attempt admits only that identity | Zero/invalid target, nil assessor, or internal construction invariant failure returns zero Binding and `ErrInvalidPlanAttemptBinding`. Construction performs no observation or assessment; a different requested identity fails as Target Binding Unavailable before observation. | Prevents independent identity/Attempt pairing and keeps single-target construction out of Host. |
-| `Host.Start` | Reference Host Composition Root | Reference Plan Host | Non-nil active context, valid nonzero `PlanAttemptBinding`, non-nil destination | One started Host and stable Report stream | Validation order is context presence, caller lifecycle, binding, destination. Nil context returns `reconciliationcontrol.ErrInvalidContext`; ended context returns its exact error; invalid binding returns `planreconciliation.ErrInvalidPlanAttemptBinding`; nil destination returns `ErrInvalidPlanResultDestination`. Every failure starts no goroutine, Controller, stream, observation, assessment, or delivery. | All-or-nothing caller-scoped startup and exact target association. |
-| `Host.Trigger` | Explicit Trigger Source | Reference Plan Host | Running Host and active submission context | Existing Controller acceptance result | Zero Host returns `ErrHostNotStarted`; submission cancellation returns its context error unless a Host terminal outcome already committed | Trigger cause cannot become an Attempt fact. |
-| `Host.Reports` | Reference command and tests | Reference Plan Host | Started Host | Stable stream of exact successfully handled Reports in Controller order | Zero Host returns nil; a one-entry internal buffer prevents the current destination from depending on reader speed; cancellation may discard an unprocessed Report | Makes one-cycle completion observable without competing for Controller's stream. |
-| `PlanResultDestination` | Reference Plan Host | Plan Feedback Loop Operation | Exact target, exact valid Assessment, active lifecycle | Nil means destination invocation processing returned successfully | Non-nil while caller lifecycle remains active becomes `DeliveryError`; possible destination-owned effects remain unspecified | Separates semantic delivery from Report publication and external application. |
-| `Host.Wait` | Host operator | Reference Plan Host | Started Host | Stable terminal caller-lifecycle or `DeliveryError` outcome for repeated and concurrent calls | Zero Host returns `ErrHostNotStarted`; no retry or persistence | Makes delivery failure and cancellation unambiguous. |
+Zero/nil Host: `Trigger` and `Wait` return `ErrHostNotStarted`; `Reports` returns nil. Started Host methods are concurrent-safe. The Host never accepts an independent identity/Attempt pair, exposes its Controller stream, or offers a replay operation.
 
-### Error and terminal precedence
+| Contract | Consumer and protected constraint | Why the boundary is necessary |
+|---|---|---|
+| PlanAttemptBinding | Composition Root/Host; exact target and executable association | Independent identity plus arbitrary Attempt permits mismatched configuration; construction belongs with the private PlanTarget |
+| Recipient | Assessment Delivery; external handoff and cancellation | Different concrete delivery mechanisms exist without changing Plan meaning; callback is the minimal substitution boundary |
+| Deliver | Host; published Plan semantics outside operational lifecycle | Direct Host classification moves Plan decisions outside its owner; generic Control cannot interpret Plan results |
+| Host | Operator/command/tests; whole-invocation lifecycle and stream ownership | A function with no retained lifecycle cannot coordinate repeated triggers, bounded evidence, and stable termination |
+| DeliveryError | Host/operator; destination failure and uncertain effect | Attempt Failure and caller cancellation cannot represent this failure domain |
 
-| Competing condition | Committed terminal meaning |
-|---|---|
-| Caller lifecycle ends before destination success or failure is accepted | Caller lifecycle error; destination return cannot replace it. |
-| Destination returns non-nil while caller lifecycle is active | `DeliveryError` wrapping that exact cause, even when the cause itself matches a context sentinel. |
-| Destination returns nil while caller lifecycle is active | Delivery succeeds; the handled Report becomes available and the Host remains Running. |
-| Delivery failure has committed before caller cancellation | The same `DeliveryError` remains the stable Host terminal outcome. |
-| Host has stopped and `Trigger` is called | Return the stable Host terminal outcome; start no Request. |
-
-The zero Host is unusable: `Trigger` and `Wait` return `ErrHostNotStarted`, and `Reports` returns nil. `Trigger`, `Reports`, and repeated or concurrent `Wait` calls are safe for concurrent use.
-
-### Representative consumer flows
+Illustrative consumer flow, not executed code:
 
 ```go
-binding, err := planreconciliation.NewPlanAttemptBinding(target, assessor)
+binding, err := planattempt.NewPlanAttemptBinding(target, assessor)
 if err != nil { return err }
-host, err := planhost.Start(lifecycle, binding, destination)
-if err != nil { return err } // Includes exact ended-lifecycle/configuration errors.
-
-// One cycle: receiving an assessed Report means destination processing returned nil.
-if err := host.Trigger(submission); err != nil { return err }
+lifecycle, cancel := context.WithCancel(parent)
+defer cancel()
+host, err := planhost.Start(lifecycle, binding, recipient)
+if err != nil { return err }
+if err := host.Trigger(submission); err != nil { cancel(); _ = host.Wait(); return err }
 report, ok := <-host.Reports()
-if !ok {
-    waitErr := host.Wait()
-    var deliveryErr *planhost.DeliveryError
-    if errors.As(waitErr, &deliveryErr) { return deliveryErr }
-    return waitErr // Caller lifecycle result.
-}
-_ = report // Inspect Completion or Failure, then end the one-shot lifecycle.
-
-// Repeated cycles: change external facts only through the External Actor,
-// trigger again, and wait for the next successfully handled exact Report.
-
-// Failure/cancellation: a closed Reports stream without the expected handled
-// Report is resolved through Wait as DeliveryError or the caller context error.
+if !ok { return host.Wait() }
+// A received assessed report proves successful recipient handoff.
+// Other reports preserve their existing no-current/failure meaning.
+_ = report
+cancel()
+return host.Wait() // One-shot command distinguishes its own cleanup cancellation.
 ```
 
-## Decisions
+### 3-4. Terminal and Publication Contracts
 
-### Decision: Keep the reference Host internal until Milestone #3
+The Host owns one terminal arbitration point. Delivery returns its boundary outcome; Host acceptance of a failure and caller cancellation are resolved once. No public global Report identifier, event counter, or per-assessment deduplication state is introduced.
 
-- **Choice**: Implement the accepted operation under `internal/planhost` and expose only the executable command as a deployment entry point.
-- **Rationale**: #2 needs running evidence, while #3 owns remodelling, refactoring, and final module/interface boundaries. An internal package permits coherent tests without prematurely making a provisional Host API a compatibility promise.
-- **Alternatives**: A public `planfeedback` package would freeze a boundary before the evidence review. Keeping all logic in `main` would make the Composition Root own behavior and obstruct focused tests.
-- **Consequences**: #3 may move or replace the internal package. #2 tests must protect behavior rather than private structure.
+| Ordered condition | Required observation |
+|---|---|
+| Parent cancellation is observed before failure is accepted | Stable exact parent lifecycle error; no new delivery or processed publication |
+| DeliveryError is accepted while parent lifecycle is active | Stable same DeliveryError, even if parent later cancels; child Controller cancellation does not replace it |
+| Recipient success is established; processed publication commits before cancellation | Exact processed Report remains readable, then Wait returns parent cancellation |
+| Recipient success is established; publication remains blocked when cancellation wins | Drop pending processed evidence, do not undo or replay handoff, terminate without reader progress |
+| Full processed buffer holds A; B handoff succeeds; B cannot publish; caller cancels | A remains readable; B evidence is discarded; one B handoff only; Wait does not require draining A |
+| Failure and cancellation are genuinely unordered | One consistent terminal winner; all Trigger/Wait observations after commitment agree |
+| Post-stop Trigger | Stable Host terminal outcome and no new Request |
 
-### Decision: Reuse the generic Controller unchanged
+The report pump calls `Deliver` once per received Report. Any non-nil handling error fails the Host closed; invalid Report errors are defensive contract failures, not invented semantic outcomes. Parent cancellation is propagated to Controller and recipient boundaries; stopping does not wait on the evidence consumer. Submission cancellation alone does not cancel already accepted work.
 
-- **Choice**: Start it with concurrency one and the Plan Attempt produced from the single configured Plan Target.
-- **Rationale**: Exact requests, coalescing, exclusion, publication, Directives, and cancellation already have accepted semantics and tests.
-- **Alternatives**: A Plan-specific scheduler duplicates control decisions. Adding Result delivery to `reconciliationcontrol` makes target-independent control interpret target semantics.
-- **Consequences**: Trigger occurrences remain level-based and may coalesce. The Host does not promise one Attempt per trigger.
+---
 
-### Decision: Expose exact Reports only after operation handling completes
+## 4. Construction Decisions and Verification
 
-- **Choice**: The Host is the Controller stream's sole consumer. For Current Plan Assessed it invokes the destination after the Controller publication commits and exposes the exact Report through a one-entry processed-Report buffer only after destination success. Other Reports are exposed after classification. Delivery failure or cancellation exposes no successfully handled Report for that Controller Report.
-- **Rationale**: Receiving a Host Report is a deterministic one-cycle completion signal, no competing consumer can steal a Controller Report, and a slow observer cannot block the destination for the current Report.
-- **Alternatives**: Publishing before destination creates a race for one-shot consumers. Two consumers on the Controller channel race. A generic event/outcome wrapper creates an unnecessary cross-stage model.
-- **Consequences**: An unread processed Report can eventually backpressure a later Report, but it never blocks delivery for the Report already being handled; cancellation must still select over publication and avoid waiting for the observer.
+### 4-1. Decisions and Rejected Alternatives
 
-### Decision: Fail-stop on Plan Result Destination failure
-
-- **Choice**: Record a Plan-specific delivery failure, cancel the child Controller lifecycle, reject later triggers, await active boundaries, and return that failure from `Wait`.
-- **Rationale**: Continuing silently would lose feedback while appearing healthy. Fail-stop makes failure observable without durable replay or automatic retry.
-- **Alternatives**: Automatic retry is explicitly out of scope and cannot establish exactly-once external effect. Continuing after failure requires another observable failure stream and a dropped-result policy not supported by current requirements.
-- **Consequences**: Recovery starts a new disposable Host and performs a fresh ordinary Request. The prior Result is never replayed; the destination may have acted before returning an error, so no external-effect claim is made.
-
-### Decision: Keep deterministic collaborators local to integration tests
-
-- **Choice**: Model authoritative Plan facts, External Actor progress, assessment calculation, trigger timing, and destination recording as specifically named test fixtures in the external integration test file.
-- **Rationale**: The environment needs shared invariants but is not a production capability or general simulation framework.
-- **Alternatives**: A production fake/simulation package adds abstractions used only by tests. Unrelated mocks reproduce implementation call order and make refactoring harder.
-- **Consequences**: Tests can inspect fresh observation inputs and delivery records while remaining coupled only to public behavior. If multiple future capabilities need the same environment, #3 can reconsider a bounded test-support package from evidence.
-
-### Decision: Make the real executable a thin one-cycle composition
-
-- **Choice**: A command-local GitHub binding adapter builds one Milestone Plan target and a fresh post-Snapshot observer that exposes only provider-independent Progress Evidence. `cmd/arcloom-plan` wires that target with one Codex assessor through the Go SDK, the configured Attempt, reference Host, and terminal Plan Result Destination, then submits one explicit trigger per invocation.
-- **Rationale**: One-shot invocation is a concrete explicit Request source, works with disposable state, and permits repeated real cycles after external progress without inventing polling or a command protocol.
-- **Alternatives**: A daemon, stdin event protocol, GitHub webhook server, or scheduler adds deployment policy and lifecycle scope not needed for #2.
-- **Consequences**: The real proof invokes the command initially and at least twice later. Repeated invocations use the same Host contract but never reuse prior Result state.
-
-## Behavioral Test Specification
-
-| Requirement | Given | When | Then | Test level |
-|---|---|---|---|---|
-| `plan-feedback-loop-operation/exact-plan-operation-configuration` | Invalid binding inputs; or nil/already-ended Host context, zero Binding, or nil destination | Binding construction or Start is requested | Constructor returns its stable zero/error contract; Host startup fails with its specified error before observation or Controller work | Unit / external-package |
-| `plan-feedback-loop-operation/explicit-plan-trigger` | A running Host and controlled target | Initial and later triggers are submitted | Attempts receive only the configured identity; duplicates obey existing Controller behavior | Integration |
-| `plan-feedback-loop-operation/assessed-plan-result-delivery` | Assessed, no-current, and Attempt Failure Reports | Host consumes each | Only exact Assessment reaches destination; exact Report is exposed after handling; at most one invocation per qualifying Report | Unit and integration |
-| `plan-feedback-loop-operation/delivery-failure-and-fresh-reentry` | Destination fails after one assessed Report | Delivery returns failure, then a new Host is started | First Host stops without retry; new Host observes fresh facts and does not replay | Integration |
-| `plan-feedback-loop-operation/caller-scoped-operation-lifecycle` | Idle, active observation, blocked Report forwarding, and in-flight delivery states | Caller cancels | Intake ends; active boundary returns; streams close; `Wait` preserves cancellation | Unit with channels; race test |
-| Multi-cycle acceptance | One valid Plan with three externally controlled progress states | Initial trigger, External Actor progress, later trigger, further progress, third trigger | Observation count is three, assessment input reflects each fresh state, destination receives three exact assessed results, final outcome is Complete | Deterministic integration |
-| Real acceptance | GitHub Milestone #2 and configured Codex SDK | Command is run initially and after at least two external progress changes | Same contracts yield fresh Reports and destination observations, with evidence recorded outside product state | Manual reproducible verification |
-
-### Deterministic convergence matrix
-
-| Cycle | Source-owned Planning revision before trigger | External Actor operation since prior cycle | Fact-derived expected Assessment | Expected processed Report and delivery |
-|---|---|---|---|---|
-| Initial | S0: all three Tasks Open | None | Retain | Exact S0 Assessment delivered once; exact handled Report exposed. |
-| First later | S1: first Task Closed, two Open | Actor closes only the first Task | Retain | Exact S1 Assessment delivered once; no S0 material enters assessment. |
-| Second later | S2: all three Tasks Closed | Actor closes only the remaining Tasks | Complete | Exact S2 Assessment delivered once; final handled Report is Complete. |
-
-The simulated Planning Context records every revision writer. The integration test asserts that the only S0→S1 and S1→S2 writes are the two named External Actor operations and that Host startup, triggers, observation, assessment, destination success, destination failure, and cancellation produce no Planning revision.
-
-### Error, boundary, and concurrency verification
-
-| Contract edge | Deterministic control | Required assertion |
+| Decision | Selected representation and reason | Rejected simpler alternative |
 |---|---|---|
-| Cancellation versus destination | Channels establish cancel-first, success-first, and failure-first commit orders separately | Cancel-first exposes no processed Report and `Wait` returns the lifecycle error; success-first exposes the processed Report, then cancellation makes `Wait` return the lifecycle error; failure-first exposes no processed Report and preserves `DeliveryError`. |
-| Same semantic Assessment in distinct Reports | Two fresh Attempts deliberately produce equal Assessments | Each qualifying Report invokes the destination once, for two total invocations; cardinality is per Report, not per value. |
-| Current Plan Not Established recovery | First observation has coherent progress without a current Plan; Actor establishes a valid current Plan; later trigger occurs in the same Running Host | First Report causes no delivery; the later Attempt sees only the new revision and delivers its Assessment. |
-| Attempt Failure recovery | First boundary fails; source recovers; later trigger occurs in the same Running Host | Failure creates no delivery or retry; later Attempt performs fresh observation and can succeed. |
-| Trigger during In Flight delivery | Destination is channel-blocked while another trigger is accepted | Trigger carries no payload; if the earlier delivery succeeds, later work follows Controller semantics; if it fails first, Host cancellation establishes no later handled success. |
-| Public ordering | Destination entry and processed `Host.Reports` receipt are channel-gated | Destination cannot enter before Controller publication; assessed Host Report cannot be received before destination returns nil. No private call sequence is asserted. |
-| Delivery failure after possible destination effect | Destination records an invocation then returns an error while the caller lifecycle remains active | One invocation, no retry, no Planning Context revision by Host, no processed Report, and stable `DeliveryError`. |
+| Plan-owned handoff | Stateless Assessment Delivery boundary; Report identity and existing Assessment preserve exact association | Host qualification violates ownership; putting published AttemptResult handling in Plan Control creates control→attempt→control; adding post-publication handoff to Attempt mixes fresh-evaluation and external-delivery lifetimes |
+| Operational Host | Keep repeated lifecycle in internal reference application | Moving the entire Host under controllers merely renames mixed responsibilities; another scheduler duplicates existing policy |
+| Per-Report cardinality | Sole consumer, one dispatch, one handoff, no retry | Report ID/ledger/deduplication by value adds durable or unnecessary state |
+| Evidence and handoff | One-entry evidence buffer and cancellable pending publication; separate commits | Lossless evidence under a stopped reader requires unbounded/durable state or blocks termination |
+| Deterministic environment | Test-local source revisions, named Actor operations, fact-derived assessor, recording recipient | A production fake package has no production consumer; scripted invocation-number outcomes cannot prove freshness |
+| Real entry point | One explicit cycle per command invocation | Daemon, webhook protocol, polling, and persistent history are not required |
+| Release proof | Deterministic contracts and runnable bindings in PR; real #44–#46 after merge | Requiring live milestone completion before merging its prerequisite Host creates a dependency cycle |
 
-### Real verification matrix
+### 4-2. Real Command and Evidence
 
-| Item | Required record |
-|---|---|
-| Owner and target | Operator identity, exact native GitHub repository/Milestone reference, and execution timestamp for each run. |
-| Three execution points | Initial run, first later run after a named provider-native Task change, and second later run after another named Task change. |
-| Preconditions | Provider-native Task names/states before each run and the configured Codex SDK version/model boundary, without recording secrets. |
-| Observable output | Exact Report classification, exact Plan Control Assessment classification, destination completion, command exit outcome, and native references used as evidence. |
-| Acceptance | Fresh observation evidence differs by the named external changes; no Codex prose match is required; the final contract classification is Complete. |
-| Storage meaning | The record is disposable operator-owned verification, contains no `arcloom-plan:v1` or other required Arcloom metadata, and is not authoritative Planning Context. |
+`cmd/arcloom-plan` is an outer reference application. Its composition function selects implementations; separate command-local functions own concrete configuration translation and output encoding. The Host and Plan Assessment Delivery do not import Provider or terminal contracts.
 
-### Requirement and invariant coverage
+| Boundary | Construction and behavior | Verification |
+|---|---|---|
+| GitHub target | Explicit owner/repository and positive milestone; exact `github-milestone` Target Identity key derived unambiguously from validated native target | Mismatched/invalid target rejects before HTTP; requests identify only the selected milestone |
+| Snapshot and Delivery Observations | Fresh existing Milestone Snapshot observer for the Attempt; a second current observer call after that Snapshot selects only provider-independent ProgressEvidence | Fake HTTP proves fresh reacquisition, post-Snapshot delivery observation, unavailable data, cancellation, and target isolation; no cached Snapshot becomes later evidence |
+| Caller evidence | Optional operator-owned UTF-8 delivery-evidence file is read for the current delivery observation and preserved as opaque evidence alongside progress, never as Plan state or a previous-result cache | Changed/missing/unreadable evidence and exact encoding tests; no inference of Goal achievement from closed Tasks alone |
+| Codex | Explicit absolute executable, positive shutdown duration, model, effort, existing absolute workdir; use `NewStdioClient` and `NewAssessor` | Injected SDK Client tests configuration/material/failure/invalid output/cancellation; existing SDK contract tests retain unsafe/incompatible pre-Turn checks |
+| Recipient | Concrete terminal handoff emits the target and exact Assessment for operator consideration, without a Snapshot argument or action | All four assessments and Proposed Plan round-trip; output failure remains failure, not successful delivery |
+| Processed evidence | Emit exact Report classification, Snapshot/current Plan/progress where present, Assessment or stable Failure, and successful Directive | No-current/failure do not fabricate missing Snapshot/Assessment; semantic handoff and processed evidence are distinguishable |
+| Provenance | UTC acquisition timestamps for Snapshot and post-Snapshot evidence, runtime build/Go metadata, GitHub REST version, SDK-supported Codex version, selected model/effort and native target reference | Capture at the boundaries, not at report-print time; label supported version separately from observed/validated version; unavailable provenance is explicit, never fabricated |
+| Output lifecycle | Context-aware command-local output adapter serializes complete JSON records and returns on cancellation; supported OS output must allow cancellation to unblock an active write | Injected cancellable writer and stopped pipe tests; no abandoned writer goroutine or global stdout closure in reusable code |
+| Exit | 0 only after one valid assessed Report, successful handoff, and successful evidence output; 2 no-current; 1 configuration/Attempt/delivery/evidence failure; 130 caller cancellation | Command tests use injected HTTP/SDK/output/clock and context cancellation; command-owned cleanup cancellation after successful processing is not misreported as caller cancellation |
 
-| Subject | Owning verification |
-|---|---|
-| Exact single-target configuration and zero work on rejection | `PlanAttemptBinding` constructor/exact-identity tests, Host startup unit tests, and command configuration tests |
-| Identity-only repeated triggers, coalescing, and no prior-cycle facts | Trigger concurrency tests plus S0/S1/S2 integration |
-| Per-Report assessed-only delivery and exact Assessment | Branch table tests, equal-Assessment distinct-Report test, and convergence integration |
-| No Authorization, application, Task execution, or Host/destination mutation | Planning revision-writer history plus dependency/code review |
-| Delivery error distinction, no retry, and uncertain destination effect | Delivery failure tests and stable `DeliveryError` assertions |
-| Caller cancellation, terminal precedence, and disposable runtime | Deterministic winner tests, repeated cancellation, concurrent repeated `Wait`, post-stop `Trigger`, stopped-consumer test, and fresh restart test |
-| Real GitHub/Codex operation through owned boundaries | Real verification matrix and command contract tests |
+The command must not call Codex to choose its own configuration, invoke GitHub mutations, print tokens or raw Provider errors, or infer retries. `GITHUB_TOKEN` supplies credential transport; flags contain no token. The runbook records the exact executable/version requirements, invocation, evidence fields, exit meanings, and post-merge issue sequence. It makes no live-success claim before #44–#46 run.
 
-The convergence assessor is derived from the exact current Plan and current simulated progress; it is not scripted by invocation number. Each observation records a distinct revision so a cached Snapshot fails the test. Channels and explicit Actor methods coordinate semantic commit boundaries; no wall-clock sleep is used. `go test -race ./...` is an additional data-race detector, not proof of terminal-winner, exclusion, or delivery cardinality semantics.
+### 4-3. Behavioral Test Specification
 
-Implementation follows Red-Green-Refactor in this order: invalid startup, assessed-only delivery, report ordering, delivery fail-stop, cancellation races, multi-cycle convergence, then real composition. Tests assert public behavior and do not require private function call order.
+| ID / requirement | Given | When | Then | Level |
+|---|---|---|---|---|
+| T1 configuration | Zero/invalid target, nil assessor, or valid target | Construct executable binding | Stable zero/error or exact immutable binding; no external calls; different requested identity rejected pre-observation | External-package unit |
+| T2 configuration | Nil/ended context, zero binding, nil recipient, or full configuration | Start Host | Documented precedence and zero work on rejection; stable started stream otherwise | Unit |
+| T3 delivery | Published assessed Reports for all four outcomes, including equal values in separate Reports | Deliver/dispatch | Exact target, assessed/proposed Plan and outcome preserved; one handoff per occurrence | Unit/integration |
+| T4 delivery | Nil/ended context, nil recipient, zero Report, invalid Completion, combinations of invalid inputs, no-current, or either Controller Failure kind | Deliver | Validation precedence is nil context → ended context → nil recipient → invalid Report, with the documented error and zero handoffs; valid non-assessed Reports succeed unchanged; ordinary recipient failure preserves `DeliveryError` classification through `errors.As` and its cause through `errors.Is` | Unit |
+| T5 triggers | Initial, later, duplicate pending, active-time, nil/cancelled submission, post-stop calls | Trigger | Existing identity-only/coalescing/exclusion behavior, no duplicate policy or hidden retry | Integration |
+| T6 failure/reentry | Recipient records a possible effect and returns error | Stop then construct another Host and trigger | Stable DeliveryError; no replay or source mutation; fresh new observations | Integration |
+| T7 lifecycle | Idle, blocked Request, Snapshot/Delivery observation, assessor, recipient | Cancel using channels | Stop intake, await only active cooperative boundaries; stable Wait; no successful post-cancellation delivery | Unit/integration |
+| T8 publication | Buffer A full; B recipient returns success; `testing/synctest.Wait` establishes quiescence while B evidence cannot publish | Cancel without reader progress | A drainable, B evidence absent, B effect not undone/replayed, bounded shutdown | Integration |
+| T9 terminal | Explicit cancel-first, success/publication-first, failure-acceptance-first conditions established through public Report reception, completed `Wait`, or `testing/synctest.Wait` quiescence | End boundaries/caller in that order | Correct stable winner; zero/nil Host and concurrent Wait/Trigger contracts | Unit |
+| T10 convergence | S0 all Tasks open and Goal evidence incomplete | Trigger; Actor completes one Task; trigger; Actor completes remaining work with AC evidence; trigger | S0 Retain, S1 Retain, S2 Complete; three source revisions; exactly two Actor writes; no prior-cycle fact reuse | Deterministic integration |
+| T11 evidence meaning | All Tasks closed but AC evidence missing; valid proposed revision; unavailable evidence | Assess current facts | Insufficient Information/Revise as derived from facts; no invocation-count scripting or completion shortcut | Deterministic integration |
+| T12 recovery | No-current then source repaired, or Attempt Failure then source repaired | Later trigger in same Host | First Report no handoff; later fresh facts and exact handoff without restart or automatic retry | Integration |
+| T13 isolation | Distinct exact targets and independent invocation lifecycles | Run concurrently and cancel one | No exchanged facts, assessments, recipients, terminal errors, or source writes | Integration/race |
+| T14 concrete binding | Injected current GitHub responses and SDK turn outcomes | Run command | Target/provenance/material/exit contract; valid, partial, unavailable, malformed AI, SDK failure, recipient/output failure, cancellation | Command |
+| T15 output cancellation | Output pipe is full or injected writer is blocked | Caller cancels | Writer unblocks through owned cancellation mechanism, Host/SDK cleanup finishes, no leaked background writer | Command |
+| T16 final quality | All behavior implemented | Run full and repeated tests, race detector, dependency guard, Markdown/OpenSpec validation, independent review | All checks pass; no P0/P1; architecture and published model agree | Repository gate |
 
-## Independent Evolution Scenario Review
+Controller's existing public tests remain the owner of generic scheduling/Directive rules; Host tests verify composition, not private scheduler order. A defensive Control Directive Rejected Report can be obtained by a test Controller with a target Attempt returning an invalid Directive, without adding a production test seam to PlanAttemptBinding.
 
-| Change scenario | Primary owner | Expected propagation | Design verdict |
+Ordered lifecycle tests run in a `testing/synctest` bubble where needed. A signal emitted inside a recipient before it returns does not establish delivery success or Host terminal commitment. T8 waits for quiescence with A deliberately unread after releasing B's recipient; T9 observes a published Report for publication-first, completed Host `Wait` before later cancellation for failure-first, and quiescence after cancellation before releasing a cooperative boundary for cancel-first. These establish behavior-level preconditions without sleeps, private hooks, or internal scheduler assertions.
+
+### 4-4. Construction Plan and Minimal Representation
+
+| Unit | Dependency / owning guarantee | TDD progression | Rollback impact |
 |---|---|---|---|
-| Trigger source changes from command invocation to webhook or another process | Host integration | New source calls `Trigger`; Attempt input remains identity-only | Pass; no Trigger Source Interface is added prematurely. |
-| Duplicate or active-time triggers increase | Reconciliation Controller | Existing exclusion and coalescing tests plus Host integration test | Pass; Host adds no queue or counter. |
-| Plan becomes temporarily not established and later recovers | Plan Attempt and Planning Context | Reports show no-current; later trigger observes fresh facts; no destination delivery for the earlier report | Pass. |
-| Destination implementation changes or temporarily fails | Plan-specific destination and Host lifecycle | Destination implementation changes; failure stops Host; new Host observes fresh state | Pass; no generic destination or replay queue. |
-| GitHub observation is partial or unavailable | GitHub Snapshot and Plan Attempt | Existing Snapshot/Attempt failure classification; Host routing unchanged | Pass. |
-| Codex protocol, executable, or process behavior changes | Codex app-server SDK | SDK implementation and contract tests only unless completed-Turn semantics change | Pass; Host never sees JSON-RPC or process state. |
-| Deployment changes from one-shot command to a long-running service | Host integration | A new source/lifecycle composition reuses operation behavior; no current service abstraction is added | Evidence-backed risk only; #3 evaluates after #2 proof. |
-| Multiple Plan targets are needed in one Host | Host integration and Controller | Current reference Host remains one target; a multi-target operation requires new requirements | Deferred; current Controller capability is not used to justify a speculative Host API. |
+| Binding | Existing PlanTarget/Attempt; exact configuration | Red invalid/identity test → constructor → refactor | Additive value only |
+| Assessment Delivery | Existing Report/AttemptResult/Assessment; handoff boundary | Red assessed/non-assessed/error tests → stateless Deliver → refactor | Additive function/Port/error; no persisted state |
+| Host | Binding, Controller, Deliver; operational lifecycle | Red startup/trigger/stream → fail-stop → ordered cancellation/full-buffer tests | Remove reference application state; existing Controller unchanged |
+| Local environment | Public Host and Plan boundaries | Red source-derived three-cycle proof → minimal fixtures → isolation/recovery | Tests only |
+| Command | Existing Providers, Host, cancellable output | Red injected one-cycle/config/error/cancel tests → concrete wiring and evidence → runbook | Remove entry point; no external data migration |
+| Publication | Approved model and all implementation evidence | Main Conceptual Model during apply; official archive at completion; strict validation | Git history restores code/spec; no source-state rollback |
 
-## Risks / Trade-offs
+Only Host needs independently changing lifetime state. Binding and existing Assessment are immutable values; delivery is a function; Recipient is one consumer-owned external boundary. No helper class, generic event wrapper, or registry is justified.
 
-- The internal Host is a provisional procedural coordination point → keep it internal, assign every decision above, and require #3 modelling before promotion or splitting.
-- Processed Report observation adds bounded backpressure only after the current destination outcome → use a one-entry buffer, let cancellation select over later publication, and test a stopped consumer.
-- A destination might perform an external effect and still return failure → expose failure without claiming non-delivery and never retry automatically.
-- A trigger accepted while a prior destination call is active may make later Controller work eligible → explicit sources should trigger from external occurrences, while Controller remains the only scheduling owner; deterministic convergence sequences external progress after delivery. #3 reviews real evidence before changing this rule.
-- The real command needs credentials and Codex installation → configuration remains operator-owned, secrets are never persisted or printed, and deterministic acceptance remains credentialless.
-- A one-shot command does not itself prove a daemon lifecycle → the reusable internal Host integration test proves repeated triggers in one lifecycle; the command proves concrete real bindings.
-- The GitHub post-Snapshot observation vocabulary may evolve → a command-local binding adapter selects only existing provider-independent Progress Evidence; `githubplan` retains HTTP and representation mapping, and no Provider DTO enters Plan Control or the Host.
+### 4-5. Independent Scenario Stress Test
 
-## Migration / Rollback
+Packet: `M2-HOST-REQ-v2`. `host_initial_model` passed initial minimality before `host_independent_scenarios` disclosed S1–S16. `host_design_readiness` then reviewed responsibility and architecture against the same scenarios. No independent scenario was invented from this package choice.
 
-There is no persisted Product state or external data migration. Rollback removes the internal Host and command while leaving existing Controller, Plan Attempt, GitHub, Codex adapter, and SDK behavior intact. The additive `PlanAttemptBinding` can be removed before any public release if #3 selects another exact single-target construction contract.
+| Scenario / confidence | Primary owner | Expected propagation | Verdict |
+|---|---|---|---|
+| S1 similar exact targets / evidence-backed plausible | Binding and Host invocation | Configuration/isolation tests | PASS |
+| S2 burst/active requests / committed | Reconciliation Control | Host integration only; no queue | PASS |
+| S3 Actor changes / committed | External Actor and Plan Attempt | Fresh-source integration | PASS |
+| S4 evidence vocabulary/sufficiency / evidence-backed plausible | Plan Control and caller evidence source | Observation/assessor tests; handoff unchanged | PASS |
+| S5 incomplete/incoherent observations / committed | GitHub adapter, Snapshot, Attempt | Existing no-current/failure and handoff suppression | PASS |
+| S6 four assessments / committed | Plan Control, Assessment Delivery | Exact-value and proposal tests | PASS |
+| S7 invalid/unavailable AI / committed | SDK/adapter, Plan Control, Attempt | Existing failure contracts and zero handoff | PASS |
+| S8 subsequent Plan consideration / evidence-backed plausible | Plan Controller and external decision owner | Recipient composition; no registry or multiple destinations | PASS |
+| S9 uncertain destination effect / committed | Assessment Delivery and Host lifecycle | Error and fail-stop tests | PASS |
+| S10 cancellation/reader stall / committed | Host and active boundaries | Separate publication commit, discard pending evidence, no effect reversal | PASS |
+| S11 lifecycle loss / committed | Host and Plan Attempt | Fresh restart; no restoration/replay | PASS |
+| S12 SDK safety/configuration / committed | SDK and Codex adapter | Configuration/boundary tests only | PASS |
+| S13 GitHub representation/pagination / evidence-backed plausible | GitHub adapter | Native mapping tests; no Host interpretation | PASS |
+| S14 deterministic concurrent verification / committed | Test-owned environment | Isolated fixtures; no production simulation | PASS |
+| S15 live checkpoints / committed | Milestone verification owner | Post-merge commands/evidence, not product state | PASS |
+| S16 another Feedback Controller / evidence-backed plausible | That Feedback Controller | Independent target meaning; no Plan dependency in Core | PASS |
 
-## Open Questions
+The scenario author's source references are the R1–R8 packet and accepted specification IDs recorded in model.md. No evidence justifies durable delivery, replay, multi-target Host operation, multiple destinations, or a new universal Result.
 
-None. Command flag names and terminal formatting may be chosen during implementation because they do not change the accepted behavior, architecture boundary, or task order.
+### 4-6. SOLID and Boundary Gate
 
-## Approval Gate
+| Check | Protected constraint and verdict |
+|---|---|
+| SRP | Attempt owns fresh evaluation; Assessment Delivery owns post-publication handoff; Host owns operational lifecycle. Separate information, authority, and change drivers. |
+| OCP | Only existing Provider/recipient substitutions are isolated. Speculative deployment or generic remodelling creates no extension point. |
+| LSP / ISP | Recipient is one exact-assessment handoff with cooperative cancellation; no large Provider API, action method, or result-kind negotiation. |
+| DIP | Delivery and Host do not depend on HTTP/SDK/terminal details; recipient Port belongs to the consumer. Dependency guard prevents infrastructure leakage. |
+| Boundary minimality | Host is the concrete consumer of the Plan-specific handoff contract. Reusing Control would reverse dependencies; reusing Attempt would add post-publication external delivery to current-fact evaluation. |
+| Scenario propagation | All S1–S16 have explainable owners; no duplicated policy or unexplained propagation. Architecture reviewer verdict: PASS for boundary choice, not construction approval. |
 
-The design risk is High. Construction MUST NOT begin until a human approves this DesignDoc, including the provisional internal Host boundary, fail-stop delivery policy, one-shot real Composition Root, and deterministic integration strategy. Milestone #3 remains responsible for final module and interface approval after #2 evidence exists.
+---
+
+## 5. Migration, Review, and Approval
+
+There is no persisted Product state or external data migration. Existing Controller, Plan Attempt, Snapshot, Assessment, GitHub, and SDK behavior remains compatible. New handoff/binding and reference application code is additive; rollback removes it and restores specifications through Git without replaying deliveries or mutating targets.
+
+The complete main-spec Conceptual Model is published during apply. Requirement deltas are published only by `openspec archive add-runnable-plan-feedback-loop-host --yes` followed by `npm run lint:openspec`. Every implementation and verification item must be complete before archival; post-merge milestone Tasks remain outside that checklist.
+
+| Gate | Current result |
+|---|---|
+| Requirements/evidence packet and initial model minimality | Prepared; independent initial minimality PASS |
+| Independent scenarios and responsibility/architecture stress test | S1–S16 reviewed; `host_design_readiness`: final Architecture and detailed-design PASS, no actionable P0/P1/P2 findings |
+| Detailed Interface review | `host_interface_review`: PASS; no actionable P0/P1/P2 findings |
+| Behavioral-test review | `host_test_design_review`: PASS after both P2 findings were resolved in T4/T8/T9 |
+| Human DesignDoc approval | Pending; earlier proposal scope approval and instruction to finish authorize preparation, not an invented review attestation |
+| Construction, implementation review, CI, merge | Not started for this feature; begin only after required design gates pass |
+
+No unresolved product choice is deferred into coding. Public contracts, output cancellation, failure precedence, and evidence provenance are part of design review, not implementation improvisation.

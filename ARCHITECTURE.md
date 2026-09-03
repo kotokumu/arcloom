@@ -152,6 +152,7 @@ C4Component
             Component(plan, "Plan", "Component", "Owns provider-independent Plan meaning and invariants")
             Component(plan_attempt, "Plan Attempt", "Component", "Owns one target-bound fresh-observation and assessment attempt")
             Component(plan_control, "Plan Control Reconciliation", "Component", "Establishes one Plan-specific assessment")
+            Component(plan_assessment_delivery, "Plan Assessment Delivery", "Component", "Returns an exact published Plan Assessment for subsequent Plan consideration")
             Component(plan_snapshot, "Plan Snapshot Observation", "Component", "Establishes one current Plan and representation progress")
             Component(plan_representation, "Plan Representation Reconciliation", "Component", "Relates expected Plan meaning to an observed external representation")
             Component(plan_application, "Plan Application Request", "Component", "Preserves and may issue one exact proposed Plan revision after separate Authorization without becoming part of Plan Control")
@@ -165,10 +166,13 @@ C4Component
 
     Rel(host, reconciliation_control, "Submits identity-only requests and consumes reports")
     Rel(host, plan_attempt, "Supplies target bindings for Plan Control")
+    Rel(host, plan_assessment_delivery, "Supplies published Reports and the concrete handoff implementation")
     Rel(host, plan_application, "May submit one exact proposed Plan revision separately from Plan Control")
     Rel(reconciliation_control, plan_attempt, "Invokes the target-specific Attempt Port")
     Rel(plan_attempt, plan_snapshot, "Obtains one fresh Snapshot")
     Rel(plan_attempt, plan_control, "Obtains an Assessment when a current Plan exists")
+    Rel(plan_assessment_delivery, plan_attempt, "Uses the public assessed-result classification without re-evaluating it")
+    Rel(plan_assessment_delivery, plan_control, "Preserves exact Assessment meaning")
     Rel(plan_control, plan, "Uses Plan meaning and invariants")
     Rel(plan_control, codex_plan, "Obtains an AI judgment through its owned Port")
     Rel(plan_snapshot, plan, "Uses Plan invariants")
@@ -202,10 +206,13 @@ Reconciliation is part of the Core Domain without requiring one generic Reconcil
 | Plan | Owns Plan name, Goal, Acceptance Conditions, Tasks, optional Target Date, exact value preservation, collection identity and order, and structural validity. | Provides provider-independent Plan values and validation results. | Does not own an authoritative external Plan, progress, proposal generation, Authorization, application, or Task execution. |
 | Plan Attempt | Owns exact Target Binding resolution, one fresh Snapshot before assessment, Delivery Observation acquisition, the Current Plan Not Established and Current Plan Assessed branches, and the directive to await another request. | Implements the target-specific Attempt Port required by Reconciliation Control. | Does not authorize or apply a revision, interpret wake-up causes, persist loop state, or infer retries. |
 | Plan Control Reconciliation | Owns Plan Control Assessment and Failure invariants and validates one externally established judgment concerning an exact current Plan and caller-owned Delivery Observations. | Provides Complete, Retain, Revise with one valid proposed Plan, Insufficient Information, or its defined failure. | Does not acquire Observation, implement an AI Provider, authorize or apply a revision, perform Tasks, or own repeated-loop lifecycle. |
+| Plan Assessment Delivery | Owns the Plan-specific handoff of an Assessment from a published Plan Attempt Report to subsequent continuation, revision, or acceptance consideration. Uses the existing assessed-result classification and preserves the exact target/Assessment association. | Accepts a published Plan Report, hands off only an existing Assessment through its owned recipient Port, and distinguishes handoff failure from Attempt Failure without claiming external effects. | Does not re-evaluate an Assessment, define a universal Result, acquire observations, schedule work, retry or replay, publish Controller or Host evidence, own the Host lifecycle, authorize, apply, or mutate a Plan. |
 | Plan Snapshot Observation | Owns Snapshot coherence, current-Plan eligibility, representation progress, membership completeness, and the observation Port required to establish them. | Provides a current Plan when eligible and preserves coherent progress when it is not. | Does not own Provider mapping, external target identity, Plan Control judgment, Authorization, mutation, or persistence. |
 | Plan Representation Reconciliation | Owns the association among an expected Plan, one bound external target Observation, Evidence, and Satisfied, NotSatisfied, or Undecidable. | Provides the target-specific Result and stable failures defined for Plan representation consistency. | Does not own Plan content decisions, external facts, Provider mapping, Authorization, or external mutation. |
 
 The Plan Controller boundary owns the Plan-specific meaning and decisions required to control a Plan even when one Capability composes multiple Components. A Component inside the boundary may depend on another Plan Component only when it uses that Component's public contract and does not take ownership of its decisions.
+
+Plan Assessment Delivery is distinct from the Host's mechanical transport. The Host consumes each Controller Report once and dispatches each occurrence once without classifying Plan outcomes; Plan Assessment Delivery uses the Plan Attempt's existing qualification and performs no more than one handoff for that call. Their composition protects per-Report cardinality without a delivery ledger. The Host owns fail-stop lifecycle handling and disposable processed-Report evidence. Cancellation may discard unpublished evidence without undoing an established handoff or claiming that no destination effect occurred.
 
 ### 5.4 Plan Application Request Component
 
@@ -241,6 +248,7 @@ flowchart BT
         P[Plan]
         PA[Plan Attempt]
         PCR[Plan Control Reconciliation]
+        PAD[Plan Assessment Delivery]
         PSO[Plan Snapshot Observation]
         PRR[Plan Representation Reconciliation]
         PAR[Plan Application Request]
@@ -254,6 +262,9 @@ flowchart BT
     PA --> PSO
     PA --> PCR
     PCR --> P
+    PAD -->|uses published Report contract| RC
+    PAD -->|uses public result classification| PA
+    PAD -->|preserves Assessment| PCR
     PSO --> P
     PRR --> P
     PAR --> P
@@ -266,6 +277,7 @@ flowchart BT
     ROOT --> RC
     ROOT --> AUTH
     ROOT --> PA
+    ROOT --> PAD
     ROOT --> PAR
     ROOT --> CODEX
     ROOT --> GITHUB
@@ -292,6 +304,7 @@ Feedback Controllers are independent by default. A real dependency between them 
 | Reconciliation Control | One current-fact, target-specific Attempt returning an opaque successful value and an explicit control directive | A Feedback Controller Component reacquires current facts and preserves its own Result and Failure meaning |
 | Plan Attempt | Exact Target Binding resolution, current Plan Snapshot Observation, and current Delivery Observation | Host composition and Plan-owned observation Components supply current target-bound facts without moving branch decisions into the Host |
 | Plan Control Reconciliation | One provider-independent external AI judgment concerning the exact supplied assessment material | The Codex adapter translates Provider interaction while leaving Assessment validation and meaning with the consumer |
+| Plan Assessment Delivery | One handoff of an exact target identity and existing Plan Assessment for subsequent Plan consideration | The Host-supplied recipient implements concrete delivery and cooperative cancellation; its return is not Authorization, application, or target-state evidence. Semantic destination meaning remains Plan-owned. |
 | Plan Snapshot Observation | Current Plan and representation-progress facts for one bound external target | The GitHub adapter maps current Provider facts without deciding Snapshot eligibility |
 | Plan Representation Reconciliation | One provider-independent Observation for a bound external Plan target | The GitHub adapter establishes facts and unavailable information without deciding Reconciliation Evidence or Result |
 | Plan Application Request | One exact proposed Plan revision request and explicit receipt or refusal evidence | An External Actor owns action-time interpretation, conflict handling, and mutation and does not return target state through the Port |
@@ -326,6 +339,7 @@ github.com/kotokumu/arcloom
 ├── controllers
 │   ├── plan
 │   │   ├── application
+│   │   ├── assessmentdelivery
 │   │   ├── attempt
 │   │   ├── control
 │   │   ├── representation
