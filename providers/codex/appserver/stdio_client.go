@@ -199,18 +199,14 @@ func (process *appServerProcess) complete(ctx context.Context, request ReadOnlyT
 	if err != nil {
 		return CompletedTurn{}, err
 	}
-	if !safeEffectiveConfiguration(configuration) {
-		return CompletedTurn{}, errAppServerInteraction
+	threadConfiguration, err := readOnlyThreadConfiguration(configuration)
+	if err != nil {
+		return CompletedTurn{}, err
 	}
 	process.threadRequested = true
 	thread, err := process.call(ctx, 3, "thread/start", map[string]any{
-		"approvalPolicy": "never",
-		"config": map[string]any{
-			"apps":        map[string]any{},
-			"hooks":       noHooksConfiguration(),
-			"mcp_servers": map[string]any{},
-			"web_search":  "disabled",
-		},
+		"approvalPolicy":        "never",
+		"config":                threadConfiguration,
 		"cwd":                   request.WorkingDirectory(),
 		"developerInstructions": request.DeveloperInstructions(),
 		"ephemeral":             true,

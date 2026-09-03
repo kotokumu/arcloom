@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -121,13 +122,41 @@ func main() {
 			case "unsafe_web_tool":
 				config["tools"] = map[string]any{"web_search": map[string]any{}}
 			case "disabled_mcp":
-				config["mcp_servers"] = map[string]any{"filesystem": map[string]any{"enabled": false}}
+				config["mcp_servers"] = map[string]any{
+					"filesystem": map[string]any{"enabled": false, "command": "never-run", "env": map[string]any{"TOKEN": "synthetic-do-not-forward"}},
+					"archive":    map[string]any{"enabled": false, "url": "https://invalid.example", "bearer_token": "synthetic-do-not-forward"},
+					"dormant":    nil,
+				}
 			case "disabled_apps":
-				config["apps"] = map[string]any{"drive": map[string]any{"enabled": false}, "_default": nil}
+				config["apps"] = map[string]any{
+					"drive":    map[string]any{"enabled": false, "token": "synthetic-do-not-forward"},
+					"calendar": map[string]any{"enabled": false, "endpoint": "https://invalid.example"},
+					"dormant":  nil,
+					"_default": nil,
+				}
+			case "null_configurations":
+				config["apps"], config["mcp_servers"] = nil, nil
+			case "absent_configurations":
+				delete(config, "apps")
+				delete(config, "mcp_servers")
 			case "empty_hooks":
 				config["hooks"] = map[string]any{"PreToolUse": []any{}, "managedDir": nil}
 			case "invalid_mcp_shape":
 				config["mcp_servers"] = "unknown"
+			case "invalid_apps_shape":
+				config["apps"] = []any{}
+			case "invalid_mcp_entry":
+				config["mcp_servers"] = map[string]any{"filesystem": "unknown"}
+			case "invalid_apps_entry":
+				config["apps"] = map[string]any{"drive": []any{}}
+			case "invalid_mcp_enabled":
+				config["mcp_servers"] = map[string]any{"filesystem": map[string]any{"enabled": "false"}}
+			case "invalid_apps_enabled":
+				config["apps"] = map[string]any{"drive": map[string]any{"enabled": 0}}
+			case "enabled_mcp":
+				config["mcp_servers"] = map[string]any{"filesystem": map[string]any{"enabled": true}}
+			case "implicit_apps":
+				config["apps"] = map[string]any{"drive": map[string]any{}}
 			}
 			responseID := incoming.ID
 			if mode == "mismatched_config_response" {
@@ -147,6 +176,30 @@ func main() {
 			respond(encoder, responseID, map[string]any{"thread": map[string]any{"id": "thread-stub"}})
 			record.ThreadResponded = true
 			writeCapture(record)
+			// Model the observed server order: respond to thread/start first,
+			// then announce a tool startup if its named denial is erased.
+			if mode == "disabled_mcp" || mode == "disabled_apps" {
+				// Decode only the two object-valued entries, not web_search.
+				var thread struct {
+					Config map[string]json.RawMessage `json:"config"`
+				}
+				_ = json.Unmarshal(incoming.Params, &thread)
+				field := "mcp_servers"
+				names := []string{"filesystem", "archive", "dormant"}
+				if mode == "disabled_apps" {
+					field, names = "apps", []string{"drive", "calendar", "dormant", "_default"}
+				}
+				var entries map[string]any
+				_ = json.Unmarshal(thread.Config[field], &entries)
+				for _, name := range names {
+					if !reflect.DeepEqual(entries[name], map[string]any{"enabled": false}) {
+						_ = encoder.Encode(map[string]any{
+							"method": "mcpServer/startupStatus/updated",
+							"params": map[string]any{"name": name, "status": "starting"},
+						})
+					}
+				}
+			}
 			if mode == "stop_before_turn_read" {
 				time.Sleep(time.Hour)
 			}

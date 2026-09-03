@@ -157,64 +157,76 @@ func compatibleUserAgent(encoded json.RawMessage) bool {
 	return afterVersion == "" || afterVersion[0] == ' ' || afterVersion[0] == '('
 }
 
-func safeEffectiveConfiguration(encoded json.RawMessage) bool {
+func readOnlyThreadConfiguration(encoded json.RawMessage) (map[string]any, error) {
 	response, err := decodeObject(encoded)
 	if err != nil {
-		return false
+		return nil, err
 	}
 	config, err := decodeObject(response["config"])
 	if err != nil {
-		return false
+		return nil, err
 	}
-	if raw := config["apps"]; raw != nil && !allNamedConfigurationsDisabled(raw) {
-		return false
+	apps, err := disabledNamedConfigurations(config["apps"])
+	if err != nil {
+		return nil, err
 	}
-	if raw := config["mcp_servers"]; raw != nil && !allNamedConfigurationsDisabled(raw) {
-		return false
+	mcpServers, err := disabledNamedConfigurations(config["mcp_servers"])
+	if err != nil {
+		return nil, err
 	}
 	if raw := config["hooks"]; raw != nil && !emptyEffectiveConfiguration(raw) {
-		return false
+		return nil, errAppServerInteraction
 	}
 	if raw := config["web_search"]; raw != nil && string(raw) != "null" {
 		var mode string
 		if json.Unmarshal(raw, &mode) != nil || mode != "disabled" {
-			return false
+			return nil, errAppServerInteraction
 		}
 	}
 	if rawTools := config["tools"]; rawTools != nil && string(rawTools) != "null" {
 		tools, err := decodeObject(rawTools)
 		if err != nil {
-			return false
+			return nil, err
 		}
 		if raw := tools["web_search"]; raw != nil && string(raw) != "null" {
-			return false
+			return nil, errAppServerInteraction
 		}
 	}
-	return true
+	apps["_default"] = map[string]any{"enabled": false}
+	return map[string]any{
+		"apps":        apps,
+		"hooks":       noHooksConfiguration(),
+		"mcp_servers": mcpServers,
+		"web_search":  "disabled",
+	}, nil
 }
 
-func allNamedConfigurationsDisabled(encoded json.RawMessage) bool {
-	if string(encoded) == "null" {
-		return true
+func disabledNamedConfigurations(encoded json.RawMessage) (map[string]any, error) {
+	disabled := make(map[string]any)
+	if encoded == nil || string(encoded) == "null" {
+		return disabled, nil
 	}
 	configurations, err := decodeObject(encoded)
 	if err != nil {
-		return false
+		return nil, err
 	}
-	for _, encodedConfiguration := range configurations {
+	for name, encodedConfiguration := range configurations {
+		// Preserve only the denial. Empty maps can restore inherited settings;
+		// forwarding the original entry would also forward connection secrets.
+		disabled[name] = map[string]any{"enabled": false}
 		if string(encodedConfiguration) == "null" {
 			continue
 		}
 		configuration, err := decodeObject(encodedConfiguration)
 		if err != nil {
-			return false
+			return nil, err
 		}
 		var enabled bool
 		if rawEnabled := configuration["enabled"]; rawEnabled == nil || json.Unmarshal(rawEnabled, &enabled) != nil || enabled {
-			return false
+			return nil, errAppServerInteraction
 		}
 	}
-	return true
+	return disabled, nil
 }
 
 func emptyEffectiveConfiguration(encoded json.RawMessage) bool {

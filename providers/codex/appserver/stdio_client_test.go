@@ -78,6 +78,7 @@ func Test_stdioClient_CompleteReadOnlyTurn(t *testing.T) {
 	stubPath := buildAppServerStub(t)
 	workingDirectory := t.TempDir()
 	request := newTurnRequest(t, workingDirectory, `{"currentPlan":{"name":"Release"}}`)
+	client := newStdioClient(t, stubPath, 200*time.Millisecond)
 
 	tests := []struct {
 		name              string
@@ -113,6 +114,8 @@ func Test_stdioClient_CompleteReadOnlyTurn(t *testing.T) {
 		{name: "notification for another Turn", mode: "mismatched_turn_notification", wantErr: true},
 		{name: "disabled MCP configuration is safe", mode: "disabled_mcp", want: CompletedTurn{FinalOutput: `{"outcome":"complete"}`}},
 		{name: "disabled Apps configuration is safe", mode: "disabled_apps", want: CompletedTurn{FinalOutput: `{"outcome":"complete"}`}},
+		{name: "null configurations do not retain names from previous calls", mode: "null_configurations", want: CompletedTurn{FinalOutput: `{"outcome":"complete"}`}},
+		{name: "absent configurations remain disabled", mode: "absent_configurations", want: CompletedTurn{FinalOutput: `{"outcome":"complete"}`}},
 		{name: "empty Hooks configuration is safe", mode: "empty_hooks", want: CompletedTurn{FinalOutput: `{"outcome":"complete"}`}},
 		{name: "incompatible version", mode: "incompatible_version", wantErr: true, wantNoThreadStart: true},
 		{name: "another product with the supported number", mode: "other_product", wantErr: true, wantNoThreadStart: true},
@@ -123,6 +126,13 @@ func Test_stdioClient_CompleteReadOnlyTurn(t *testing.T) {
 		{name: "effective Web Search mode", mode: "unsafe_web_search", wantErr: true, wantNoThreadStart: true},
 		{name: "effective Web Search tool", mode: "unsafe_web_tool", wantErr: true, wantNoThreadStart: true},
 		{name: "invalid MCP configuration shape", mode: "invalid_mcp_shape", wantErr: true, wantNoThreadStart: true},
+		{name: "invalid Apps configuration shape", mode: "invalid_apps_shape", wantErr: true, wantNoThreadStart: true},
+		{name: "invalid MCP entry shape", mode: "invalid_mcp_entry", wantErr: true, wantNoThreadStart: true},
+		{name: "invalid Apps entry shape", mode: "invalid_apps_entry", wantErr: true, wantNoThreadStart: true},
+		{name: "invalid MCP enabled flag", mode: "invalid_mcp_enabled", wantErr: true, wantNoThreadStart: true},
+		{name: "invalid Apps enabled flag", mode: "invalid_apps_enabled", wantErr: true, wantNoThreadStart: true},
+		{name: "enabled MCP entry", mode: "enabled_mcp", wantErr: true, wantNoThreadStart: true},
+		{name: "implicitly enabled Apps entry", mode: "implicit_apps", wantErr: true, wantNoThreadStart: true},
 		{name: "server request", mode: "server_request", wantErr: true, wantNoThreadStart: true},
 		{name: "error response", mode: "error_response", wantErr: true, wantNoThreadStart: true},
 		{name: "unknown notification", mode: "unknown_notification", wantErr: true},
@@ -150,7 +160,6 @@ func Test_stdioClient_CompleteReadOnlyTurn(t *testing.T) {
 			capturePath := filepath.Join(t.TempDir(), "capture.json")
 			t.Setenv("ARCLOOM_CODEX_STUB_CAPTURE", capturePath)
 			t.Setenv("ARCLOOM_CODEX_STUB_MODE", tt.mode)
-			client := newStdioClient(t, stubPath, 200*time.Millisecond)
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
@@ -169,7 +178,7 @@ func Test_stdioClient_CompleteReadOnlyTurn(t *testing.T) {
 				t.Errorf("app-server process %d was not reaped: %v", captured.PID, err)
 			}
 			if !tt.wantErr {
-				assertReadOnlyWire(t, captured, workingDirectory)
+				assertReadOnlyWire(t, captured, workingDirectory, tt.mode)
 			}
 		})
 	}
@@ -615,7 +624,7 @@ func waitForFile(t *testing.T, path string) {
 	t.Fatalf("timed out waiting for %s", path)
 }
 
-func assertReadOnlyWire(t *testing.T, captured stubCapture, workingDirectory string) {
+func assertReadOnlyWire(t *testing.T, captured stubCapture, workingDirectory, mode string) {
 	t.Helper()
 	if diff := cmp.Diff([]string{"app-server", "--listen", "stdio://"}, captured.Arguments); diff != "" {
 		t.Errorf("process arguments mismatch (-want +got):\n%s", diff)
@@ -663,7 +672,23 @@ func assertReadOnlyWire(t *testing.T, captured stubCapture, workingDirectory str
 		t.Errorf("unsafe or incomplete thread/start params: %#v", threadStart)
 	}
 	wantThreadConfig := map[string]any{
-		"apps": map[string]any{}, "hooks": noHooksConfiguration(), "mcp_servers": map[string]any{}, "web_search": "disabled",
+		"apps":  map[string]any{"_default": map[string]any{"enabled": false}},
+		"hooks": noHooksConfiguration(), "mcp_servers": map[string]any{}, "web_search": "disabled",
+	}
+	switch mode {
+	case "disabled_mcp":
+		wantThreadConfig["mcp_servers"] = map[string]any{
+			"filesystem": map[string]any{"enabled": false},
+			"archive":    map[string]any{"enabled": false},
+			"dormant":    map[string]any{"enabled": false},
+		}
+	case "disabled_apps":
+		wantThreadConfig["apps"] = map[string]any{
+			"drive":    map[string]any{"enabled": false},
+			"calendar": map[string]any{"enabled": false},
+			"dormant":  map[string]any{"enabled": false},
+			"_default": map[string]any{"enabled": false},
+		}
 	}
 	if diff := cmp.Diff(wantThreadConfig, threadStart["config"]); diff != "" {
 		t.Errorf("thread/start config mismatch (-want +got):\n%s", diff)
