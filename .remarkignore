@@ -1,2 +1,4 @@
 .agents/
 .claude/
+# Immutable user-provided original: preserve its exact bytes, including no final newline.
+docs/design/agent-os-v0.1.original.md

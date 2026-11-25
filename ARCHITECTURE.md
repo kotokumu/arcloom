@@ -1,5 +1,11 @@
 # Arcloom Architecture
 
+## Agent OS prototype boundary
+
+The [Agent OS v0.1 original](docs/design/agent-os-v0.1.original.md) governs the new direction; the [prototype design](openspec/changes/add-agent-os-prototype/design.md) defines this limited Stage 1 increment. Its Rust kernel uses Wasmtime Component Model/WIT, SQLite WAL and a local content-addressed artifact store. Business applications own transitions and success criteria; execution and feedback drivers own provider interaction. The kernel owns durable run bookkeeping, capability checks, signal delivery, context filtering and local resource leases. The CLI composes and dispatches these contracts without owning workflow decisions.
+
+This is a separate prototype beside the Go implementation described below. Its durable operational state does not make external business facts authoritative inside Arcloom. The legacy disposable-state and Package rules below remain applicable to the existing Go components, not to the prototype's explicitly owned run state. The prototype permits one operator-owned scope per state directory, exposes no ambient filesystem access to WASM applications, and treats native command drivers as trusted host programs. Full agent hooks, process isolation, asynchronous syscall coverage, UI and external lease fencing remain deferred; no complete Stage 1 claim is made.
+
 ## 1. Purpose and Scope
 
 This document defines the software architecture inside Arcloom. It defines the system boundary, architectural vocabulary, Component ownership, dependency direction, Ports, external Context boundaries, and Package namespace.

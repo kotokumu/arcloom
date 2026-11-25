@@ -1,0 +1,7 @@
+package arcloom:os@0.1.0;
+
+// Prototype event ABI. JSON envelopes are versioned by the manifest and
+// application content hash; no ambient filesystem or network imports.
+world business-app {
+    export on-signal: func(state: string, signal: string) -> string;
+}

@@ -1,0 +1,6 @@
+[workspace]
+members = ["agent-os", "agent-os/apps/feedback-loop", "agent-os/apps/observe-only"]
+resolver = "2"
+
+[profile.dev]
+debug = 0

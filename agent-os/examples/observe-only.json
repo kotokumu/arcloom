@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "component": "generated/observe-only.component.wasm",
+  "intent": {"goal": "Record this Intent without invoking any driver"},
+  "requires": [],
+  "grants": [],
+  "drivers": [],
+  "limits": {"max_actions": 1, "fuel": 10000000, "memory_bytes": 16777216}
+}
