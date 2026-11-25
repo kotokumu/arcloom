@@ -1,0 +1,42 @@
+package arcloom:os@0.2.0;
+
+// Kernel contracts are typed. Application state and provider payloads stay opaque.
+interface syscalls {
+    record signal {
+        id: s64,
+        kind: string,
+        payload: string,
+        action: option<s64>,
+        generation: option<s64>,
+        artifact: option<string>,
+    }
+    enum syscall-error { denied, invalid-input, invalid-handle, unavailable, limit-exceeded }
+    // Callback-local reservations. Acquiring a handle does not mutate the journal.
+    resource lease;
+    resource ticket;
+    lease-acquire: func(capability: string) -> result<own<lease>, syscall-error>;
+    dispatch: func(reservation: borrow<lease>, input: string) -> result<own<ticket>, syscall-error>;
+    enum knowledge-kind { decision, finding, hypothesis, disproved }
+    enum knowledge-status { draft, stable, deprecated }
+    enum knowledge-trust { unverified, machine, human }
+    record knowledge-node {
+        id: string,
+        kind: knowledge-kind,
+        status: knowledge-status,
+        trust: knowledge-trust,
+        stale-after: option<s64>,
+        sources: list<string>,
+        payload: string,
+    }
+    record context-view { confirmed: list<knowledge-node>, provisional: list<knowledge-node> }
+    knowledge-query: func() -> result<context-view, syscall-error>;
+    artifact-get: func(hash: string) -> result<list<u8>, syscall-error>;
+    variant outcome { wait, complete, denied, dispatch(own<ticket>) }
+    record transition { state: string, effect: outcome }
+}
+
+world business-app {
+    import syscalls;
+    use syscalls.{signal, transition};
+    export on-signal: func(state: string, event: signal) -> result<transition, string>;
+}

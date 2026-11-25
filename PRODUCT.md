@@ -1,5 +1,11 @@
 # Arcloom Product
 
+## Agent OS prototype scope
+
+The [Agent OS v0.1 original](docs/design/agent-os-v0.1.original.md) defines the new product direction. The [prototype design](openspec/changes/add-agent-os-prototype/design.md) implements a limited, locally runnable part of Stage 1: replaceable business applications control their own loops, open capability providers compose explicitly scoped dependencies, and the OS preserves run state, explicit grants and inspectable evidence. Typed guest services request evidence on demand. Actual dispatch consumes the configured Mailbox and reserves its resource Lease atomically; the host collects pending work outside kernel decisions. This increment is not completion of Stage 1.
+
+The prototype has one operator-owned scope per state directory. Native drivers are trusted local programs; production isolation, live agent hooks, full asynchronous syscalls, UI, semantic knowledge GC and OKF compatibility remain deferred. The sections below continue to define the existing Go product and its accepted contracts. In particular, the prototype's durable Task is distinct from a Plan Task performed outside the existing Plan Controller.
+
 ## 1. Product Concept
 
 Arcloom is a platform that controls continuous Feedback Loops for AI-assisted development. Its Core Domain is Feedback Loop Control. Arcloom applies that Core Domain through Feedback Controllers that address feedback problems without owning the external activities or authoritative facts involved in their loops.

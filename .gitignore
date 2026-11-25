@@ -1,1 +1,5 @@
 node_modules/
+/target/
+/agent-os/examples/*.wasm
+/agent-os/examples/state*/
+/agent-os/examples/generated/
