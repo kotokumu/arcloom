@@ -1,40 +1,69 @@
 {
-  "version": 1,
+  "version": 2,
   "component": "generated/feedback-loop.component.wasm",
   "intent": {
     "goal": "Transform a text and verify its exact expected result",
     "execution": "text.transform",
     "feedback": "text.check",
-    "input": {"text": "Hello Arcloom", "operation": "upper"},
-    "criteria": {"expected": "HELLO ARCLOOM"}
+    "input": {
+      "text": "Hello Arcloom",
+      "operation": "upper"
+    },
+    "criteria": {
+      "expected": "HELLO ARCLOOM"
+    }
   },
-  "requires": ["text.transform", "text.check"],
-  "grants": ["text.transform", "text.check"],
+  "requires": [
+    "text.transform",
+    "text.check"
+  ],
+  "grants": [
+    "text.transform",
+    "text.check"
+  ],
   "drivers": [
     {
       "id": "text-transform",
-      "kind": "execution",
-      "provides": ["text.transform"],
-      "command": {
-        "argv": ["/usr/bin/python3", "execute.py"],
+      "provides": [
+        "text.transform"
+      ],
+      "adapter": "command",
+      "config": {
+        "argv": [
+          "/usr/bin/python3",
+          "execute.py"
+        ],
         "cwd": ".",
         "env": {},
         "timeout_ms": 3000,
         "max_output_bytes": 65536
-      }
+      },
+      "requires": []
     },
     {
       "id": "text-feedback",
-      "kind": "feedback",
-      "provides": ["text.check"],
-      "command": {
-        "argv": ["/usr/bin/python3", "evaluate.py"],
+      "provides": [
+        "text.check"
+      ],
+      "adapter": "command",
+      "config": {
+        "argv": [
+          "/usr/bin/python3",
+          "evaluate.py"
+        ],
         "cwd": ".",
         "env": {},
         "timeout_ms": 3000,
         "max_output_bytes": 65536
-      }
+      },
+      "requires": []
     }
   ],
-  "limits": {"max_actions": 4, "fuel": 10000000, "memory_bytes": 16777216}
+  "limits": {
+    "max_actions": 4,
+    "fuel": 10000000,
+    "memory_bytes": 16777216,
+    "lease_ttl_seconds": 60
+  },
+  "coalescing": []
 }

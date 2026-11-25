@@ -38,6 +38,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "arcloom-kernel"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "arcloom-observe-only"
 version = "0.1.0"
 dependencies = [
@@ -50,6 +59,7 @@ name = "arcloom-os"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arcloom-kernel",
  "fs2",
  "libc",
  "rusqlite",

@@ -2,5 +2,6 @@
 pub mod application;
 pub mod drivers;
 pub mod journal;
-pub mod kernel;
 pub mod model;
+pub mod registry;
+pub use arcloom_kernel::{kernel, ports, storage};

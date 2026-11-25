@@ -13,21 +13,21 @@ fn transition(state: Value, signal: Value) -> Result<Value, String> {
 #[cfg(target_arch = "wasm32")]
 mod component {
     wit_bindgen::generate!({ path: "../../wit", world: "business-app" });
+    use arcloom::os::syscalls::Outcome;
     struct App;
     impl Guest for App {
-        fn on_signal(state: String, signal: String) -> String {
-            let result = serde_json::from_str(&state)
-                .map_err(|e| e.to_string())
-                .and_then(|state| {
-                    serde_json::from_str(&signal)
-                        .map_err(|e| e.to_string())
-                        .map(|signal| (state, signal))
-                })
-                .and_then(|(state, signal)| super::transition(state, signal));
-            match result {
-                Ok(value) => value.to_string(),
-                Err(error) => serde_json::json!({"error":error}).to_string(),
-            }
+        fn on_signal(state: String, event: Signal) -> Result<Transition, String> {
+            let state = serde_json::from_str(&state).map_err(|e| e.to_string())?;
+            let payload: serde_json::Value =
+                serde_json::from_str(&event.payload).map_err(|e| e.to_string())?;
+            let value = super::transition(
+                state,
+                serde_json::json!({"kind":event.kind,"payload":payload}),
+            )?;
+            Ok(Transition {
+                state: value["state"].to_string(),
+                effect: Outcome::Complete,
+            })
         }
     }
     export!(App);

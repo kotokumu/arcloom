@@ -1,5 +1,5 @@
 [workspace]
-members = ["agent-os", "agent-os/apps/feedback-loop", "agent-os/apps/observe-only"]
+members = ["agent-os", "agent-os/kernel", "agent-os/apps/feedback-loop", "agent-os/apps/observe-only"]
 resolver = "2"
 
 [profile.dev]

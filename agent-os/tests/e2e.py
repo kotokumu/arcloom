@@ -29,7 +29,7 @@ class AgentOsCliTests(unittest.TestCase):
             (EXAMPLES / self.manifest["component"]).resolve(strict=True)
         )
         for driver in self.manifest["drivers"]:
-            driver["command"]["cwd"] = str(EXAMPLES)
+            driver["config"]["cwd"] = str(EXAMPLES)
         self.config = self.directory / "manifest.json"
         self.save()
 
@@ -59,10 +59,10 @@ class AgentOsCliTests(unittest.TestCase):
         return json.loads(self.cli("inspect", self.state, run_id).stdout)
 
     def set_execution(self, source, timeout_ms=3000):
-        self.manifest["drivers"][0]["command"]["argv"] = [
+        self.manifest["drivers"][0]["config"]["argv"] = [
             "/usr/bin/python3", "-c", source
         ]
-        self.manifest["drivers"][0]["command"]["timeout_ms"] = timeout_ms
+        self.manifest["drivers"][0]["config"]["timeout_ms"] = timeout_ms
 
     def test_feedback_loop_and_idempotent_completed_resume(self):
         first = self.run_task()
@@ -94,7 +94,7 @@ class AgentOsCliTests(unittest.TestCase):
     def test_replace_execution_driver_without_recompiling_application(self):
         selected = "result from a substituted provider"
         self.manifest["intent"]["criteria"]["expected"] = selected
-        self.manifest["drivers"][0]["command"]["env"] = {"RESULT": selected}
+        self.manifest["drivers"][0]["config"]["env"] = {"RESULT": selected}
         self.set_execution(
             "import json, os; print(json.dumps({'text': os.environ['RESULT']}))"
         )
@@ -102,6 +102,81 @@ class AgentOsCliTests(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["actions"], 2)
         self.assertEqual(result["state"]["result"]["text"], selected)
+
+    def test_non_command_driver_for_arbitrary_capability(self):
+        capability = "analytics.normalize.v17"
+        self.manifest["intent"]["execution"] = capability
+        self.manifest["intent"]["criteria"]["expected"] = "Hello Arcloom"
+        self.manifest["requires"][0] = capability
+        self.manifest["grants"][0] = capability
+        self.manifest["drivers"][0] = {
+            "id": "native-identity", "provides": [capability], "requires": [],
+            "adapter": "identity", "config": {},
+        }
+        result = self.run_task()
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["actions"], 2)
+        self.assertEqual(result["state"]["result"]["text"], "Hello Arcloom")
+
+    def delegated_identity(self):
+        self.manifest["intent"]["criteria"]["expected"] = "Hello Arcloom"
+        self.manifest["drivers"][0] = {
+            "id": "delegator", "resource": "shared-text-work",
+            "provides": ["text.transform"], "requires": ["text.delegate-leaf"],
+            "adapter": "delegate", "config": {"capability": "text.delegate-leaf"},
+        }
+        self.manifest["drivers"].append({
+            "id": "native-leaf", "resource": "shared-text-work",
+            "provides": ["text.delegate-leaf"], "requires": [],
+            "adapter": "identity", "config": {},
+        })
+
+    def test_driver_dependency_is_callable_under_explicit_transitive_grant(self):
+        self.delegated_identity()
+        self.manifest["grants"].append("text.delegate-leaf")
+        result = self.run_task()
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["state"]["result"]["text"], "Hello Arcloom")
+
+    def test_dependency_declaration_does_not_grant_authority(self):
+        self.delegated_identity()
+        result = self.run_task(expected=2)
+        self.assertEqual(result["status"], "denied")
+        self.assertEqual(result["actions"], 0)
+
+    def test_typed_knowledge_and_artifact_reads_require_explicit_grants(self):
+        evidence = self.directory / "evidence.txt"
+        evidence.write_text("operator evidence")
+        digest = json.loads(self.cli("artifact-put", self.state, evidence).stdout)["sha256"]
+        node = self.directory / "knowledge.json"
+        node.write_text(json.dumps({
+            "id": "policy", "kind": "decision", "status": "stable",
+            "trust": "human", "sources": [digest], "text": "keep the goal",
+        }))
+        self.cli("knowledge-put", self.state, node)
+        self.manifest["intent"]["read_knowledge"] = True
+        self.manifest["intent"]["read_artifact"] = True
+        self.manifest["requires"] += ["knowledge.read", "artifact.read"]
+        self.manifest["grants"] += ["knowledge.read", "artifact.read"]
+        result = self.run_task()
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["state"]["knowledge_view"]["confirmed"], ["policy"])
+        self.assertEqual(len(result["state"]["read_artifact"]), 64)
+
+    def test_knowledge_read_without_grant_stops_before_dispatch(self):
+        self.manifest["intent"]["read_knowledge"] = True
+        self.manifest["requires"].append("knowledge.read")
+        self.save()
+        result = self.run_task(expected=2)
+        self.assertEqual(result["status"], "denied")
+        self.assertEqual(self.inspect()["run"]["actions"], 0)
+
+    def test_artifact_read_without_grant_stops_before_evaluation(self):
+        self.manifest["intent"]["read_artifact"] = True
+        self.manifest["requires"].append("artifact.read")
+        result = self.run_task(expected=2)
+        self.assertEqual(result["status"], "denied")
+        self.assertEqual(result["actions"], 1)
 
     def test_missing_grant_denies_before_external_action(self):
         marker = self.directory / "must-not-exist"
@@ -118,7 +193,7 @@ class AgentOsCliTests(unittest.TestCase):
         self.assertEqual(result["status"], "budget_hit")
         self.assertEqual(result["actions"], 4)
         signals = self.inspect()["signals"]
-        feedback = [item for item in signals if item["kind"] == "feedback"]
+        feedback = [item for item in signals if item["kind"] == "text.check"]
         self.assertEqual(len(feedback), 2)
         self.assertTrue(all(item["payload"]["accepted"] is False for item in feedback))
 
@@ -164,6 +239,31 @@ class AgentOsCliTests(unittest.TestCase):
         self.assertEqual(self.run_task(expected=2), first)
         self.assertEqual(self.inspect(), before)
         self.assertEqual(attempts.read_text(), "attempt\n")
+
+    def test_operator_reconciles_exact_uncertain_lease_before_other_run_can_dispatch(self):
+        marker = self.directory / "worked"
+        self.set_execution(
+            f"from pathlib import Path; import time; p=Path({str(marker)!r}); "
+            "first=not p.exists(); p.touch(); "
+            "time.sleep(3 if first else 0); print('{\"text\":\"HELLO ARCLOOM\"}')",
+            timeout_ms=300,
+        )
+        self.assertEqual(self.run_task(expected=2)["status"], "uncertain")
+        evidence = self.inspect()["actions"]
+        self.assertEqual(len(evidence), 1)
+        receipt = evidence[0]
+        self.assertEqual(receipt["status"], "uncertain")
+        self.assertEqual(receipt["effect"]["provider"], self.manifest["drivers"][0]["id"])
+        token = receipt["lease_token"]
+        resource = receipt["resource"]
+        self.cli("lease-reconcile", self.state, "example", resource, token + 1, expected=1)
+        busy = self.cli("run", self.config, self.state, "second", expected=1)
+        self.assertIn("resource busy", busy.stderr)
+        self.assertEqual(self.inspect("second")["run"]["actions"], 0)
+        self.cli("lease-reconcile", self.state, "example", resource, token)
+        self.assertEqual(self.run_task(run_id="second")["status"], "completed")
+        self.assertGreater(self.inspect("second")["actions"][0]["lease_token"], token)
+        self.assertEqual(self.inspect()["run"]["status"], "uncertain")
 
     def test_concurrent_host_cannot_enter_locked_state_directory(self):
         started = self.directory / "started"
